@@ -12,16 +12,25 @@
 //---------------------------------------------------------------------------------
 #endregion
 
+using System;
 using System.Runtime.Serialization;
-using Lokad.Cloud.Provisioning.Azure.Entities;
 
-namespace Lokad.Cloud.Provisioning.Azure.InputParameters
+namespace Lokad.Cloud.Management.Azure.InputParameters
 {
-	[DataContract(Name = "UpdateDeploymentStatus", Namespace = ApiConstants.XmlNamespace)]
-	internal class UpdateDeploymentStatusInput : IExtensibleDataObject
+	[DataContract(Name = "CreateDeployment", Namespace = ApiConstants.XmlNamespace)]
+	internal class CreateDeploymentInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
-		public DeploymentStatus Status { get; set; }
+		public string Name { get; set; }
+
+		[DataMember(Order = 2)]
+		public Uri PackageUrl { get; set; }
+
+		[DataMember(Order = 3)]
+		public string Label { get; set; }
+
+		[DataMember(Order = 4)]
+		public string Configuration { get; set; }
 
 		public ExtensionDataObject ExtensionData { get; set; }
 	}

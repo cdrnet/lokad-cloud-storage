@@ -14,16 +14,13 @@
 
 using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Provisioning.Azure.InputParameters
+namespace Lokad.Cloud.Management.Azure.InputParameters
 {
-	[DataContract(Name = "Swap", Namespace = ApiConstants.XmlNamespace)]
-	internal class SwapDeploymentInput : IExtensibleDataObject
+	[DataContract(Name = "ChangeConfiguration", Namespace = ApiConstants.XmlNamespace)]
+	internal class ChangeConfigurationInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
-		public string Production { get; set; }
-
-		[DataMember(Order = 2)]
-		public string SourceDeployment { get; set; }
+		public string Configuration { get; set; }
 
 		public ExtensionDataObject ExtensionData { get; set; }
 	}

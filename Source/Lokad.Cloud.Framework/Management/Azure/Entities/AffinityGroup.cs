@@ -12,46 +12,51 @@
 //---------------------------------------------------------------------------------
 #endregion
 
-using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Provisioning.Azure.Entities
+namespace Lokad.Cloud.Management.Azure.Entities
 {
 	/// <summary>
-	/// Certificate
+	/// Affinity Group
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class Certificate : IExtensibleDataObject
+	internal class AffinityGroup : IExtensibleDataObject
 	{
 		[DataMember(Order = 1, EmitDefaultValue = false)]
-		public Uri CertificateUrl { get; set; }
+		public string Name { get; set; }
 
-		[DataMember(Order = 2, EmitDefaultValue = false)]
-		public string Thumbprint { get; set; }
+		/// <remarks>Base64-Encoded</remarks>
+		[DataMember(Order = 2)]
+		public string Label { get; set; }
 
-		[DataMember(Order = 3, EmitDefaultValue = false)]
-		public string ThumbprintAlgorithm { get; set; }
+		[DataMember(Order = 3)]
+		public string Description { get; set; }
 
-		/// <remarks>Base64-Encoded X509</remarks>
-		[DataMember(Order = 4, EmitDefaultValue = false)]
-		public string Data { get; set; }
+		[DataMember(Order = 4)]
+		public string Location { get; set; }
+
+		[DataMember(Order = 5, EmitDefaultValue = false)]
+		public HostedServiceList HostedServices { get; set; }
+
+		[DataMember(Order = 6, EmitDefaultValue = false)]
+		public StorageServiceList StorageServices { get; set; }
 
 		public ExtensionDataObject ExtensionData { get; set; }
 	}
 
 	/// <summary>
-	/// List of certificates
+	/// List of affinity groups
 	/// </summary>
-	[CollectionDataContract(Name = "Certificates", ItemName = "Certificate", Namespace = ApiConstants.XmlNamespace)]
-	internal class CertificateList : List<Certificate>
+	[CollectionDataContract(Name = "AffinityGroups", ItemName = "AffinityGroup", Namespace = ApiConstants.XmlNamespace)]
+	internal class AffinityGroupList : List<AffinityGroup>
 	{
-		public CertificateList()
+		public AffinityGroupList()
 		{
 		}
 
-		public CertificateList(IEnumerable<Certificate> certificateList)
-			: base(certificateList)
+		public AffinityGroupList(IEnumerable<AffinityGroup> affinityGroups)
+			: base(affinityGroups)
 		{
 		}
 	}

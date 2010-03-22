@@ -13,14 +13,15 @@
 #endregion
 
 using System.Runtime.Serialization;
+using Lokad.Cloud.Management.Azure.Entities;
 
-namespace Lokad.Cloud.Provisioning.Azure.InputParameters
+namespace Lokad.Cloud.Management.Azure.InputParameters
 {
-	[DataContract(Name = "WalkUpgradeDomain", Namespace = ApiConstants.XmlNamespace)]
-	internal class WalkUpgradeDomainInput : IExtensibleDataObject
+	[DataContract(Name = "UpdateDeploymentStatus", Namespace = ApiConstants.XmlNamespace)]
+	internal class UpdateDeploymentStatusInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
-		public int UpgradeDomain { get; set; }
+		public DeploymentStatus Status { get; set; }
 
 		public ExtensionDataObject ExtensionData { get; set; }
 	}

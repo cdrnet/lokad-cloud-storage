@@ -12,16 +12,22 @@
 //---------------------------------------------------------------------------------
 #endregion
 
-// TODO: To be replaced with official REST client once available
+using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Provisioning.Azure
+namespace Lokad.Cloud.Management.Azure.InputParameters
 {
-	internal static class ApiConstants
+	[DataContract(Name = "RegenerateKeys", Namespace = ApiConstants.XmlNamespace)]
+	internal class RegenerateKeysInput : IExtensibleDataObject
 	{
-		public const string ServiceEndpoint = "https://management.core.windows.net";
-		public const string XmlNamespace = "http://schemas.microsoft.com/windowsazure";
-		public const string VersionHeaderName = "x-ms-version";
-		public const string OperationTrackingIdHeader = "x-ms-request-id";
-		public const string VersionHeaderContent = "2009-10-01";
+		[DataMember(Order = 1)]
+		public KeyType KeyType { get; set; }
+
+		public ExtensionDataObject ExtensionData { get; set; }
+	}
+
+	public enum KeyType
+	{
+		Primary,
+		Secondary,
 	}
 }

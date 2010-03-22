@@ -12,29 +12,18 @@
 //---------------------------------------------------------------------------------
 #endregion
 
-using System;
 using System.Runtime.Serialization;
-using Lokad.Cloud.Provisioning.Azure.Entities;
 
-namespace Lokad.Cloud.Provisioning.Azure.InputParameters
+namespace Lokad.Cloud.Management.Azure.InputParameters
 {
-	[DataContract(Name = "UpgradeDeployment", Namespace = ApiConstants.XmlNamespace)]
-	internal class UpgradeDeploymentInput : IExtensibleDataObject
+	[DataContract(Name = "Swap", Namespace = ApiConstants.XmlNamespace)]
+	internal class SwapDeploymentInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
-		public UpgradeMode Mode { get; set; }
+		public string Production { get; set; }
 
 		[DataMember(Order = 2)]
-		public Uri PackageUrl { get; set; }
-
-		[DataMember(Order = 3)]
-		public string Configuration { get; set; }
-
-		[DataMember(Order = 4)]
-		public string Label { get; set; }
-
-		[DataMember(Order = 5)]
-		public string RoleToUpgrade { get; set; }
+		public string SourceDeployment { get; set; }
 
 		public ExtensionDataObject ExtensionData { get; set; }
 	}

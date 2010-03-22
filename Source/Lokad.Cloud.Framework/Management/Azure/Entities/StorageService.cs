@@ -16,13 +16,13 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Provisioning.Azure.Entities
+namespace Lokad.Cloud.Management.Azure.Entities
 {
 	/// <summary>
-	/// Hosted Service
+	/// Storage Service
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class HostedService : IExtensibleDataObject
+	internal class StorageService : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public Uri Url { get; set; }
@@ -31,19 +31,19 @@ namespace Lokad.Cloud.Provisioning.Azure.Entities
 		public string ServiceName { get; set; }
 
 		[DataMember(Order = 3, EmitDefaultValue = false)]
-		public HostedServiceProperties HostedServiceProperties { get; set; }
+		public StorageServiceProperties StorageServiceProperties { get; set; }
 
 		[DataMember(Order = 4, EmitDefaultValue = false)]
-		public DeploymentList Deployments { get; set; }
+		public StorageServiceKeys StorageServiceKeys { get; set; }
 
 		public ExtensionDataObject ExtensionData { get; set; }
 	}
 
 	/// <summary>
-	/// Hosted Service Properties
+	/// Storage Service Properties
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class HostedServiceProperties : IExtensibleDataObject
+	internal class StorageServiceProperties : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public string Description { get; set; }
@@ -54,7 +54,6 @@ namespace Lokad.Cloud.Provisioning.Azure.Entities
 		[DataMember(Order = 3, EmitDefaultValue = false)]
 		public string Location { get; set; }
 
-		/// <remarks>Base64-Encoded</remarks>
 		[DataMember(Order = 4)]
 		public string Label { get; set; }
 
@@ -62,17 +61,32 @@ namespace Lokad.Cloud.Provisioning.Azure.Entities
 	}
 
 	/// <summary>
-	/// List of host services
+	///  Storage Service Keys
 	/// </summary>
-	[CollectionDataContract(Name = "HostedServices", ItemName = "HostedService", Namespace = ApiConstants.XmlNamespace)]
-	internal class HostedServiceList : List<HostedService>
+	[DataContract(Namespace = ApiConstants.XmlNamespace)]
+	internal class StorageServiceKeys : IExtensibleDataObject
 	{
-		public HostedServiceList()
+		[DataMember(Order = 1)]
+		public string Primary { get; set; }
+
+		[DataMember(Order = 2)]
+		public string Secondary { get; set; }
+
+		public ExtensionDataObject ExtensionData { get; set; }
+	}
+
+	/// <summary>
+	/// List of storage services
+	/// </summary>
+	[CollectionDataContract(Name = "StorageServices", ItemName = "StorageService", Namespace = ApiConstants.XmlNamespace)]
+	internal class StorageServiceList : List<StorageService>
+	{
+		public StorageServiceList()
 		{
 		}
 
-		public HostedServiceList(IEnumerable<HostedService> hostedServices)
-			: base(hostedServices)
+		public StorageServiceList(IEnumerable<StorageService> storageServices)
+			: base(storageServices)
 		{
 		}
 	}
