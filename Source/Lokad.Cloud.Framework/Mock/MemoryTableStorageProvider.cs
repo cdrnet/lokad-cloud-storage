@@ -20,15 +20,15 @@ namespace Lokad.Cloud.Mock
 	public class MemoryTableStorageProvider : ITableStorageProvider
 	{
 		/// <summary>In memory table storage : entries per table (designed for simplicity instead of performance)</summary>
-		readonly Dictionary<string, List<MockTableEntry>> _tables;
+		private readonly Dictionary<string, List<MockTableEntry>> _tables;
 
 		/// <summary>Formatter as requiered to handle FatEntities.</summary>
-		readonly IDataSerializer _serializer;
+		private readonly IDataSerializer _serializer;
 
 		/// <summary>naive global lock to make methods thread-safe.</summary>
-		readonly object _syncRoot;
+		private readonly object _syncRoot;
 
-		int _nextETag;
+		private int _nextETag;
 
 		/// <summary>
 		/// Constructor for <see cref="MemoryTableStorageProvider"/>.

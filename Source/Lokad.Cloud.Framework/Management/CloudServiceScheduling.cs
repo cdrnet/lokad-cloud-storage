@@ -23,7 +23,7 @@ namespace Lokad.Cloud.Management
 	[UsedImplicitly]
 	public class CloudServiceScheduling : ICloudServiceSchedulingApi
 	{
-		readonly IBlobStorageProvider _blobProvider;
+		private readonly IBlobStorageProvider _blobProvider;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CloudServiceScheduling"/> class.

@@ -12,12 +12,12 @@ namespace Lokad.Cloud.ServiceFabric
 	public class RuntimeFinalizer : IRuntimeFinalizer
 	{
 		/// <summary>Locking object used to ensure the thread safety of instance.</summary>
-		readonly object _sync;
+		private readonly object _sync;
 
 		/// <summary>Collections of objects to be disposed on runtime finalization.</summary>
-		readonly HashSet<IDisposable> _disposables;
+		private readonly HashSet<IDisposable> _disposables;
 
-		bool _isRuntimeFinalized;
+		private bool _isRuntimeFinalized;
 
 		public void Register(IDisposable obj)
 		{

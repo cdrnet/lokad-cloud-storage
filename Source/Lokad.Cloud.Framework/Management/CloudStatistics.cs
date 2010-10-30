@@ -16,9 +16,9 @@ namespace Lokad.Cloud.Management
 	/// Management facade for cloud configuration.
 	/// </summary>
 	[UsedImplicitly]
-	public class CloudStatistics : ICloudStatisticsApi 
+	public class CloudStatistics : ICloudStatisticsApi
 	{
-		readonly ICloudDiagnosticsRepository _repository;
+		private readonly ICloudDiagnosticsRepository _repository;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CloudStatistics"/> class.

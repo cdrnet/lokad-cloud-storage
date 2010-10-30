@@ -15,10 +15,10 @@ namespace Lokad.Cloud.Storage
 	{
 		[UsedImplicitly] public readonly int Index;
 
-        /// <summary>Indicates whether the default value (for value types)
-        /// should be treated as 'null'. Not relevant for class types.
-        /// </summary>
-        [UsedImplicitly] public readonly bool TreatDefaultAsNull;
+		/// <summary>Indicates whether the default value (for value types)
+		/// should be treated as 'null'. Not relevant for class types.
+		/// </summary>
+		[UsedImplicitly] public readonly bool TreatDefaultAsNull;
 
 		/// <summary>Position v</summary>
 		public RankAttribute(int index)
@@ -26,11 +26,11 @@ namespace Lokad.Cloud.Storage
 			Index = index;
 		}
 
-        /// <summary>Position v, and default behavior.</summary>
-        public RankAttribute(int index, bool treatDefaultAsNull)
-        {
-            Index = index;
-            TreatDefaultAsNull = treatDefaultAsNull;
-        }
+		/// <summary>Position v, and default behavior.</summary>
+		public RankAttribute(int index, bool treatDefaultAsNull)
+		{
+			Index = index;
+			TreatDefaultAsNull = treatDefaultAsNull;
+		}
 	}
 }

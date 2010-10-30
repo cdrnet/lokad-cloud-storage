@@ -22,22 +22,22 @@ namespace Lokad.Cloud.Management
 	/// Azure Management API Provider, Provisioning Provider.
 	/// </summary>
 	[UsedImplicitly]
-	public class CloudProvisioning : IProvisioningProvider, ICloudProvisioningApi 
+	public class CloudProvisioning : IProvisioningProvider, ICloudProvisioningApi
 	{
-		readonly ILog _log;
+		private readonly ILog _log;
 
-		readonly bool _enabled;
-		readonly Maybe<X509Certificate2> _certificate = Maybe<X509Certificate2>.Empty;
-		readonly Maybe<string> _deploymentId = Maybe.String;
-		readonly Maybe<string> _subscriptionId = Maybe.String;
+		private readonly bool _enabled;
+		private readonly Maybe<X509Certificate2> _certificate = Maybe<X509Certificate2>.Empty;
+		private readonly Maybe<string> _deploymentId = Maybe.String;
+		private readonly Maybe<string> _subscriptionId = Maybe.String;
 
-		readonly ActionPolicy _retryPolicy;
+		private readonly ActionPolicy _retryPolicy;
 
-		ManagementStatus _status;
-		Maybe<HostedService> _service = Maybe<HostedService>.Empty;
-		Maybe<Deployment> _deployment = Maybe<Deployment>.Empty;
+		private ManagementStatus _status;
+		private Maybe<HostedService> _service = Maybe<HostedService>.Empty;
+		private Maybe<Deployment> _deployment = Maybe<Deployment>.Empty;
 
-		ManagementClient _client;
+		private ManagementClient _client;
 
 		//[ThreadStatic]
 		IAzureServiceManagement _channel;

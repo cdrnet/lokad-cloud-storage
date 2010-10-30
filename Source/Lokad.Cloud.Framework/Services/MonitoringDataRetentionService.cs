@@ -17,7 +17,7 @@ namespace Lokad.Cloud.Services
 		   Description = "Removes old monitoring statistics.")] 
 	public class MonitoringDataRetentionService : ScheduledService
 	{
-		readonly DiagnosticsAcquisition _diagnosticsAcquisition;
+		private readonly DiagnosticsAcquisition _diagnosticsAcquisition;
 
 		public MonitoringDataRetentionService(DiagnosticsAcquisition diagnosticsAcquisition)
 		{

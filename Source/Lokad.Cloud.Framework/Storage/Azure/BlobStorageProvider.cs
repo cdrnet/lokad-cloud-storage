@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Xml.Linq;
 using Lokad.Diagnostics;
 using Lokad.Serialization;
@@ -21,16 +22,16 @@ namespace Lokad.Cloud.Storage.Azure
 	/// </remarks>
 	public class BlobStorageProvider : IBlobStorageProvider
 	{
-		readonly CloudBlobClient _blobStorage;
-		readonly IDataSerializer _serializer;
-		readonly ActionPolicy _azureServerPolicy;
+		private readonly CloudBlobClient _blobStorage;
+		private readonly IDataSerializer _serializer;
+		private readonly ActionPolicy _azureServerPolicy;
 
 		// Instrumentation
-		readonly ExecutionCounter _countPutBlob;
-		readonly ExecutionCounter _countGetBlob;
-		readonly ExecutionCounter _countGetBlobIfModified;
-		readonly ExecutionCounter _countUpdateIfNotModified;
-		readonly ExecutionCounter _countDeleteBlob;
+		private readonly ExecutionCounter _countPutBlob;
+		private readonly ExecutionCounter _countGetBlob;
+		private readonly ExecutionCounter _countGetBlobIfModified;
+		private readonly ExecutionCounter _countUpdateIfNotModified;
+		private readonly ExecutionCounter _countDeleteBlob;
 
 		public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer)
 		{
@@ -51,9 +52,9 @@ namespace Lokad.Cloud.Storage.Azure
 
 		public bool CreateContainer(string containerName)
 		{
-            //workaround since Azure is presently returning OutOfRange exception when using a wrong name.
-            if (!StorageExtensions.IsContainerNameValid(containerName))
-                throw new NotSupportedException("containerName is not compliant with azure constraints on container naming");
+			//workaround since Azure is presently returning OutOfRange exception when using a wrong name.
+			if (!StorageExtensions.IsContainerNameValid(containerName))
+				throw new NotSupportedException("containerName is not compliant with azure constraints on container naming");
 
 			var container = _blobStorage.GetContainerReference(containerName);
 			try
@@ -109,11 +110,11 @@ namespace Lokad.Cloud.Storage.Azure
 			return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag);
 		}
 
-        public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag)
-        {
-            string outEtag;
-            return PutBlob(containerName, blobName, item, typeof (T), true, expectedEtag, out outEtag);
-        }
+		public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag)
+		{
+			string outEtag;
+			return PutBlob(containerName, blobName, item, typeof (T), true, expectedEtag, out outEtag);
+		}
 
 		public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string outEtag)
 		{
@@ -227,6 +228,8 @@ namespace Lokad.Cloud.Storage.Azure
 																						// case with etag constraint
 					new BlobRequestOptions { AccessCondition = AccessCondition.IfMatch(expectedEtag) };
 			}
+
+			blob.Properties.ContentMD5 = ComputeContentHash(stream);
 
 			try
 			{
@@ -636,6 +639,19 @@ namespace Lokad.Cloud.Storage.Azure
 				// removing /container/ from the blob name (dev storage: /account/container/)
 				yield return Uri.UnescapeDataString(enumerator.Current.Uri.AbsolutePath.Substring(container.Uri.LocalPath.Length + 1));
 			}
+		}
+
+		public static string ComputeContentHash(Stream source)
+		{
+			byte[] hash;
+			source.Seek(0, SeekOrigin.Begin);
+			using (var md5 = MD5.Create())
+			{
+				hash = md5.ComputeHash(source);
+			}
+
+			source.Seek(0, SeekOrigin.Begin);
+			return Convert.ToBase64String(hash);
 		}
 	}
 }

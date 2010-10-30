@@ -24,7 +24,7 @@ namespace Lokad.Cloud.Storage.Azure
 		/// into account that byte[] are Base64 encoded which represent
 		/// a penalty overhead of 4/3 - hence the reduced capacity.
 		/// </summary>
-		public const int MaxByteCapacity = (960*1024*3) / 4;
+		public const int MaxByteCapacity = (960*1024*3)/4;
 
 		// ReSharper disable InconsistentNaming
 		// ReSharper disable MemberCanBePrivate.Global

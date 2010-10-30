@@ -34,16 +34,16 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			get { return 1.Minutes(); }
 		}
 
-		readonly IBlobStorageProvider _provider;
+		private readonly IBlobStorageProvider _provider;
 
 		/// <summary>Etag of the assembly package. This property is set when
 		/// assemblies are loaded. It can be used to monitor the availability of
 		/// a new package.</summary>
-		string _lastPackageEtag;
+		private string _lastPackageEtag;
 
-		string _lastConfigurationEtag;
+		private string _lastConfigurationEtag;
 
-		DateTimeOffset _lastPackageCheck;
+		private DateTimeOffset _lastPackageCheck;
 
 		/// <summary>Build a new package loader.</summary>
 		public AssemblyLoader(IBlobStorageProvider provider)

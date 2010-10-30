@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 	[UsedImplicitly]
 	public class BlobDiagnosticsRepository : ICloudDiagnosticsRepository
 	{
-		readonly IBlobStorageProvider _provider;
+		private readonly IBlobStorageProvider _provider;
 
 		/// <summary>
 		/// Creates an Instance of the <see cref="BlobDiagnosticsRepository"/> class.

@@ -20,26 +20,26 @@ namespace Lokad.Cloud.Storage.Azure
 	public class TableStorageProvider : ITableStorageProvider
 	{
 		// HACK: those tokens will probably be provided as constants in the StorageClient library
-		const int MaxEntityTransactionCount = 100;
+		private const int MaxEntityTransactionCount = 100;
 
 		// HACK: Lowering the maximal payload, to avoid corner cases #117 (ContentLengthExceeded)
 		// [vermorel] 128kB is purely arbitrary, only taken as a reasonable safety margin
 		const int MaxEntityTransactionPayload = 4 * 1024 * 1024 - 128 * 1024; // 4 MB - 128kB
 
-		const string ContinuationNextRowKeyToken = "x-ms-continuation-NextRowKey";
-		const string ContinuationNextPartitionKeyToken = "x-ms-continuation-NextPartitionKey";
-		const string NextRowKeyToken = "NextRowKey";
-		const string NextPartitionKeyToken = "NextPartitionKey";
+		private const string ContinuationNextRowKeyToken = "x-ms-continuation-NextRowKey";
+		private const string ContinuationNextPartitionKeyToken = "x-ms-continuation-NextPartitionKey";
+		private const string NextRowKeyToken = "NextRowKey";
+		private const string NextPartitionKeyToken = "NextPartitionKey";
 
-		readonly CloudTableClient _tableStorage;
-		readonly IDataSerializer _serializer;
-		readonly ActionPolicy _storagePolicy;
+		private readonly CloudTableClient _tableStorage;
+		private readonly IDataSerializer _serializer;
+		private readonly ActionPolicy _storagePolicy;
 
 		// Instrumentation
-		readonly ExecutionCounter _countQuery;
-		readonly ExecutionCounter _countInsert;
-		readonly ExecutionCounter _countUpdate;
-		readonly ExecutionCounter _countDelete;
+		private readonly ExecutionCounter _countQuery;
+		private readonly ExecutionCounter _countInsert;
+		private readonly ExecutionCounter _countUpdate;
+		private readonly ExecutionCounter _countDelete;
 
 		/// <summary>IoC constructor.</summary>
 		public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer)

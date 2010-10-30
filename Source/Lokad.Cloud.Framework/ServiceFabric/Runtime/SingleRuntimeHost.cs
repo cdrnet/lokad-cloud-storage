@@ -19,7 +19,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 	{
 		/// <summary>Refer to the callee instance (isolated). This property is not null
 		/// only for the caller instance (non-isolated).</summary>
-		volatile SingleRuntimeHost _isolatedInstance;
+		private volatile SingleRuntimeHost _isolatedInstance;
 
 		/// <summary>
 		/// Run the hosted runtime, blocking the calling thread.

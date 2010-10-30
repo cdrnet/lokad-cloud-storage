@@ -18,7 +18,7 @@ namespace Lokad.Cloud.Web
 {
 	public partial class Workloads : Page
 	{
-		// TODO: reuse constant, or abstract with management class
+		// HACK: reuse constant, or abstract with management class
 		const string FailingMessagesStoreName = "failing-messages";
 		const string DataNotAvailableMessage = "Raw data was lost, message not restoreable. Maybe the queue was deleted in the meantime.";
 		const string XmlNotAvailableMegssage = "XML representation not available, but message is restoreable.";
@@ -62,7 +62,7 @@ namespace Lokad.Cloud.Web
 
 		IEnumerable<object> GetFailingMessages()
 		{
-			// TODO: paging or other mechanism to be able to show more than 50 entries
+			// HACK: paging or other mechanism to be able to show more than 50 entries
 
 			return _provider.ListPersisted(FailingMessagesStoreName)
 				.Take(50)

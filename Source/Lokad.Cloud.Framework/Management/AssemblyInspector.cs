@@ -16,9 +16,9 @@ namespace Lokad.Cloud.Management
 	/// </remarks>
 	internal class AssemblyInspector : IDisposable
 	{
-		bool _disposed;
-		AppDomain _sandbox;
-		AssemblyWrapper _asmWrapper;
+		private bool _disposed;
+		private readonly AppDomain _sandbox;
+		private readonly AssemblyWrapper _asmWrapper;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:AssemblyInspector"/> class.

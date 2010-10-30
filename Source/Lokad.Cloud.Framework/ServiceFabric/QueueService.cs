@@ -21,11 +21,11 @@ namespace Lokad.Cloud.ServiceFabric
 	/// </remarks>
 	public abstract class QueueService<T> : CloudService
 	{
-		readonly string _queueName;
-		readonly string _serviceName;
-		readonly int _batchSize;
-		readonly TimeSpan _visibilityTimeout;
-		readonly int _maxProcessingTrials;
+		private readonly string _queueName;
+		private readonly string _serviceName;
+		private readonly int _batchSize;
+		private readonly TimeSpan _visibilityTimeout;
+		private readonly int _maxProcessingTrials;
 
 		/// <summary>Name of the queue associated to the service.</summary>
 		public override string Name
@@ -40,11 +40,11 @@ namespace Lokad.Cloud.ServiceFabric
 
 			// default settings
 			_batchSize = 1;
-			_maxProcessingTrials = 50;
+			_maxProcessingTrials = 5;
 
 			if (null != settings) // settings are provided through custom attribute
 			{
-				_queueName = settings.QueueName ?? TypeMapper.GetStorageName(typeof(T));
+				_queueName = settings.QueueName ?? TypeMapper.GetStorageName(typeof (T));
 				_serviceName = settings.ServiceName ?? GetType().FullName;
 
 				if (settings.BatchSize > 0)
@@ -52,20 +52,20 @@ namespace Lokad.Cloud.ServiceFabric
 					// need to be at least 1
 					_batchSize = settings.BatchSize;
 				}
-				
-				if(settings.MaxProcessingTrials > 0)
+
+				if (settings.MaxProcessingTrials > 0)
 				{
 					_maxProcessingTrials = settings.MaxProcessingTrials;
 				}
 			}
 			else
 			{
-				_queueName = TypeMapper.GetStorageName(typeof(T));
+				_queueName = TypeMapper.GetStorageName(typeof (T));
 				_serviceName = GetType().FullName;
 			}
 
 			// 1.25 * execution timeout, but limited to 2h max
-			_visibilityTimeout = TimeSpan.FromSeconds(Math.Max(1, Math.Min(7200, (1.25 * ExecutionTimeout.TotalSeconds))));
+			_visibilityTimeout = TimeSpan.FromSeconds(Math.Max(1, Math.Min(7200, (1.25*ExecutionTimeout.TotalSeconds))));
 		}
 
 		/// <summary>Do not try to override this method, use <see cref="StartRange"/>
