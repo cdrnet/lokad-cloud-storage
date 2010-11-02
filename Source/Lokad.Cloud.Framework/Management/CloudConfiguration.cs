@@ -18,8 +18,8 @@ namespace Lokad.Cloud.Management
 	[UsedImplicitly]
 	public class CloudConfiguration : ICloudConfigurationApi
 	{
-		private readonly IBlobStorageProvider _blobProvider;
-		private readonly UTF8Encoding _encoding = new UTF8Encoding();
+		readonly IBlobStorageProvider _blobProvider;
+		readonly UTF8Encoding _encoding = new UTF8Encoding();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CloudConfiguration"/> class.

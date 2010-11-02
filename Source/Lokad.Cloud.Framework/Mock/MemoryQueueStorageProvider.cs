@@ -16,12 +16,12 @@ namespace Lokad.Cloud.Mock
 	public class MemoryQueueStorageProvider : IQueueStorageProvider
 	{
 		/// <summary>Root used to synchronize accesses to <c>_inprocess</c>.</summary>
-		private readonly object _sync = new object();
+		readonly object _sync = new object();
 
-		private readonly Dictionary<string, Queue<object>> _queues;
-		private readonly HashSet<Pair<string, object>> _inProgressMessages;
-		private readonly HashSet<Quad<string, string, string, object>> _persistedMessages;
-		private readonly IDataSerializer _serializer;
+		readonly Dictionary<string,Queue<object>> _queues;
+		readonly HashSet<Pair<string,object>> _inProgressMessages;
+		readonly HashSet<Quad<string,string,string,object>> _persistedMessages;
+		readonly IDataSerializer _serializer;
 		
 		/// <summary>Default constructor.</summary>
 		public MemoryQueueStorageProvider() 

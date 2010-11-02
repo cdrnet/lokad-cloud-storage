@@ -20,15 +20,15 @@ namespace Lokad.Cloud.Mock
 	public class MemoryTableStorageProvider : ITableStorageProvider
 	{
 		/// <summary>In memory table storage : entries per table (designed for simplicity instead of performance)</summary>
-		private readonly Dictionary<string, List<MockTableEntry>> _tables;
+		readonly Dictionary<string, List<MockTableEntry>> _tables;
 
 		/// <summary>Formatter as requiered to handle FatEntities.</summary>
-		private readonly IDataSerializer _serializer;
+		readonly IDataSerializer _serializer;
 
 		/// <summary>naive global lock to make methods thread-safe.</summary>
-		private readonly object _syncRoot;
+		readonly object _syncRoot;
 
-		private int _nextETag;
+		int _nextETag;
 
 		/// <summary>
 		/// Constructor for <see cref="MemoryTableStorageProvider"/>.
@@ -178,12 +178,11 @@ namespace Lokad.Cloud.Mock
 				}
 
 				// verify valid data BEFORE updating them
-                // TODO: check #166 for incorrect behavior here
-				if (entities.GroupJoin(entries, ToId, ToId, (u, vs) => vs.Count(entry => force || entry.ETag == u.ETag)).Any(c => c != 1))
+				if (entities.GroupJoin(entries, u => ToId(u), ToId, (u, vs) => vs.Count(entry => force || u.ETag == null || entry.ETag == u.ETag)).Any(c => c != 1))
 				{
 					throw new DataServiceRequestException("UPDATE: key not found or etag conflict.");
 				}
-				if (entities.GroupBy(ToId).Any(id => id.Count() != 1))
+				if (entities.GroupBy(e => ToId(e)).Any(id => id.Count() != 1))
 				{
 					throw new DataServiceRequestException("UPDATE: duplicate keys.");
 				}
@@ -248,8 +247,7 @@ namespace Lokad.Cloud.Mock
 				var entityList = entities.ToList();
 
 				// verify valid data BEFORE deleting them
-                // TODO: check #166 for incorrect behavior here
-				if (entityList.Join(entries, ToId, ToId, (u, v) => force || u.ETag == v.ETag).Any(c => !c))
+				if (entityList.Join(entries, u => ToId(u), ToId, (u, v) => force || u.ETag == null || u.ETag == v.ETag).Any(c => !c))
 				{
 					throw new DataServiceRequestException("DELETE: etag conflict.");
 				}

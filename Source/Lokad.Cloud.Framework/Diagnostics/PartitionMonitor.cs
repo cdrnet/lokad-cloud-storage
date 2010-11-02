@@ -13,9 +13,9 @@ namespace Lokad.Cloud.Diagnostics
 	/// </summary>
 	internal class PartitionMonitor
 	{
-		private readonly ICloudDiagnosticsRepository _repository;
-		private readonly string _partitionKey;
-		private readonly string _instanceId;
+		readonly ICloudDiagnosticsRepository _repository;
+		readonly string _partitionKey;
+		readonly string _instanceId;
 
 		/// <summary>
 		/// Creates an instance of the <see cref="PartitionMonitor"/> class.

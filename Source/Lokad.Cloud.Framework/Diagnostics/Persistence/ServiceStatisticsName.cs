@@ -32,12 +32,12 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 			return new ServiceStatisticsName(timeSegment, serviceName);
 		}
 
-		public static ServiceStatisticsName GetPrefix()
+        public static ServiceStatisticsName GetPrefix()
 		{
 			return new ServiceStatisticsName(null, null);
 		}
 
-		public static ServiceStatisticsName GetPrefix(string timeSegment)
+        public static ServiceStatisticsName GetPrefix(string timeSegment)
 		{
 			return new ServiceStatisticsName(timeSegment, null);
 		}

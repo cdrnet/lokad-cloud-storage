@@ -20,8 +20,8 @@ namespace Lokad.Cloud.Storage
 	[Immutable]
 	public class CloudTable<T>
 	{
-		private readonly ITableStorageProvider _provider;
-		private readonly string _tableName;
+		readonly ITableStorageProvider _provider;
+		readonly string _tableName;
 
 		/// <summary>Name of the underlying table.</summary>
 		public string Name

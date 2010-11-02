@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Management
 	[UsedImplicitly]
 	public class CloudServices : ICloudServicesApi
 	{
-		private readonly IBlobStorageProvider _blobProvider;
+		readonly IBlobStorageProvider _blobProvider;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CloudServices"/> class.

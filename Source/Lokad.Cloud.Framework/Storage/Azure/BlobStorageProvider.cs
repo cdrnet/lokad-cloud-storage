@@ -22,16 +22,18 @@ namespace Lokad.Cloud.Storage.Azure
 	/// </remarks>
 	public class BlobStorageProvider : IBlobStorageProvider
 	{
-		private readonly CloudBlobClient _blobStorage;
-		private readonly IDataSerializer _serializer;
-		private readonly ActionPolicy _azureServerPolicy;
+		private const string MetadataMD5Key = "ContentMD5";
+
+		readonly CloudBlobClient _blobStorage;
+		readonly IDataSerializer _serializer;
+		readonly ActionPolicy _azureServerPolicy;
 
 		// Instrumentation
-		private readonly ExecutionCounter _countPutBlob;
-		private readonly ExecutionCounter _countGetBlob;
-		private readonly ExecutionCounter _countGetBlobIfModified;
-		private readonly ExecutionCounter _countUpdateIfNotModified;
-		private readonly ExecutionCounter _countDeleteBlob;
+		readonly ExecutionCounter _countPutBlob;
+		readonly ExecutionCounter _countGetBlob;
+		readonly ExecutionCounter _countGetBlobIfModified;
+		readonly ExecutionCounter _countUpdateIfNotModified;
+		readonly ExecutionCounter _countDeleteBlob;
 
 		public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer)
 		{
@@ -229,7 +231,7 @@ namespace Lokad.Cloud.Storage.Azure
 					new BlobRequestOptions { AccessCondition = AccessCondition.IfMatch(expectedEtag) };
 			}
 
-			blob.Properties.ContentMD5 = ComputeContentHash(stream);
+			ApplyContentHash(blob, stream);
 
 			try
 			{
@@ -282,6 +284,7 @@ namespace Lokad.Cloud.Storage.Azure
 						{
 							stream.Seek(0, SeekOrigin.Begin);
 							blob.DownloadToStream(stream);
+							VerifyContentHash(blob, stream);
 						});
 					etag = blob.Properties.ETag;
 				}
@@ -332,6 +335,7 @@ namespace Lokad.Cloud.Storage.Azure
 						{
 							stream.Seek(0, SeekOrigin.Begin);
 							blob.DownloadToStream(stream);
+							VerifyContentHash(blob, stream);
 						});
 					etag = blob.Properties.ETag;
 				}
@@ -502,6 +506,7 @@ namespace Lokad.Cloud.Storage.Azure
 						{
 							rstream.Seek(0, SeekOrigin.Begin);
 							blob.DownloadToStream(rstream);
+							VerifyContentHash(blob, rstream);
 						});
 
 					originalEtag = blob.Properties.ETag;
@@ -641,7 +646,7 @@ namespace Lokad.Cloud.Storage.Azure
 			}
 		}
 
-		public static string ComputeContentHash(Stream source)
+		private static string ComputeContentHash(Stream source)
 		{
 			byte[] hash;
 			source.Seek(0, SeekOrigin.Begin);
@@ -652,6 +657,33 @@ namespace Lokad.Cloud.Storage.Azure
 
 			source.Seek(0, SeekOrigin.Begin);
 			return Convert.ToBase64String(hash);
+		}
+
+		/// <summary>
+		/// Apply a content hash to the blob to verify upload and roundtrip consistency.
+		/// </summary>
+		private static void ApplyContentHash(CloudBlob blob, Stream stream)
+		{
+			var hash = ComputeContentHash(stream);
+			blob.Properties.ContentMD5 = hash;
+			blob.Metadata[MetadataMD5Key] = hash;
+		}
+
+		/// <summary>
+		/// Throws a DataCorruptionException if the content hash is available but doesn't match.
+		/// </summary>
+		private static void VerifyContentHash(CloudBlob blob, Stream stream)
+		{
+			var expectedHash = blob.Metadata[MetadataMD5Key];
+			if (string.IsNullOrEmpty(expectedHash))
+			{
+				return;
+			}
+
+			if (expectedHash != ComputeContentHash(stream))
+			{
+				throw new DataCorruptionException();
+			}
 		}
 	}
 }

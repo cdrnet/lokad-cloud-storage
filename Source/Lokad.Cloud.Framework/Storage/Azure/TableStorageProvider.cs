@@ -20,26 +20,26 @@ namespace Lokad.Cloud.Storage.Azure
 	public class TableStorageProvider : ITableStorageProvider
 	{
 		// HACK: those tokens will probably be provided as constants in the StorageClient library
-		private const int MaxEntityTransactionCount = 100;
+		const int MaxEntityTransactionCount = 100;
 
 		// HACK: Lowering the maximal payload, to avoid corner cases #117 (ContentLengthExceeded)
 		// [vermorel] 128kB is purely arbitrary, only taken as a reasonable safety margin
 		const int MaxEntityTransactionPayload = 4 * 1024 * 1024 - 128 * 1024; // 4 MB - 128kB
 
-		private const string ContinuationNextRowKeyToken = "x-ms-continuation-NextRowKey";
-		private const string ContinuationNextPartitionKeyToken = "x-ms-continuation-NextPartitionKey";
-		private const string NextRowKeyToken = "NextRowKey";
-		private const string NextPartitionKeyToken = "NextPartitionKey";
+		const string ContinuationNextRowKeyToken = "x-ms-continuation-NextRowKey";
+		const string ContinuationNextPartitionKeyToken = "x-ms-continuation-NextPartitionKey";
+		const string NextRowKeyToken = "NextRowKey";
+		const string NextPartitionKeyToken = "NextPartitionKey";
 
-		private readonly CloudTableClient _tableStorage;
-		private readonly IDataSerializer _serializer;
-		private readonly ActionPolicy _storagePolicy;
+		readonly CloudTableClient _tableStorage;
+		readonly IDataSerializer _serializer;
+		readonly ActionPolicy _storagePolicy;
 
 		// Instrumentation
-		private readonly ExecutionCounter _countQuery;
-		private readonly ExecutionCounter _countInsert;
-		private readonly ExecutionCounter _countUpdate;
-		private readonly ExecutionCounter _countDelete;
+		readonly ExecutionCounter _countQuery;
+		readonly ExecutionCounter _countInsert;
+		readonly ExecutionCounter _countUpdate;
+		readonly ExecutionCounter _countDelete;
 
 		/// <summary>IoC constructor.</summary>
 		public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer)
@@ -287,21 +287,20 @@ namespace Lokad.Cloud.Storage.Azure
 								{
 									AzurePolicies.SlowInstantiation.Do(() =>
 										{
-                                            try
-                                            {
-                                                _tableStorage.CreateTableIfNotExist(tableName);
-                                            }
-                                            // HACK: incorrect behavior of the StorageClient (2010-09)
-                                            // Fails to behave properly in multi-threaded situations
-                                            catch(StorageClientException cex)
-                                            {
-                                                if(cex.ExtendedErrorInformation.ErrorCode != "TableAlreadyExists")
-                                                {
-                                                    throw;
-                                                }
-                                            }
-
-										    context.SaveChanges(noBatchMode ? SaveChangesOptions.None : SaveChangesOptions.Batch);
+											try
+											{
+												_tableStorage.CreateTableIfNotExist(tableName);
+											}
+											// HACK: incorrect behavior of the StorageClient (2010-09)
+											// Fails to behave properly in multi-threaded situations
+											catch (StorageClientException cex)
+											{
+												if (cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
+												{
+													throw;
+												}
+											}
+											context.SaveChanges(noBatchMode ? SaveChangesOptions.None : SaveChangesOptions.Batch);
 											ReadETagsAndDetach(context, (entity, etag) => cloudEntityOfFatEntity[entity].ETag = etag);
 										});
 								}
@@ -414,20 +413,19 @@ namespace Lokad.Cloud.Storage.Azure
 							{
 								AzurePolicies.SlowInstantiation.Do(() =>
 									{
-                                        try
-                                        {
-                                            _tableStorage.CreateTableIfNotExist(tableName);
-                                        }
-                                        // HACK: incorrect behavior of the StorageClient (2010-09)
-                                        // Fails to behave properly in multi-threaded situations
-                                        catch (StorageClientException cex)
-                                        {
-                                            if (cex.ExtendedErrorInformation.ErrorCode != "TableAlreadyExists")
-                                            {
-                                                throw;
-                                            }
-                                        }
-
+										try
+										{
+											_tableStorage.CreateTableIfNotExist(tableName);
+										}
+										// HACK: incorrect behavior of the StorageClient (2010-09)
+										// Fails to behave properly in multi-threaded situations
+										catch (StorageClientException cex)
+										{
+											if (cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
+											{
+												throw;
+											}
+										}
 										context.SaveChanges(noBatchMode ? SaveChangesOptions.None : SaveChangesOptions.Batch);
 										ReadETagsAndDetach(context, (entity, etag) => cloudEntityOfFatEntity[entity].ETag = etag);
 									});

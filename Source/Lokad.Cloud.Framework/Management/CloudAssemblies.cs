@@ -20,8 +20,8 @@ namespace Lokad.Cloud.Management
 	[UsedImplicitly]
 	public class CloudAssemblies : ICloudAssembliesApi
 	{
-		private readonly IBlobStorageProvider _blobProvider;
-		private readonly ILog _log;
+		readonly IBlobStorageProvider _blobProvider;
+		readonly ILog _log;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="CloudAssemblies"/> class.

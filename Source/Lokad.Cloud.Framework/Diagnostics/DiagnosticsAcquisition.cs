@@ -27,7 +27,7 @@ namespace Lokad.Cloud.Diagnostics
 			_partitionMonitor = new PartitionMonitor(repository);
 			_serviceMonitor = new ServiceMonitor(repository);
 		}
-
+		
 		/// <summary>
 		/// Collect (pull) internal and external diagnostics statistics and persists
 		/// them in the diagnostics repository.

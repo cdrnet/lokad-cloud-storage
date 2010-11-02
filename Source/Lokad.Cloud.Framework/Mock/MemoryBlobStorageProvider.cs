@@ -22,28 +22,28 @@ namespace Lokad.Cloud.Mock
 	{
 		/// <summary> Containers Property.</summary>
 		Dictionary<string, MockContainer> Containers { get { return _containers;} }
-		private readonly Dictionary<string, MockContainer> _containers;
-
+		readonly Dictionary<string, MockContainer> _containers;
+		
 		/// <summary>naive global lock to make methods thread-safe.</summary>
-		private readonly object _syncRoot;
+		readonly object _syncRoot;
 
-		private readonly IDataSerializer _serializer;
+        readonly IDataSerializer _serializer;
 
 		public MemoryBlobStorageProvider()
 		{
 			_containers = new Dictionary<string, MockContainer>();
 			_syncRoot = new object();
-			_serializer = new CloudFormatter();
+		    _serializer = new CloudFormatter();
 		}
 
 		public bool CreateContainer(string containerName)
 		{
 			lock (_syncRoot)
 			{
-				if (!StorageExtensions.IsContainerNameValid(containerName))
-				{
-					throw new NotSupportedException("the containerName is not compliant with azure constraints on container names");
-				}
+                if (!StorageExtensions.IsContainerNameValid(containerName))
+                {
+                    throw new NotSupportedException("the containerName is not compliant with azure constraints on container names");
+                }
 
 				if (Containers.Keys.Contains(containerName))
 				{
@@ -85,22 +85,22 @@ namespace Lokad.Cloud.Mock
 			return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag);
 		}
 
-		public bool PutBlob<T>(string containerName, string blobName, object item, string expectedEtag)
-		{
-			lock (_syncRoot)
-			{
-				using (var stream = new MemoryStream())
-				{
-					_serializer.Serialize(item, stream);
-				}
+        public bool PutBlob<T>(string containerName, string blobName, object item, string expectedEtag)
+        {
+            lock (_syncRoot)
+            {
+                using (var stream = new MemoryStream())
+                {
+                    _serializer.Serialize(item, stream);
+                }
 
-				if (Containers[containerName].BlobsEtag[blobName] == expectedEtag)
-				{
-					Containers[containerName].SetBlob(blobName, item);
-				}
-				return false;
-			}
-		}
+                if (Containers[containerName].BlobsEtag[blobName] == expectedEtag)
+                {
+                    Containers[containerName].SetBlob(blobName, item);
+                }
+                return false;
+            }
+        }
 
 		public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string etag)
 		{
@@ -116,10 +116,10 @@ namespace Lokad.Cloud.Mock
 							return false;
 						}
 
-						using (var stream = new MemoryStream())
-						{
-							_serializer.Serialize(item, stream);
-						}
+                        using (var stream = new MemoryStream())
+                        {
+                            _serializer.Serialize(item, stream);
+                        }
 
 						Containers[containerName].SetBlob(blobName, item);
 						etag = Containers[containerName].BlobsEtag[blobName];
@@ -131,17 +131,17 @@ namespace Lokad.Cloud.Mock
 					return true;
 				}
 
-				if (!StorageExtensions.IsContainerNameValid(containerName))
-				{
-					throw new NotSupportedException("the containerName is not compliant with azure constraints on container names");
-				}
+                if (!StorageExtensions.IsContainerNameValid(containerName))
+                {
+                    throw new NotSupportedException("the containerName is not compliant with azure constraints on container names");
+                }
 
 				Containers.Add(containerName, new MockContainer());
 
-				using (var stream = new MemoryStream())
-				{
-					_serializer.Serialize(item, stream);
-				}
+                using (var stream = new MemoryStream())
+                {
+                    _serializer.Serialize(item, stream);
+                }
 
 				Containers[containerName].AddBlob(blobName, item);
 				etag = Containers[containerName].BlobsEtag[blobName];
@@ -355,16 +355,16 @@ namespace Lokad.Cloud.Mock
 			}
 		}
 
-		public bool PutBlob<T>(string containerName, string blobName, T item, string etag)
-		{
-			lock (_syncRoot)
-			{
-				if (Containers[containerName].BlobsEtag[blobName] == etag)
-				{
-					Containers[containerName].SetBlob(blobName, item);
-				}
-				return false;
-			}
-		}
-	}
+        public bool PutBlob<T>(string containerName, string blobName, T item, string etag)
+        {
+            lock (_syncRoot)
+            {
+                if (Containers[containerName].BlobsEtag[blobName] == etag)
+                {
+                    Containers[containerName].SetBlob(blobName, item);
+                }
+                return false;
+            }
+        }
+    }
 }

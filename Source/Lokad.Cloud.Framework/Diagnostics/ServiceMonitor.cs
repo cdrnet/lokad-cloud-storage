@@ -16,8 +16,8 @@ namespace Lokad.Cloud.Diagnostics
 	/// </summary>
 	internal class ServiceMonitor : IServiceMonitor
 	{
-		private static List<ServiceStatisticUpdate> _updates = new List<ServiceStatisticUpdate>();
-		private static readonly object _updatesSync = new object();
+		static List<ServiceStatisticUpdate> _updates = new List<ServiceStatisticUpdate>();
+		static readonly object _updatesSync = new object();
 
 		readonly ICloudDiagnosticsRepository _repository;
 

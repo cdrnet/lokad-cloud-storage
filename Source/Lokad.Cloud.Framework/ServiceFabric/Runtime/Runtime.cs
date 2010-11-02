@@ -18,15 +18,15 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 	/// <summary>Organize the executions of the services.</summary>
 	internal class Runtime
 	{
-		private readonly CloudInfrastructureProviders _providers;
-		private readonly IServiceMonitor _monitoring;
-		private readonly DiagnosticsAcquisition _diagnostics;
+		readonly CloudInfrastructureProviders _providers;
+		readonly IServiceMonitor _monitoring;
+		readonly DiagnosticsAcquisition _diagnostics;
 
 		/// <summary>Main thread used to schedule services in <see cref="Execute()"/>.</summary>
-		private Thread _executeThread;
+		Thread _executeThread;
 
-		private volatile bool _isStopRequested;
-		private Scheduler _scheduler;
+		volatile bool _isStopRequested;
+		Scheduler _scheduler;
 
 		/// <summary>Container used to populate cloud service properties.</summary>
 		public IContainer RuntimeContainer { get; set; }

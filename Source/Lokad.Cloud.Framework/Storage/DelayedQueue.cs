@@ -46,10 +46,10 @@ namespace Lokad.Cloud.Storage
 		[Rank(0, true), DataMember] public readonly DateTimeOffset TriggerTime;
 		[UsedImplicitly, Rank(1, true), DataMember] public readonly Guid Identifier;
 
-		/// <summary>Empty constructor, used for prefixing.</summary>
-		public DelayedMessageName()
-		{
-		}
+        /// <summary>Empty constructor, used for prefixing.</summary>
+        public DelayedMessageName()
+        {
+        }
 
 		public DelayedMessageName(DateTimeOffset triggerTime, Guid identifier)
 		{

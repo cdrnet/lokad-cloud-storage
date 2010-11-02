@@ -11,10 +11,10 @@ namespace Lokad.Cloud.Storage
 	/// Caution : this counter is not idempotent, so using it in services could lead to incorrect behaviour.</remarks>
 	public class BlobCounter
 	{
-		private readonly IBlobStorageProvider _provider;
+		readonly IBlobStorageProvider _provider;
 
-		private readonly string _containerName;
-		private readonly string _blobName;
+		readonly string _containerName;
+		readonly string _blobName;
 
 		/// <summary>Constant value provided for the cloud enumeration pattern
 		/// over a queue.</summary>

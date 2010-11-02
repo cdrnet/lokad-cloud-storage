@@ -19,22 +19,22 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 	/// </summary>
 	public class Scheduler
 	{
-		private readonly Func<IEnumerable<CloudService>> _serviceProvider;
-		private readonly Func<CloudService, ServiceExecutionFeedback> _schedule;
-		private readonly object _sync = new object();
+		readonly Func<IEnumerable<CloudService>> _serviceProvider;
+		readonly Func<CloudService, ServiceExecutionFeedback> _schedule;
+		readonly object _sync = new object();
 
 		/// <summary>Duration to keep pinging the same cloud service if service is active.</summary>
-		private readonly TimeSpan _moreOfTheSame = 60.Seconds();
+		readonly TimeSpan _moreOfTheSame = 60.Seconds();
 
 		/// <summary>Resting duration.</summary>
-		private readonly TimeSpan _idleSleep = 10.Seconds();
+		readonly TimeSpan _idleSleep = 10.Seconds();
 
-		private CloudService _currentService;
-		private volatile bool _isRunning;
+		CloudService _currentService;
+		volatile bool _isRunning;
 
 		// Instrumentation
-		private readonly ExecutionCounter _countIdleSleep;
-		private readonly ExecutionCounter _countBusyExecute;
+		readonly ExecutionCounter _countIdleSleep;
+		readonly ExecutionCounter _countBusyExecute;
 
 		/// <summary>
 		/// Creates a new instance of the Scheduler class.

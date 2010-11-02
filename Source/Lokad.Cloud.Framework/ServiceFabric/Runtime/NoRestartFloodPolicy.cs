@@ -29,7 +29,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 		/// </summary>
 		static TimeSpan DelayWhenFlooding { get { return 5.Minutes(); } }
 
-		private volatile bool _isStopRequested;
+		volatile bool _isStopRequested;
 
 		/// <summary>When stop is requested, policy won't go on with restarts anymore.</summary>
 		public bool IsStopRequested

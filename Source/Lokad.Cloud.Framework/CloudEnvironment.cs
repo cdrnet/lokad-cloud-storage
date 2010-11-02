@@ -21,7 +21,7 @@ namespace Lokad.Cloud
 	/// </remarks>
 	public static class CloudEnvironment
 	{
-		private static readonly bool _runtimeAvailable;
+		readonly static bool _runtimeAvailable;
 
 		static CloudEnvironment()
 		{

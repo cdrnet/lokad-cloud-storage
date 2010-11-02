@@ -21,11 +21,11 @@ namespace Lokad.Cloud.ServiceFabric
 	/// </remarks>
 	public abstract class QueueService<T> : CloudService
 	{
-		private readonly string _queueName;
-		private readonly string _serviceName;
-		private readonly int _batchSize;
-		private readonly TimeSpan _visibilityTimeout;
-		private readonly int _maxProcessingTrials;
+		readonly string _queueName;
+		readonly string _serviceName;
+		readonly int _batchSize;
+		readonly TimeSpan _visibilityTimeout;
+		readonly int _maxProcessingTrials;
 
 		/// <summary>Name of the queue associated to the service.</summary>
 		public override string Name

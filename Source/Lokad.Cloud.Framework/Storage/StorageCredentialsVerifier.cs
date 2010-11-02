@@ -13,7 +13,7 @@ namespace Lokad.Cloud.Storage
 	/// </summary>
 	public class StorageCredentialsVerifier
 	{
-		private readonly CloudBlobClient _storage;
+		private CloudBlobClient _storage;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:StorageCredentialsVerifier" /> class.
