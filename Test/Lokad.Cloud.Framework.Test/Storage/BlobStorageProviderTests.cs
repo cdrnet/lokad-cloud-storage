@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using Lokad.Cloud.Test;
+using Lokad.Quality;
 using Lokad.Threading;
 using NUnit.Framework;
 
@@ -19,7 +20,20 @@ namespace Lokad.Cloud.Storage.Test
 		private const string ContainerName = "tests-blobstorageprovider-mycontainer";
 		private const string BlobName = "myprefix/myblob";
 
-		readonly IBlobStorageProvider Provider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
+		// ReSharper disable InconsistentNaming
+		readonly IBlobStorageProvider Provider;
+		// ReSharper restore InconsistentNaming
+
+		[UsedImplicitly]
+		public BlobStorageProviderTests()
+		{
+			Provider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
+		}
+
+		protected BlobStorageProviderTests(IBlobStorageProvider provider)
+		{
+			Provider = provider;
+		}
 
 		[TestFixtureSetUp]
 		public void Setup()
@@ -79,19 +93,19 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.AreEqual(6, Provider.GetBlob<int>(ContainerName, BlobName).Value, "#A03");
 		}
 
-        [Test]
-        public void PutBlobEnforceMatchingEtag()
-        {
-            Provider.PutBlob(ContainerName, BlobName, 1);
+		[Test]
+		public void PutBlobEnforceMatchingEtag()
+		{
+			Provider.PutBlob(ContainerName, BlobName, 1);
 
-            var etag = Provider.GetBlobEtag(ContainerName, BlobName);
-            var isUpdated = Provider.PutBlob(ContainerName, BlobName, 2, Guid.NewGuid().ToString());
+			var etag = Provider.GetBlobEtag(ContainerName, BlobName);
+			var isUpdated = Provider.PutBlob(ContainerName, BlobName, 2, Guid.NewGuid().ToString());
 
-            Assert.IsTrue(!isUpdated, "#A00 Blob shouldn't be updated if etag is not matching");
+			Assert.IsTrue(!isUpdated, "#A00 Blob shouldn't be updated if etag is not matching");
 
-            isUpdated = Provider.PutBlob(ContainerName, BlobName, 3, etag);
-            Assert.IsTrue(isUpdated, "#A01 Blob should have been updated");
-        }
+			isUpdated = Provider.PutBlob(ContainerName, BlobName, 3, etag);
+			Assert.IsTrue(isUpdated, "#A01 Blob should have been updated");
+		}
 
 		[Test]
 		public void EtagChangesOnlyWithBlogChange()
@@ -160,7 +174,7 @@ namespace Lokad.Cloud.Storage.Test
 		/// <summary>Loose check of the behavior of 'UpdateIfNotModified'
 		/// under concurrency stress.</summary>
 		[Test]
-		public void UpdateIfNotModifiedWithStress()
+		public virtual void UpdateIfNotModifiedWithStress()
 		{
 			Provider.PutBlob(ContainerName, BlobName, 0);
 
@@ -169,8 +183,10 @@ namespace Lokad.Cloud.Storage.Test
 			int ignored;
 
 			array = array.SelectInParallel(
-				k => Provider.UpdateIfNotModified(ContainerName,
-					BlobName, i => i.HasValue ? i.Value + 1 : 1, out ignored), array.Length);
+				k => Provider.UpdateIfNotModified(
+					ContainerName, BlobName,
+					i => i.HasValue ? i.Value + 1 : 1,
+					out ignored), array.Length);
 
 			Assert.IsTrue(array.Any(x => x), "#A00 write should have happened at least once.");
 			Assert.IsTrue(array.Any(x => !x), "#A01 conflict should have happened at least once.");
@@ -313,6 +329,59 @@ namespace Lokad.Cloud.Storage.Test
 			var xml = blob.Value;
 			var property = xml.Elements().Single();
 			Assert.AreEqual(data.MyGuid, new Guid(property.Value));
+		}
+
+		private string CreateNewBlob()
+		{
+			var name = "x" + Guid.NewGuid().ToString("N");
+			Provider.PutBlob(ContainerName, name, name);
+			return name;
+		}
+
+		[Test]
+		public void CanAcquireBlobLease()
+		{
+			var blobName = CreateNewBlob();
+			var result = Provider.TryAcquireLease(ContainerName, blobName);
+			Assert.IsTrue(result.IsSuccess);
+			Assert.IsNotNullOrEmpty(result.Value);
+		}
+
+		[Test]
+		public void CanNotAcquireBlobLeaseOnLockedBlob()
+		{
+			var blobName = CreateNewBlob();
+			var result = Provider.TryAcquireLease(ContainerName, blobName);
+			Assert.IsTrue(result.IsSuccess);
+			Assert.IsNotNullOrEmpty(result.Value);
+
+			// Second trial should fail
+			result = Provider.TryAcquireLease(ContainerName, blobName);
+			Assert.IsFalse(result.IsSuccess);
+			Assert.AreEqual("Conflict", result.Error);
+		}
+
+		[Test]
+		public void CanReleaseLockedBlobWithMatchingLeaseId()
+		{
+			var blobName = CreateNewBlob();
+			var lease = Provider.TryAcquireLease(ContainerName, blobName);
+			Assert.IsTrue(Provider.TryReleaseLease(ContainerName, blobName, lease.Value));
+		}
+
+		[Test]
+		public void CanNotReleaseLockedBlobWithoutMatchingLeaseId()
+		{
+			var blobName = CreateNewBlob();
+			Provider.TryAcquireLease(ContainerName, blobName);
+			Assert.IsFalse(Provider.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
+		}
+
+		[Test]
+		public void CanNotReleaseUnleasedBlob()
+		{
+			var blobName = CreateNewBlob();
+			Assert.IsFalse(Provider.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
 		}
 	}
 
