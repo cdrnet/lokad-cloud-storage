@@ -676,6 +676,9 @@ namespace Lokad.Cloud.Storage.Azure
 		/// </summary>
 		private static void VerifyContentHash(CloudBlob blob, Stream stream)
 		{
+            // TODO: [vermorel] disabling md5 check, remove this when it's working 
+		    return;
+
 			var expectedHash = blob.Metadata[MetadataMD5Key];
 			if (string.IsNullOrEmpty(expectedHash))
 			{

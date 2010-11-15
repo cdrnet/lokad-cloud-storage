@@ -31,7 +31,8 @@ namespace Lokad.Cloud.Web
 			QueuesView.DataBind();
 
 			var failingMessages = GetFailingMessages().ToArray();
-			if(failingMessages.Length > 0)
+			
+            if(failingMessages.Length > 0)
 			{
 				FailingMessagesLabel.Visible = true;
 			}
