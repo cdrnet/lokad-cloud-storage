@@ -666,9 +666,15 @@ namespace Lokad.Cloud.Storage.Azure
 		/// </summary>
 		private static void ApplyContentHash(CloudBlob blob, Stream stream)
 		{
-			var hash = ComputeContentHash(stream);
-			//blob.Properties.ContentMD5 = hash;
-			blob.Metadata[MetadataMD5Key] = hash;
+            // HACK: [Vermorel] StorageClient does not apply MD5 on smaller blobs.
+            // Reflector indicates that the behavior threshold is at 32MB
+            // so manually disable hasing for larger blobs
+            if (stream.Length < 0x2000000L)
+            {
+                var hash = ComputeContentHash(stream);
+                blob.Properties.ContentMD5 = hash;
+                //blob.Metadata[MetadataMD5Key] = hash;
+            }
 		}
 
 		/// <summary>

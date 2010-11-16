@@ -89,9 +89,32 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.IsTrue(isSaved, "#A00");
 			Assert.IsNotNull(etag, "#A01");
 
-			Assert.IsTrue(Provider.GetBlob<int>(ContainerName, BlobName).HasValue, "#A02");
-			Assert.AreEqual(6, Provider.GetBlob<int>(ContainerName, BlobName).Value, "#A03");
+		    var maybe = Provider.GetBlob<int>(ContainerName, BlobName);
+			Assert.IsTrue(maybe.HasValue, "#A02");
+			Assert.AreEqual(6, maybe.Value, "#A03");
 		}
+
+        /// <summary>The purpose of this test is to further check MD5 behavior.</summary>
+        [Test]
+        public void PutBlogWithGrowSizes()
+        {
+            var rand = new Random(0);
+            for(double i = 1; i < 64; i *= 1.5) // 10 iterations
+            {
+                var buffer = new byte[(int) (i*(2 << 20))];
+                rand.NextBytes(buffer);
+
+                Provider.PutBlob(ContainerName, BlobName, buffer);
+                var maybe = Provider.GetBlob<byte[]>(ContainerName, BlobName);
+
+                Assert.IsTrue(maybe.HasValue);
+
+                for(int j = 0; j < buffer.Length; j++)
+                {
+                    Assert.AreEqual(buffer[j], maybe.Value[j]);
+                }
+            }
+        }
 
 		[Test]
 		public void PutBlobEnforceMatchingEtag()
