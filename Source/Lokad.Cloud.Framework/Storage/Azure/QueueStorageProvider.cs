@@ -110,20 +110,25 @@ namespace Lokad.Cloud.Storage.Azure
 			return _queueStorage.ListQueues(prefix).Select(queue => queue.Name);
 		}
 
-		bool TryDeserializeAs<T>(Stream source, out object result)
+		Result<T, Exception> TryDeserializeAs<T>(Stream source)
 		{
 			var position = source.Position;
-
 			try
 			{
-				result = _serializer.Deserialize(source, typeof(T));
-				return result is T;
+				var result = _serializer.Deserialize(source, typeof (T));
+				return result is T
+					? Result<T, Exception>.CreateSuccess((T) result)
+					: Result<T, Exception>.CreateError(new InvalidCastException(
+						String.Format("Message was expected to be of type {0} but was of type {1}.", typeof (T).Name,
+							result.GetType().Name)));
 			}
-			catch (SerializationException)
+			catch (Exception e)
+			{
+				return Result<T, Exception>.CreateError(e);
+			}
+			finally
 			{
 				source.Position = position;
-				result = default(T);
-				return false;
 			}
 		}
 
@@ -170,63 +175,67 @@ namespace Lokad.Cloud.Storage.Azure
 			{
 				foreach (var rawMessage in rawMessages)
 				{
-					// 3.1. PERSIST POISONED MESSAGES, SKIP
+					// 3.1. DESERIALIZE MESSAGE, CHECK-OUT, COLLECT WRAPPED MESSAGES TO BE UNWRAPPED LATER
 
-					if (rawMessage.DequeueCount > maxProcessingTrials)
-					{
-						PersistRawMessage(rawMessage, queueName, PoisonedMessagePersistenceStoreName,
-							String.Format("Message was {0} times dequeued but failed processing each time.", rawMessage.DequeueCount - 1));
-
-						continue;
-					}
-
-					// 3.2. DESERIALIZE MESSAGE, CHECK-OUT, COLLECT WRAPPED MESSAGES TO BE UNWRAPPED LATER
-
-					var stream = new MemoryStream(rawMessage.AsBytes);
+					var data = rawMessage.AsBytes;
+					var stream = new MemoryStream(data);
 					try
 					{
 						var dequeueCount = rawMessage.DequeueCount;
-						object innerMessage;
 
-						// 3.2.1 UNPACK ENVELOPE, UPDATE POISONING INDICATOR
+						// 3.1.1 UNPACK ENVELOPE IF PACKED, UPDATE POISONING INDICATOR
 
-						if (TryDeserializeAs<MessageEnvelope>(stream, out innerMessage))
+						var messageAsEnvelope = TryDeserializeAs<MessageEnvelope>(stream);
+						if (messageAsEnvelope.IsSuccess)
 						{
 							stream.Dispose();
-							var envelope = (MessageEnvelope) innerMessage;
+							var envelope = (MessageEnvelope) messageAsEnvelope.Value;
 							dequeueCount += envelope.DequeueCount;
-							stream = new MemoryStream(envelope.RawMessage);
+							data = envelope.RawMessage;
+							stream = new MemoryStream(data);
 						}
 
-						// 3.2.2 PERSIST POISONED MESSAGES (2nd check), SKIP
+						// 3.1.2 PERSIST POISONED MESSAGE, SKIP
 
 						if (dequeueCount > maxProcessingTrials)
 						{
-							PersistRawMessage(rawMessage, queueName, PoisonedMessagePersistenceStoreName,
-								String.Format("Message was {0} times dequeued but failed processing each time (with envelope).", dequeueCount - 1));
+							// we want to persist the unpacked message (no envelope) but still need to drop
+							// the original message, that's why we pass the original rawMessage but the unpacked data
+							PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
+								String.Format("Message was dequeued {0} times but failed processing each time.", dequeueCount - 1));
 
 							continue;
 						}
 
-						// 3.2.3 DESERIALIZE MESSAGE OR WRAPPER, PERSIST BAD MESSAGES (SKIP)
+						// 3.1.3 DESERIALIZE MESSAGE IF POSSIBLE
 
-						if (TryDeserializeAs<T>(stream, out innerMessage))
+						var messageAsT = TryDeserializeAs<T>(stream);
+						if (messageAsT.IsSuccess)
 						{
-							messages.Add((T)innerMessage);
-							CheckOutMessage(innerMessage, rawMessage, queueName, false, dequeueCount);
+							messages.Add((T) (messageAsT.Value));
+							CheckOutMessage(messageAsT.Value, rawMessage, queueName, false, dequeueCount);
+
+							continue;
 						}
-						else if (TryDeserializeAs<MessageWrapper>(stream, out innerMessage))
+
+						// 3.1.4 DESERIALIZE WRAPPER IF POSSIBLE
+
+						var messageAsWrapper = TryDeserializeAs<MessageWrapper>(stream);
+						if (messageAsWrapper.IsSuccess)
 						{
 							// we don't retrieve messages while holding the lock
-							var mw = (MessageWrapper)innerMessage;
-							wrappedMessages.Add(mw);
-							CheckOutMessage(mw, rawMessage, queueName, true, dequeueCount);
+							wrappedMessages.Add((MessageWrapper) (messageAsWrapper.Value));
+							CheckOutMessage(messageAsWrapper.Value, rawMessage, queueName, true, dequeueCount);
+
+							continue;
 						}
-						else
-						{
-							// we failed to deserialize, so we remove it from the queue and persist it in the poison quarantine
-							PersistRawMessage(rawMessage, queueName, PoisonedMessagePersistenceStoreName, "Message failed to deserialize.");
-						}
+
+						// 3.1.5 PERSIST FAILED MESSAGE, SKIP
+
+						// we want to persist the unpacked message (no envelope) but still need to drop
+						// the original message, that's why we pass the original rawMessage but the unpacked data
+						PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
+							String.Format("Message failed to deserialize ({0})", messageAsT.Error));
 					}
 					finally
 					{
@@ -555,7 +564,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 				// 2. PERSIST MESSAGE AND DELETE FROM QUEUE
 
-				PersistRawMessage(rawMessage, queueName, storeName, reason);
+				PersistRawMessage(rawMessage, rawMessage.AsBytes, queueName, storeName, reason);
 
 				// 3. REMOVE MESSAGE FROM CHECK-OUT
 
@@ -694,7 +703,7 @@ namespace Lokad.Cloud.Storage.Azure
 			_blobStorage.DeleteBlob(blobReference);
 		}
 
-		void PersistRawMessage(CloudQueueMessage message, string queueName, string storeName, string reason)
+		void PersistRawMessage(CloudQueueMessage message, byte[] data, string queueName, string storeName, string reason)
 		{
 			var timestamp = _countPersistMessage.Open();
 
@@ -710,7 +719,7 @@ namespace Lokad.Cloud.Storage.Azure
 					PersistenceTime = DateTimeOffset.UtcNow,
 					DequeueCount = message.DequeueCount,
 					Reason = reason,
-					Data = message.AsBytes,
+					Data = data,
 				};
 
 			_blobStorage.PutBlob(blobReference, persistedMessage);
