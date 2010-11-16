@@ -34,6 +34,7 @@ namespace Lokad.Cloud.Storage.Azure
 		readonly CloudBlobClient _blobStorage;
 		readonly IDataSerializer _serializer;
 		readonly ActionPolicy _azureServerPolicy;
+	    readonly ActionPolicy _networkPolicy;
 
 		// Instrumentation
 		readonly ExecutionCounter _countPutBlob;
@@ -47,6 +48,7 @@ namespace Lokad.Cloud.Storage.Azure
 			_blobStorage = blobStorage;
 			_serializer = serializer;
 			_azureServerPolicy = AzurePolicies.TransientServerErrorBackOff;
+		    _networkPolicy = AzurePolicies.NetworkCorruption;
 
 			// Instrumentation
 			ExecutionCounters.Default.RegisterRange(new[]
@@ -242,11 +244,11 @@ namespace Lokad.Cloud.Storage.Azure
 
 			try
 			{
-				_azureServerPolicy.Do(() =>
+				_azureServerPolicy.Do(() => _networkPolicy.Do(() =>
 					{
 						stream.Seek(0, SeekOrigin.Begin);
 						blob.UploadFromStream(stream, options);
-					});
+					}));
 			}
 			catch (StorageClientException ex)
 			{
@@ -287,12 +289,13 @@ namespace Lokad.Cloud.Storage.Azure
 				// if no such container, return empty
 				try
 				{
-					_azureServerPolicy.Do(() =>
-						{
-							stream.Seek(0, SeekOrigin.Begin);
-							blob.DownloadToStream(stream);
-							VerifyContentHash(blob, stream);
-						});
+					_azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+					    {
+					        stream.Seek(0, SeekOrigin.Begin);
+					        blob.DownloadToStream(stream);
+					        VerifyContentHash(blob, stream, containerName, blobName);
+					    }));
+
 					etag = blob.Properties.ETag;
 				}
 				catch(StorageClientException ex)
@@ -338,12 +341,13 @@ namespace Lokad.Cloud.Storage.Azure
 				// if no such container, return empty
 				try
 				{
-					_azureServerPolicy.Do(() =>
+					_azureServerPolicy.Do(() => _networkPolicy.Do(() =>
 						{
 							stream.Seek(0, SeekOrigin.Begin);
 							blob.DownloadToStream(stream);
-							VerifyContentHash(blob, stream);
-						});
+							VerifyContentHash(blob, stream, containerName, blobName);
+						}));
+
 					etag = blob.Properties.ETag;
 				}
 				catch (StorageClientException ex)
@@ -507,19 +511,19 @@ namespace Lokad.Cloud.Storage.Azure
 			{
 				blob = container.GetBlockBlobReference(blobName);
 
-				using (var rstream = new MemoryStream())
+				using (var stream = new MemoryStream())
 				{
-					_azureServerPolicy.Do(() =>
+					_azureServerPolicy.Do(() => _networkPolicy.Do(() =>
 						{
-							rstream.Seek(0, SeekOrigin.Begin);
-							blob.DownloadToStream(rstream);
-							VerifyContentHash(blob, rstream);
-						});
+							stream.Seek(0, SeekOrigin.Begin);
+							blob.DownloadToStream(stream);
+							VerifyContentHash(blob, stream, containerName, blobName);
+						}));
 
 					originalEtag = blob.Properties.ETag;
 
-					rstream.Seek(0, SeekOrigin.Begin);
-					var blobData = _serializer.Deserialize(rstream, typeof(T));
+					stream.Seek(0, SeekOrigin.Begin);
+					var blobData = _serializer.Deserialize(stream, typeof(T));
 
 					input = blobData == null ? Maybe<T>.Empty : (T) blobData;
 				}
@@ -690,11 +694,8 @@ namespace Lokad.Cloud.Storage.Azure
 		/// <summary>
 		/// Throws a DataCorruptionException if the content hash is available but doesn't match.
 		/// </summary>
-		private static void VerifyContentHash(CloudBlob blob, Stream stream)
+		private static void VerifyContentHash(CloudBlob blob, Stream stream, string containerName, string blobName)
 		{
-            // TODO: [vermorel] disabling md5 check, remove this when it's working 
-		    return;
-
 			var expectedHash = blob.Metadata[MetadataMD5Key];
 			if (string.IsNullOrEmpty(expectedHash))
 			{
@@ -703,7 +704,8 @@ namespace Lokad.Cloud.Storage.Azure
 
 			if (expectedHash != ComputeContentHash(stream))
 			{
-				throw new DataCorruptionException();
+				throw new DataCorruptionException(
+                    string.Format("MD5 mismatch on blob retrieval {0}/{1}.", containerName, blobName));
 			}
 		}
 

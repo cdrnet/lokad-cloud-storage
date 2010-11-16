@@ -92,7 +92,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="App.template.config" />
+    <None Include="App.template.config">
+      <SubType>Designer</SubType>
+    </None>
     <Compile Include="Diagnostics\CloudLoggerTests.cs" />
     <Compile Include="Diagnostics\ExecutionCounterTests.cs" />
     <Compile Include="GlobalSetup.cs" />
