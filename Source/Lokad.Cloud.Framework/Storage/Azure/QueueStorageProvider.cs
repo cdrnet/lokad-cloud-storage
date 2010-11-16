@@ -167,9 +167,8 @@ namespace Lokad.Cloud.Storage.Azure
 						if (messageAsEnvelope.IsSuccess)
 						{
 							stream.Dispose();
-							var envelope = (MessageEnvelope) messageAsEnvelope.Value;
-							dequeueCount += envelope.DequeueCount;
-							data = envelope.RawMessage;
+							dequeueCount += messageAsEnvelope.Value.DequeueCount;
+							data = messageAsEnvelope.Value.RawMessage;
 							stream = new MemoryStream(data);
 						}
 
@@ -190,7 +189,7 @@ namespace Lokad.Cloud.Storage.Azure
 						var messageAsT = _serializer.TryDeserializeAs<T>(stream);
 						if (messageAsT.IsSuccess)
 						{
-							messages.Add((T) (messageAsT.Value));
+							messages.Add(messageAsT.Value);
 							CheckOutMessage(messageAsT.Value, rawMessage, queueName, false, dequeueCount);
 
 							continue;
@@ -202,7 +201,7 @@ namespace Lokad.Cloud.Storage.Azure
 						if (messageAsWrapper.IsSuccess)
 						{
 							// we don't retrieve messages while holding the lock
-							wrappedMessages.Add((MessageWrapper) (messageAsWrapper.Value));
+							wrappedMessages.Add(messageAsWrapper.Value);
 							CheckOutMessage(messageAsWrapper.Value, rawMessage, queueName, true, dequeueCount);
 
 							continue;
@@ -400,12 +399,13 @@ namespace Lokad.Cloud.Storage.Azure
 
 				if (isOverflowing)
 				{
-					using (var stream = new MemoryStream(rawMessage.AsBytes))
+					var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(rawMessage.AsBytes);
+					if (messageWrapper.IsSuccess)
 					{
-						var mw = (MessageWrapper)_serializer.Deserialize(stream, typeof(MessageWrapper));
-
-						_blobStorage.DeleteBlob(mw.ContainerName, mw.BlobName);
+						_blobStorage.DeleteBlob(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
 					}
+
+					// TODO: else-case would mean that we won't delete the overflow blob, consider to report it
 				}
 
 				// 3. DELETE THE MESSAGE FROM THE QUEUE
@@ -581,7 +581,7 @@ namespace Lokad.Cloud.Storage.Azure
 				dataXml = _blobStorage.GetBlobXml(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName, out ignored);
 				
 				// We consider data to be available only if we can access its blob's data
-				// Simplification: we assume that if we can get the data as xml, then we can also get it's binary data
+				// Simplification: we assume that if we can get the data as xml, then we can also get its binary data
 				dataForRestorationAvailable = dataXml.HasValue;
 			}
 			else
@@ -631,21 +631,10 @@ namespace Lokad.Cloud.Storage.Azure
 
 			// 2. IF WRAPPED, UNWRAP AND DELETE BLOB
 
-			MessageWrapper wrapper = null;
-			try
+			var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(persistedMessage.Data);
+			if (messageWrapper.IsSuccess)
 			{
-				using (var stream = new MemoryStream(persistedMessage.Data))
-				{
-					wrapper = (MessageWrapper)_serializer.Deserialize(stream, typeof(MessageWrapper));
-				}
-			}
-			catch (SerializationException)
-			{
-			}
-
-			if (wrapper != null)
-			{
-				_blobStorage.DeleteBlob(wrapper.ContainerName, wrapper.BlobName);
+				_blobStorage.DeleteBlob(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
 			}
 
 			// 3. DELETE PERSISTED MESSAGE
@@ -838,7 +827,7 @@ namespace Lokad.Cloud.Storage.Azure
 			try
 			{
 				var queue = _queueStorage.GetQueueReference(queueName);
-				return _azureServerPolicy.Get<int>(queue.RetrieveApproximateMessageCount);
+				return _azureServerPolicy.Get(queue.RetrieveApproximateMessageCount);
 			}
 			catch (StorageClientException ex)
 			{
@@ -863,7 +852,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 			try
 			{
-				rawMessage = _azureServerPolicy.Get<CloudQueueMessage>(queue.PeekMessage);
+				rawMessage = _azureServerPolicy.Get(queue.PeekMessage);
 			}
 			catch (StorageClientException ex)
 			{
