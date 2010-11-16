@@ -132,7 +132,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 				Func<Maybe<string>> doUpload = () =>
 				{
-					var blob = container.GetBlobReference(blobName);
+					var blob = container.GetBlockBlobReference(blobName);
 
 					// single remote call
 					var result = UploadBlobContent(blob, stream, overwrite, expectedEtag);
@@ -399,7 +399,7 @@ namespace Lokad.Cloud.Storage.Azure
 			newEtag = null;
 
 			var container = _blobStorage.GetContainerReference(containerName);
-			var blob = container.GetBlobReference(blobName);
+			var blob = container.GetBlockBlobReference(blobName);
 
 			try
 			{
@@ -667,7 +667,7 @@ namespace Lokad.Cloud.Storage.Azure
 		private static void ApplyContentHash(CloudBlob blob, Stream stream)
 		{
 			var hash = ComputeContentHash(stream);
-			blob.Properties.ContentMD5 = hash;
+			//blob.Properties.ContentMD5 = hash;
 			blob.Metadata[MetadataMD5Key] = hash;
 		}
 
