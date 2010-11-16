@@ -65,23 +65,27 @@ namespace Lokad.Cloud.Web
 		{
 			// TODO: paging or other mechanism to be able to show more than 50 entries
 
-			return _provider.ListPersisted(FailingMessagesStoreName)
-				.Take(50)
+			var fiftyNewestMessages = _provider.ListPersisted(FailingMessagesStoreName)
 				.Select(key => _provider.GetPersisted(FailingMessagesStoreName, key))
 				.Where(m => m.HasValue)
 				.Select(m => m.Value)
+				.OrderByDescending(m => m.PersistenceTime)
+				.Take(50)
+				.ToList();
+
+			return fiftyNewestMessages
 				.GroupBy(m => m.QueueName)
 				.Select(group => new
 					{
 						QueueName = group.Key,
-						Messages = group.OrderBy(m => m.InsertionTime)
+						Messages = group.OrderByDescending(m => m.PersistenceTime)
 							.Select(m => new
 								{
 									Inserted = m.InsertionTime.PrettyFormatRelativeToNow(),
 									Persisted = m.PersistenceTime.PrettyFormatRelativeToNow(),
 									Reason = HttpUtility.HtmlEncode(m.Reason ?? string.Empty),
 									Content = FormatContent(m),
-									Key = m.Key
+									m.Key
 								})
 							.ToArray()
 					}).Cast<object>();
