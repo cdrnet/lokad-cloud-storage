@@ -110,28 +110,6 @@ namespace Lokad.Cloud.Storage.Azure
 			return _queueStorage.ListQueues(prefix).Select(queue => queue.Name);
 		}
 
-		Result<T, Exception> TryDeserializeAs<T>(Stream source)
-		{
-			var position = source.Position;
-			try
-			{
-				var result = _serializer.Deserialize(source, typeof (T));
-				return result is T
-					? Result<T, Exception>.CreateSuccess((T) result)
-					: Result<T, Exception>.CreateError(new InvalidCastException(
-						String.Format("Message was expected to be of type {0} but was of type {1}.", typeof (T).Name,
-							result.GetType().Name)));
-			}
-			catch (Exception e)
-			{
-				return Result<T, Exception>.CreateError(e);
-			}
-			finally
-			{
-				source.Position = position;
-			}
-		}
-
 		public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials)
 		{
 			var timestamp = _countGetMessage.Open();
@@ -185,7 +163,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 						// 3.1.1 UNPACK ENVELOPE IF PACKED, UPDATE POISONING INDICATOR
 
-						var messageAsEnvelope = TryDeserializeAs<MessageEnvelope>(stream);
+						var messageAsEnvelope = _serializer.TryDeserializeAs<MessageEnvelope>(stream);
 						if (messageAsEnvelope.IsSuccess)
 						{
 							stream.Dispose();
@@ -209,7 +187,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 						// 3.1.3 DESERIALIZE MESSAGE IF POSSIBLE
 
-						var messageAsT = TryDeserializeAs<T>(stream);
+						var messageAsT = _serializer.TryDeserializeAs<T>(stream);
 						if (messageAsT.IsSuccess)
 						{
 							messages.Add((T) (messageAsT.Value));
@@ -220,7 +198,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 						// 3.1.4 DESERIALIZE WRAPPER IF POSSIBLE
 
-						var messageAsWrapper = TryDeserializeAs<MessageWrapper>(stream);
+						var messageAsWrapper = _serializer.TryDeserializeAs<MessageWrapper>(stream);
 						if (messageAsWrapper.IsSuccess)
 						{
 							// we don't retrieve messages while holding the lock
@@ -595,24 +573,16 @@ namespace Lokad.Cloud.Storage.Azure
 
 			// 2. IF WRAPPED, UNWRAP; UNPACK XML IF SUPPORTED
 
-			MessageWrapper wrapper = null;
-			try
-			{
-				using (var stream = new MemoryStream(data))
-				{
-					wrapper = (MessageWrapper)_serializer.Deserialize(stream, typeof(MessageWrapper));
-				}
-			}
-			catch (SerializationException)
-			{
-			}
-
-			var dataAvailable = true;
-			if (wrapper != null)
+			bool dataForRestorationAvailable;
+			var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(data);
+			if (messageWrapper.IsSuccess)
 			{
 				string ignored;
-				dataXml = _blobStorage.GetBlobXml(wrapper.ContainerName, wrapper.BlobName, out ignored);
-				dataAvailable = dataXml.HasValue;
+				dataXml = _blobStorage.GetBlobXml(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName, out ignored);
+				
+				// We consider data to be available only if we can access its blob's data
+				// Simplification: we assume that if we can get the data as xml, then we can also get it's binary data
+				dataForRestorationAvailable = dataXml.HasValue;
 			}
 			else
 			{
@@ -624,6 +594,10 @@ namespace Lokad.Cloud.Storage.Azure
 						dataXml = formatter.UnpackXml(stream);
 					}
 				}
+
+				// The message is not wrapped (or unwrapping it failed).
+				// No matter whether we can get the xml, we do have access to the binary data
+				dataForRestorationAvailable = true;
 			}
 
 			// 3. RETURN
@@ -638,7 +612,7 @@ namespace Lokad.Cloud.Storage.Azure
 					DequeueCount = persistedMessage.DequeueCount,
 					Reason = persistedMessage.Reason,
 					DataXml = dataXml,
-					IsDataAvailable = dataAvailable,
+					IsDataAvailable = dataForRestorationAvailable,
 				};
 		}
 
