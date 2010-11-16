@@ -24,7 +24,12 @@ namespace Lokad.Cloud.Storage.Azure
 	/// </remarks>
 	public class BlobStorageProvider : IBlobStorageProvider
 	{
-		private const string MetadataMD5Key = "ContentMD5";
+        /// <summary>Custom meta-data used as a work-around of an issue of the StorageClient.</summary>
+        /// <remarks>[vermorel 2010-11] The StorageClient for odds reasons do not enable the
+        /// retrieval of the Content-MD5 property when performing a GET on blobs. In order to validate
+        /// the integrity during the entire roundtrip, we need to apply a suplementary header
+        /// used to perform the MD5 check.</remarks>
+		private const string MetadataMD5Key = "LokadContentMD5";
 
 		readonly CloudBlobClient _blobStorage;
 		readonly IDataSerializer _serializer;
@@ -274,7 +279,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 			var container = _blobStorage.GetContainerReference(containerName);
 			var blob = container.GetBlockBlobReference(blobName);
-			 
+
 			using(var stream = new MemoryStream())
 			{
 				etag = null;
@@ -666,15 +671,20 @@ namespace Lokad.Cloud.Storage.Azure
 		/// </summary>
 		private static void ApplyContentHash(CloudBlob blob, Stream stream)
 		{
-            // HACK: [Vermorel] StorageClient does not apply MD5 on smaller blobs.
+            var hash = ComputeContentHash(stream);
+
+            // HACK: [Vermorel 2010-11] StorageClient does not apply MD5 on smaller blobs.
             // Reflector indicates that the behavior threshold is at 32MB
             // so manually disable hasing for larger blobs
             if (stream.Length < 0x2000000L)
             {
-                var hash = ComputeContentHash(stream);
                 blob.Properties.ContentMD5 = hash;
-                //blob.Metadata[MetadataMD5Key] = hash;
             }
+
+            // HACK: [vermorel 2010-11] StorageClient does not provide a way to retrieve
+            // MD5 so we add our own MD5 check which let perform our own validation when
+            // downloading the blob (full roundtrip validation). 
+            blob.Metadata[MetadataMD5Key] = hash;
 		}
 
 		/// <summary>
