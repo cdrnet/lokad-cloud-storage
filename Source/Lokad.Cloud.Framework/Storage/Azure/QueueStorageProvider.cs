@@ -117,7 +117,7 @@ namespace Lokad.Cloud.Storage.Azure
 			try
 			{
 				result = _serializer.Deserialize(source, typeof(T));
-				return true;
+				return result is T;
 			}
 			catch (SerializationException)
 			{
