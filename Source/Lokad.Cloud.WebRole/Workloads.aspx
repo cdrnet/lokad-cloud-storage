@@ -41,6 +41,9 @@
 					<div class="box">
 						<%# Eval("Content") %>
 					</div>
+					<div class="box">
+						Reason: <%# Eval("Reason") %>
+					</div>
 				</ItemTemplate>
 			</asp:Repeater>
 		</ItemTemplate>

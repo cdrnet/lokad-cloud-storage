@@ -32,7 +32,7 @@ namespace Lokad.Cloud.Web
 
 			var failingMessages = GetFailingMessages().ToArray();
 			
-            if(failingMessages.Length > 0)
+			if(failingMessages.Length > 0)
 			{
 				FailingMessagesLabel.Visible = true;
 			}
@@ -79,7 +79,7 @@ namespace Lokad.Cloud.Web
 								{
 									Inserted = m.InsertionTime.PrettyFormatRelativeToNow(),
 									Persisted = m.PersistenceTime.PrettyFormatRelativeToNow(),
-									Reason = m.Reason ?? string.Empty,
+									Reason = HttpUtility.HtmlEncode(m.Reason ?? string.Empty),
 									Content = FormatContent(m),
 									Key = m.Key
 								})
@@ -118,7 +118,7 @@ namespace Lokad.Cloud.Web
 			var encoded = HttpUtility.HtmlEncode(sb.ToString());
 			return encoded.Replace(Environment.NewLine, "<br />").Replace("  ", "&nbsp;&nbsp;");
 		}
-		 
+
 		protected void QueuesView_RowCommand(object sender, GridViewCommandEventArgs e)
 		{
 			if(e.CommandName == "DeleteQueue")
