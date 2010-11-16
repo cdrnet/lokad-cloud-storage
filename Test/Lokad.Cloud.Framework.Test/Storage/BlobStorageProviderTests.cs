@@ -94,14 +94,15 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.AreEqual(6, maybe.Value, "#A03");
 		}
 
-        /// <summary>The purpose of this test is to further check MD5 behavior.</summary>
+        /// <summary>The purpose of this test is to further check MD5 behavior
+        /// below and above the 32MB threshold (plus the below/above 4MB too).</summary>
         [Test]
-        public void PutBlogWithGrowSizes()
+        public void PutBlobWithGrowingSizes()
         {
             var rand = new Random(0);
-            for(double i = 1; i < 64; i *= 1.5) // 10 iterations
+            foreach (var i in new [] {1, 2, 4, 25, 40})
             {
-                var buffer = new byte[(int) (i*(2 << 20))];
+                var buffer = new byte[(i* 1000000)];
                 rand.NextBytes(buffer);
 
                 Provider.PutBlob(ContainerName, BlobName, buffer);
