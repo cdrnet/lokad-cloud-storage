@@ -83,7 +83,7 @@ namespace Lokad.Cloud.Web
 								{
 									Inserted = m.InsertionTime.PrettyFormatRelativeToNow(),
 									Persisted = m.PersistenceTime.PrettyFormatRelativeToNow(),
-									Reason = HttpUtility.HtmlEncode(m.Reason ?? string.Empty),
+									Reason = FormatReason(m),
 									Content = FormatContent(m),
 									m.Key
 								})
@@ -121,6 +121,17 @@ namespace Lokad.Cloud.Web
 
 			var encoded = HttpUtility.HtmlEncode(sb.ToString());
 			return encoded.Replace(Environment.NewLine, "<br />").Replace("  ", "&nbsp;&nbsp;");
+		}
+
+		static string FormatReason(PersistedMessage message)
+		{
+			if (String.IsNullOrEmpty(message.Reason))
+			{
+				return "Reason unknown";
+			}
+
+			var encoded = HttpUtility.HtmlEncode("Reason: " + message.Reason);
+			return encoded.Replace(Environment.NewLine, "<br />");
 		}
 
 		protected void QueuesView_RowCommand(object sender, GridViewCommandEventArgs e)
