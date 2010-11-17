@@ -36,16 +36,16 @@ namespace Lokad.Cloud.Storage.Azure
 		/// </summary>
 		public static ActionPolicy SlowInstantiation { get; private set; }
 
-        /// <summary>
-        /// Limited retry related to MD5 validation failure.
-        /// </summary>
-        public static ActionPolicy NetworkCorruption { get; private set; }
+		/// <summary>
+		/// Limited retry related to MD5 validation failure.
+		/// </summary>
+		public static ActionPolicy NetworkCorruption { get; private set; }
 
 		// Instrumentation
 		static readonly ExecutionCounter CountOnTransientServerError;
 		static readonly ExecutionCounter CountOnTransientTableError;
 		static readonly ExecutionCounter CountOnSlowInstantiation;
-	    static readonly ExecutionCounter CountOnNetworkCorruption;
+		static readonly ExecutionCounter CountOnNetworkCorruption;
 
 		/// <summary>
 		/// Static Constructor
@@ -58,7 +58,7 @@ namespace Lokad.Cloud.Storage.Azure
 					CountOnTransientServerError = new ExecutionCounter("Policies.ServerErrorRetryWait", 0, 0),
 					CountOnTransientTableError = new ExecutionCounter("Policies.TableErrorRetryWait", 0, 0),
 					CountOnSlowInstantiation = new ExecutionCounter("Policies.SlowInstantiationRetryWait", 0, 0),
-                    CountOnNetworkCorruption = new ExecutionCounter("Policies.NetworkCorruption", 0, 0)
+					CountOnNetworkCorruption = new ExecutionCounter("Policies.NetworkCorruption", 0, 0)
 				});
 
 			// Initialize Policies
@@ -71,8 +71,8 @@ namespace Lokad.Cloud.Storage.Azure
 			SlowInstantiation = ActionPolicy.With(SlowInstantiationExceptionFilter)
 				.Retry(30, OnSlowInstantiationRetry);
 
-		    NetworkCorruption = ActionPolicy.With(NetworkCorruptionExceptionFilter)
-                .Retry(2, OnNetworkCorruption);
+			NetworkCorruption = ActionPolicy.With(NetworkCorruptionExceptionFilter)
+				.Retry(2, OnNetworkCorruption);
 		}
 
 		static void OnTransientServerErrorRetry(Exception exception, int count)
@@ -111,10 +111,10 @@ namespace Lokad.Cloud.Storage.Azure
 			CountOnSlowInstantiation.Close(timestamp);
 		}
 
-        static void OnNetworkCorruption(Exception exception, int count)
-        {
-            // no backoff, retry immediately
-        }
+		static void OnNetworkCorruption(Exception exception, int count)
+		{
+			// no backoff, retry immediately
+		}
 
 		static bool IsErrorCodeMatch(StorageException exception, params StorageErrorCode[] codes)
 		{
@@ -174,10 +174,23 @@ namespace Lokad.Cloud.Storage.Azure
 				return true; 
 			}
 
-			var dataServiceException = exception as DataServiceRequestException;
-			if (dataServiceException != null)
+			var dataServiceRequestException = exception as DataServiceRequestException;
+			if (dataServiceRequestException != null)
 			{
-				if (IsErrorStringMatch(GetErrorCode(dataServiceException),
+				if (IsErrorStringMatch(GetErrorCode(dataServiceRequestException),
+					StorageErrorCodeStrings.InternalError,
+					StorageErrorCodeStrings.ServerBusy,
+					StorageErrorCodeStrings.OperationTimedOut,
+					TableErrorCodeStrings.TableServerOutOfMemory))
+				{
+					return true;
+				}
+			}
+
+			var dataServiceQueryException = exception as DataServiceQueryException;
+			if (dataServiceQueryException != null)
+			{
+				if (IsErrorStringMatch(GetErrorCode(dataServiceQueryException),
 					StorageErrorCodeStrings.InternalError,
 					StorageErrorCodeStrings.ServerBusy,
 					StorageErrorCodeStrings.OperationTimedOut,
@@ -236,32 +249,32 @@ namespace Lokad.Cloud.Storage.Azure
 			return false;
 		}
 
-        static bool NetworkCorruptionExceptionFilter(Exception exception)
-        {
-            // Upload MD5 mismatch
-            var clientException = exception as StorageClientException;
-            if (clientException != null
-                && clientException.ErrorCode == StorageErrorCode.BadRequest
-                && clientException.ExtendedErrorInformation != null
-                && clientException.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.InvalidHeaderValue
-                && clientException.ExtendedErrorInformation.AdditionalDetails["HeaderName"] == "Content-MD5")
-            {
-                // network transport corruption (automatic), try again
-                return true;
-            }
+		static bool NetworkCorruptionExceptionFilter(Exception exception)
+		{
+			// Upload MD5 mismatch
+			var clientException = exception as StorageClientException;
+			if (clientException != null
+				&& clientException.ErrorCode == StorageErrorCode.BadRequest
+				&& clientException.ExtendedErrorInformation != null
+				&& clientException.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.InvalidHeaderValue
+				&& clientException.ExtendedErrorInformation.AdditionalDetails["HeaderName"] == "Content-MD5")
+			{
+				// network transport corruption (automatic), try again
+				return true;
+			}
 
-            // Download MD5 mismatch
-            if (exception is DataCorruptionException)
-            {
-                // network transport corruption (manual), try again
-                return true;
-            }
+			// Download MD5 mismatch
+			if (exception is DataCorruptionException)
+			{
+				// network transport corruption (manual), try again
+				return true;
+			}
 
-            return false;
-        }
+			return false;
+		}
 
 
-	    public static string GetErrorCode(DataServiceRequestException ex)
+		public static string GetErrorCode(DataServiceRequestException ex)
 		{
 			var r = new Regex(@"<code>(\w+)</code>", RegexOptions.IgnoreCase);
 			var match = r.Match(ex.InnerException.Message);
