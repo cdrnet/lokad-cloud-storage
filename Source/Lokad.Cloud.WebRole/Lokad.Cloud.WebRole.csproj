@@ -239,7 +239,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="rsm.ashx" />
-    <None Include="Web.template.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
