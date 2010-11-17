@@ -212,7 +212,8 @@ namespace Lokad.Cloud.Storage.Azure
 						// we want to persist the unpacked message (no envelope) but still need to drop
 						// the original message, that's why we pass the original rawMessage but the unpacked data
 						PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
-							String.Format("Message failed to deserialize ({0})", messageAsT.Error));
+							String.Format("Message failed to deserialize:\r\nAs {0}:\r\n{1}\r\n\r\nAs MessageEnvelope:\r\n{2}\r\n\r\nAs MessageWrapper:\r\n{3}",
+								typeof (T).FullName, messageAsT.Error, messageAsEnvelope.Error, messageAsWrapper.Error));
 					}
 					finally
 					{
