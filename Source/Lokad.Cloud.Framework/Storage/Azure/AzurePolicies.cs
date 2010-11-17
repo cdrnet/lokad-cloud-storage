@@ -113,7 +113,11 @@ namespace Lokad.Cloud.Storage.Azure
 
 		static void OnNetworkCorruption(Exception exception, int count)
 		{
+			var timestamp = CountOnNetworkCorruption.Open();
+
 			// no backoff, retry immediately
+
+			CountOnNetworkCorruption.Close(timestamp);
 		}
 
 		static bool IsErrorCodeMatch(StorageException exception, params StorageErrorCode[] codes)
