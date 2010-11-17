@@ -69,19 +69,6 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 				_isolatedInstance.Stop();
 			}
 		}
-
-		/// <summary>
-		/// Interrupt the runtime host at the next point where it fits well,
-		/// without forcibly aborting running jobs. Does not wait until it has exited.
-		/// </summary>
-		public void RequestToStop()
-		{
-			var instance = _isolatedInstance;
-			if (null != instance)
-			{
-				_isolatedInstance.RequestToStop();
-			}
-		}
 	}
 
 	/// <summary>
@@ -134,50 +121,44 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 
 					// runtime endlessly keeps pinging queues for pending work
 					_runtime.Execute();
-					log.Log(LogLevel.Warn, "Runtime host stopped execution.");
+
+					log.Log(LogLevel.Debug, string.Format(
+						"Runtime Host: Runtime has stopped cleanly on worker {0}.",
+						CloudEnvironment.PartitionKey));
 				}
-				catch (TypeLoadException typeLoadEx)
+				catch (TypeLoadException typeLoadException)
 				{
-					log.Log(LogLevel.Error, typeLoadEx, string.Format(
-						"Type {0} could not be loaded (service: {1}).",
-						typeLoadEx.TypeName,
-						GetServiceInExecution(_runtime)));
+					log.Log(LogLevel.Error, typeLoadException, string.Format(
+						"Runtime Host: Type {0} could not be loaded. The Runtime Host will be restarted.",
+						typeLoadException.TypeName));
 				}
-				catch (FileLoadException fileLoadEx)
+				catch (FileLoadException fileLoadException)
 				{
 					// Tentatively: referenced assembly is missing
-					log.Log(LogLevel.Error, fileLoadEx, string.Format(
-						"Could not load assembly probably due to a missing reference assembly (service: {0}).",
-						GetServiceInExecution(_runtime)));
+					log.Log(LogLevel.Error, fileLoadException, string.Format(
+						"Runtime Host: Could not load assembly probably due to a missing reference assembly. The Runtime Host will be restarted."));
 				}
-				catch (SecurityException securityEx)
+				catch (SecurityException securityException)
 				{
 					// Tentatively: assembly cannot be loaded due to security config
-					log.Log(LogLevel.Error, securityEx, string.Format(
-						"Could not load assembly {0} probably due to security configuration (service: {1}).",
-						securityEx.FailedAssemblyInfo,
-						GetServiceInExecution(_runtime)));
+					log.Log(LogLevel.Error, securityException, string.Format(
+						"Runtime Host: Could not load assembly {0} probably due to security configuration. The Runtime Host will be restarted.",
+						securityException.FailedAssemblyInfo));
 				}
 				catch (TriggerRestartException)
 				{
-					log.Log(LogLevel.Warn, "Runtime host was triggered to stop execution.");
+					log.Log(LogLevel.Debug, string.Format(
+						"Runtime Host: Triggered to stop execution on worker {0}. The Role Instance will be recycled and the Runtime Host restarted.",
+						CloudEnvironment.PartitionKey));
+
 					return true;
-				}
-				catch (ThreadInterruptedException)
-				{
-					log.Log(LogLevel.Warn, "Runtime host interrupted execution.");
-				}
-				catch (ThreadAbortException)
-				{
-					log.Log(LogLevel.Warn, "Runtime host aborted execution.");
-					Thread.ResetAbort();
 				}
 				catch (Exception ex)
 				{
 					// Generic exception
 					log.Log(LogLevel.Error, ex, string.Format(
-						"An unhandled exception occurred (service: {0}).",
-						GetServiceInExecution(_runtime)));
+						"Runtime Host: An unhandled exception occurred on worker {0}. The Runtime Host will be restarted.",
+						CloudEnvironment.PartitionKey));
 				}
 				finally
 				{
@@ -203,27 +184,6 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 				// or the Azure Fabric will tear us apart early!
 				_stoppedWaitHandle.WaitOne(25.Seconds());
 			}
-		}
-
-		/// <summary>
-		/// Interrupt the runtime host at the next point where it fits well,
-		/// without forcibly aborting running jobs. Does not wait until it has exited.
-		/// </summary>
-		public void RequestToStop()
-		{
-			var runtime = _runtime;
-			if (null != runtime)
-			{
-				runtime.RequestToStop();
-			}
-		}
-
-		static string GetServiceInExecution(Runtime runtime)
-		{
-			string service;
-			return runtime == null || String.IsNullOrEmpty(service = runtime.ServiceInExecution)
-				? "unknown"
-				: service;
 		}
 
 		public void Dispose()

@@ -40,23 +40,11 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			_diagnostics = new DiagnosticsAcquisition(diagnosticsRepository);
 		}
 
-		/// <summary>The name of the service that is being executed, if any, <c>null</c> otherwise.</summary>
-		public string ServiceInExecution
-		{
-			get
-			{
-				CloudService service;
-				return _scheduler == null || (service = _scheduler.CurrentlyScheduledService) == null
-					? null
-					: service.Name;
-			}
-		}
-
 		/// <summary>Called once by the service fabric. Call is not supposed to return
 		/// until stop is requested, or an uncaught exception is thrown.</summary>
 		public void Execute()
 		{
-			OnRuntimeStarting();
+			_providers.Log.Log(LogLevel.Debug, string.Format("Runtime: started on worker {0}.", CloudEnvironment.PartitionKey));
 
 			// hook on the current thread to force shut down
 			_executeThread = Thread.CurrentThread;
@@ -87,25 +75,66 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 						break;
 					}
 
-					try
-					{
-						action();
-					}
-					catch (Exception ex)
-					{
-						if (!(ex is TriggerRestartException) && !(ex is ThreadAbortException))
-						{
-						    _providers.Log.Error(ex);
-						}
-
-						throw;
-					}
+					action();
 				}
+			}
+			catch (ThreadInterruptedException)
+			{
+				_providers.Log.Log(LogLevel.Warn, string.Format(
+					"Runtime: execution was interrupted on worker {0} in service {1}. The Runtime will be restarted.",
+					CloudEnvironment.PartitionKey,
+					GetNameOfServiceInExecution()));
+			}
+			catch (ThreadAbortException)
+			{
+				Thread.ResetAbort();
+
+				_providers.Log.Log(LogLevel.Warn, string.Format(
+					"Runtime: execution was aborted on worker {0} in service {1}. The Runtime is stopping and may be restarted.",
+					CloudEnvironment.PartitionKey,
+					GetNameOfServiceInExecution()));
+			}
+			catch (TimeoutException)
+			{
+				_providers.Log.Log(LogLevel.Warn, string.Format(
+					"Runtime: execution timed out on worker {0} in service {1}. The Runtime will be restarted.",
+					CloudEnvironment.PartitionKey,
+					GetNameOfServiceInExecution()));
+			}
+			catch (TriggerRestartException)
+			{
+				// Supposed to be handled by the runtime host (i.e. SingleRuntimeHost)
+				throw;
+			}
+			catch (Exception ex)
+			{
+				_providers.Log.Log(LogLevel.Error, ex, string.Format(
+					"Runtime: An unhandled exception occurred on worker {0} in service {1}. The Runtime will be restarted.",
+					CloudEnvironment.PartitionKey,
+					GetNameOfServiceInExecution()));
 			}
 			finally
 			{
-				OnRuntimeStopping();
+				_providers.Log.Log(LogLevel.Debug, string.Format("Runtime stopping on worker {0}.", CloudEnvironment.PartitionKey));
+
+				_providers.RuntimeFinalizer.FinalizeRuntime();
+				TryDumpDiagnostics();
+
+				_providers.Log.Log(LogLevel.Debug, string.Format("Runtime stopped on worker {0}.", CloudEnvironment.PartitionKey));
 			}
+		}
+
+		/// <summary>The name of the service that is being executed, if any, <c>null</c> otherwise.</summary>
+		private string GetNameOfServiceInExecution()
+		{
+			var scheduler = _scheduler;
+			CloudService service;
+			if (scheduler == null || (service = scheduler.CurrentlyScheduledService) == null)
+			{
+				return "unknown";
+			}
+
+			return service.Name;
 		}
 
 		/// <summary>Stops all services at once.</summary>
@@ -113,53 +142,19 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 		/// be shut down.</remarks>
 		public void Stop()
 		{
-			TryLogInfoFormat("Runtime::Stop");
-			if(_executeThread != null)
+			_isStopRequested = true;
+			_providers.Log.Log(LogLevel.Debug, "Runtime::Stop");
+
+			if (_executeThread != null)
 			{
 				_executeThread.Abort();
+				return;
 			}
-			else
-			{
-				RequestToStop();
-			}
-		}
-
-		/// <summary>Raise the "stop requested" flag and aborts the runtime
-		/// if it was waiting idly. This method does not force running jobs though
-		/// and is thus too slow to be used if the envirronment is
-		/// requesting immediate shutdown, but has the advantage of gracefully
-		/// shutting down the services.</summary>
-		public void RequestToStop()
-		{
-			TryLogInfoFormat("Runtime::RequestToStop");
-			_isStopRequested = true;
 
 			if (_scheduler != null)
 			{
 				_scheduler.AbortWaitingSchedule();
 			}
-		}
-
-		/// <summary>
-		/// Called when the runtime is starting execution.
-		/// </summary>
-		void OnRuntimeStarting()
-		{
-			TryLogInfoFormat("Runtime started on worker {0}.", CloudEnvironment.PartitionKey);
-		}
-
-		/// <summary>
-		/// Called when the runtime is stopping execution.
-		/// </summary>
-		void OnRuntimeStopping()
-		{
-			TryLogInfoFormat("Runtime stopping on worker {0}.", CloudEnvironment.PartitionKey);
-
-			_providers.RuntimeFinalizer.FinalizeRuntime();
-
-			TryDumpDiagnostics();
-
-			TryLogInfoFormat("Runtime stopped on worker {0}.", CloudEnvironment.PartitionKey);
 		}
 
 		/// <summary>
@@ -225,30 +220,6 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 				_providers.Log.ErrorFormat("Runtime failed to acquire statistics on {0}: {1}", CloudEnvironment.PartitionKey, e.ToString());
 				// might fail when shutting down on exception
 				// logging is likely to fail as well in this case
-				// Suppress exception, can't do anything (will be recycled anyway)
-			}
-			// ReSharper restore EmptyGeneralCatchClause
-		}
-
-
-		/// <summary>
-		/// Try to log info, but suppress any exceptions if it fails
-		/// </summary>
-		void TryLogInfoFormat(string format, params object[] args)
-		{
-			try
-			{
-				_providers.Log.InfoFormat(format, args);
-			}
-			catch (ThreadAbortException)
-			{
-				Thread.ResetAbort();
-				_providers.Log.InfoFormat(format, args);
-			}
-			// ReSharper disable EmptyGeneralCatchClause
-			catch
-			{
-				// might fail when shutting down on exception
 				// Suppress exception, can't do anything (will be recycled anyway)
 			}
 			// ReSharper restore EmptyGeneralCatchClause
