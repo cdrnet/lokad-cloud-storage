@@ -24,17 +24,17 @@ namespace Lokad.Cloud.Storage.Azure
 	/// </remarks>
 	public class BlobStorageProvider : IBlobStorageProvider
 	{
-        /// <summary>Custom meta-data used as a work-around of an issue of the StorageClient.</summary>
-        /// <remarks>[vermorel 2010-11] The StorageClient for odds reasons do not enable the
-        /// retrieval of the Content-MD5 property when performing a GET on blobs. In order to validate
-        /// the integrity during the entire roundtrip, we need to apply a suplementary header
-        /// used to perform the MD5 check.</remarks>
+		/// <summary>Custom meta-data used as a work-around of an issue of the StorageClient.</summary>
+		/// <remarks>[vermorel 2010-11] The StorageClient for odds reasons do not enable the
+		/// retrieval of the Content-MD5 property when performing a GET on blobs. In order to validate
+		/// the integrity during the entire roundtrip, we need to apply a suplementary header
+		/// used to perform the MD5 check.</remarks>
 		private const string MetadataMD5Key = "LokadContentMD5";
 
 		readonly CloudBlobClient _blobStorage;
 		readonly IDataSerializer _serializer;
 		readonly ActionPolicy _azureServerPolicy;
-	    readonly ActionPolicy _networkPolicy;
+		readonly ActionPolicy _networkPolicy;
 
 		// Instrumentation
 		readonly ExecutionCounter _countPutBlob;
@@ -48,7 +48,7 @@ namespace Lokad.Cloud.Storage.Azure
 			_blobStorage = blobStorage;
 			_serializer = serializer;
 			_azureServerPolicy = AzurePolicies.TransientServerErrorBackOff;
-		    _networkPolicy = AzurePolicies.NetworkCorruption;
+			_networkPolicy = AzurePolicies.NetworkCorruption;
 
 			// Instrumentation
 			ExecutionCounters.Default.RegisterRange(new[]
@@ -170,7 +170,7 @@ namespace Lokad.Cloud.Storage.Azure
 						var tentativeEtag = Maybe<string>.Empty;
 						AzurePolicies.SlowInstantiation.Do(() =>
 						{
-							_azureServerPolicy.Get<bool>(container.CreateIfNotExist);
+							_azureServerPolicy.Get(container.CreateIfNotExist);
 
 							tentativeEtag = doUpload();
 						});
@@ -272,7 +272,7 @@ namespace Lokad.Cloud.Storage.Azure
 		public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
 		{
 			return GetBlob(containerName, blobName, typeof (T), out etag)
-				.Convert<Maybe<T>>(o => (T) o, Maybe<T>.Empty);
+				.Convert(o => (T) o, Maybe<T>.Empty);
 		}
 
 		public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
@@ -290,17 +290,17 @@ namespace Lokad.Cloud.Storage.Azure
 				try
 				{
 					_azureServerPolicy.Do(() => _networkPolicy.Do(() =>
-					    {
-					        stream.Seek(0, SeekOrigin.Begin);
-					        blob.DownloadToStream(stream);
-					        VerifyContentHash(blob, stream, containerName, blobName);
-					    }));
+						{
+							stream.Seek(0, SeekOrigin.Begin);
+							blob.DownloadToStream(stream);
+							VerifyContentHash(blob, stream, containerName, blobName);
+						}));
 
 					etag = blob.Properties.ETag;
 				}
-				catch(StorageClientException ex)
+				catch (StorageClientException ex)
 				{
-					if(ex.ErrorCode == StorageErrorCode.ContainerNotFound
+					if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
 						|| ex.ErrorCode == StorageErrorCode.BlobNotFound
 							|| ex.ErrorCode == StorageErrorCode.ResourceNotFound)
 					{
@@ -311,15 +311,11 @@ namespace Lokad.Cloud.Storage.Azure
 				}
 
 				stream.Seek(0, SeekOrigin.Begin);
-				var deserialized = _serializer.Deserialize(stream, type);
-
-				if (deserialized == null)
-				{
-					return Maybe<object>.Empty;
-				}
+				var deserialized = _serializer.TryDeserialize(stream, type);
 
 				_countGetBlob.Close(timestamp);
-				return Maybe.From(deserialized);
+
+				return deserialized.ToMaybe();
 			}
 		}
 
@@ -363,14 +359,7 @@ namespace Lokad.Cloud.Storage.Azure
 				}
 
 				stream.Seek(0, SeekOrigin.Begin);
-				var deserialized = formatter.UnpackXml(stream);
-
-				if (deserialized == null)
-				{
-					return Maybe<XElement>.Empty;
-				}
-
-				return Maybe.From(deserialized);
+				return formatter.TryUnpackXml(stream).ToMaybe();
 			}
 		}
 
@@ -419,23 +408,26 @@ namespace Lokad.Cloud.Storage.Azure
 
 				using (var stream = new MemoryStream())
 				{
-					_azureServerPolicy.Do(() =>
+					_azureServerPolicy.Do(() => _networkPolicy.Do(() =>
 						{
 							stream.Seek(0, SeekOrigin.Begin);
 							blob.DownloadToStream(stream, options);
-						});
+							VerifyContentHash(blob, stream, containerName, blobName);
+						}));
 
 					newEtag = blob.Properties.ETag;
 
 					stream.Seek(0, SeekOrigin.Begin);
-					var deserialized = (T)_serializer.Deserialize(stream, typeof(T));
+					var deserialized = _serializer.TryDeserializeAs<T>(stream);
+
 					_countGetBlobIfModified.Close(timestamp);
-					return deserialized;
+
+					return deserialized.ToMaybe();
 				}
 			}
 			catch (StorageClientException ex)
 			{
-				// call fails because blob has been modified (usual case)
+				// call fails because blob has not been modified (usual case)
 				if(ex.ErrorCode == StorageErrorCode.ConditionFailed ||
 					// HACK: BUG in StorageClient 1.0 
 					// see http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/4817cafa-12d8-4979-b6a7-7bda053e6b21
@@ -523,9 +515,7 @@ namespace Lokad.Cloud.Storage.Azure
 					originalEtag = blob.Properties.ETag;
 
 					stream.Seek(0, SeekOrigin.Begin);
-					var blobData = _serializer.Deserialize(stream, typeof(T));
-
-					input = blobData == null ? Maybe<T>.Empty : (T) blobData;
+					input = _serializer.TryDeserializeAs<T>(stream).ToMaybe();
 				}
 			}
 			catch (StorageClientException ex)
@@ -540,7 +530,7 @@ namespace Lokad.Cloud.Storage.Azure
 					// caution: the container might have been freshly deleted
 					// (multiple retries are needed in such a situation)
 					AzurePolicies.SlowInstantiation.Do(() =>
-						_azureServerPolicy.Get<bool>(container.CreateIfNotExist));
+						_azureServerPolicy.Get(container.CreateIfNotExist));
 				}
 				else
 				{
@@ -637,7 +627,7 @@ namespace Lokad.Cloud.Storage.Azure
 			{
 				try
 				{
-					if(!_azureServerPolicy.Get<bool>(enumerator.MoveNext))
+					if(!_azureServerPolicy.Get(enumerator.MoveNext))
 					{
 						yield break;
 					}
@@ -675,20 +665,20 @@ namespace Lokad.Cloud.Storage.Azure
 		/// </summary>
 		private static void ApplyContentHash(CloudBlob blob, Stream stream)
 		{
-            var hash = ComputeContentHash(stream);
+			var hash = ComputeContentHash(stream);
 
-            // HACK: [Vermorel 2010-11] StorageClient does not apply MD5 on smaller blobs.
-            // Reflector indicates that the behavior threshold is at 32MB
-            // so manually disable hasing for larger blobs
-            if (stream.Length < 0x2000000L)
-            {
-                blob.Properties.ContentMD5 = hash;
-            }
+			// HACK: [Vermorel 2010-11] StorageClient does not apply MD5 on smaller blobs.
+			// Reflector indicates that the behavior threshold is at 32MB
+			// so manually disable hasing for larger blobs
+			if (stream.Length < 0x2000000L)
+			{
+				blob.Properties.ContentMD5 = hash;
+			}
 
-            // HACK: [vermorel 2010-11] StorageClient does not provide a way to retrieve
-            // MD5 so we add our own MD5 check which let perform our own validation when
-            // downloading the blob (full roundtrip validation). 
-            blob.Metadata[MetadataMD5Key] = hash;
+			// HACK: [vermorel 2010-11] StorageClient does not provide a way to retrieve
+			// MD5 so we add our own MD5 check which let perform our own validation when
+			// downloading the blob (full roundtrip validation). 
+			blob.Metadata[MetadataMD5Key] = hash;
 		}
 
 		/// <summary>
@@ -705,7 +695,7 @@ namespace Lokad.Cloud.Storage.Azure
 			if (expectedHash != ComputeContentHash(stream))
 			{
 				throw new DataCorruptionException(
-                    string.Format("MD5 mismatch on blob retrieval {0}/{1}.", containerName, blobName));
+					string.Format("MD5 mismatch on blob retrieval {0}/{1}.", containerName, blobName));
 			}
 		}
 

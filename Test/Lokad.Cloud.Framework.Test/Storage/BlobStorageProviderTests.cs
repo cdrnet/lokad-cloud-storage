@@ -89,35 +89,35 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.IsTrue(isSaved, "#A00");
 			Assert.IsNotNull(etag, "#A01");
 
-		    var maybe = Provider.GetBlob<int>(ContainerName, BlobName);
+			var maybe = Provider.GetBlob<int>(ContainerName, BlobName);
 			Assert.IsTrue(maybe.HasValue, "#A02");
 			Assert.AreEqual(6, maybe.Value, "#A03");
 		}
 
-        /// <summary>The purpose of this test is to further check MD5 behavior
-        /// below and above the 32MB threshold (plus the below/above 4MB too).</summary>
-        //[Test]
-        // HACK: [Vermorel 2010-11] Test is super slow, and cannot complete within
-        // less than 60min on the build server.
-        public void PutBlobWithGrowingSizes()
-        {
-            var rand = new Random(0);
-            foreach (var i in new [] {/*1, 2, 4,*/ 25, 40})
-            {
-                var buffer = new byte[(i* 1000000)];
-                rand.NextBytes(buffer);
+		/// <summary>The purpose of this test is to further check MD5 behavior
+		/// below and above the 32MB threshold (plus the below/above 4MB too).</summary>
+		//[Test]
+		// HACK: [Vermorel 2010-11] Test is super slow, and cannot complete within
+		// less than 60min on the build server.
+		public void PutBlobWithGrowingSizes()
+		{
+			var rand = new Random(0);
+			foreach (var i in new [] {/*1, 2, 4,*/ 25, 40})
+			{
+				var buffer = new byte[(i* 1000000)];
+				rand.NextBytes(buffer);
 
-                Provider.PutBlob(ContainerName, BlobName, buffer);
-                var maybe = Provider.GetBlob<byte[]>(ContainerName, BlobName);
+				Provider.PutBlob(ContainerName, BlobName, buffer);
+				var maybe = Provider.GetBlob<byte[]>(ContainerName, BlobName);
 
-                Assert.IsTrue(maybe.HasValue);
+				Assert.IsTrue(maybe.HasValue);
 
-                for(int j = 0; j < buffer.Length; j++)
-                {
-                    Assert.AreEqual(buffer[j], maybe.Value[j]);
-                }
-            }
-        }
+				for(int j = 0; j < buffer.Length; j++)
+				{
+					Assert.AreEqual(buffer[j], maybe.Value[j]);
+				}
+			}
+		}
 
 		[Test]
 		public void PutBlobEnforceMatchingEtag()
@@ -170,16 +170,9 @@ namespace Lokad.Cloud.Storage.Test
 		{
 			Provider.PutBlob(ContainerName, BlobName, 1); // pushing Int32
 
-			try
-			{
-				string newEtag; // pulling MyBlob
-				var output = Provider.GetBlobIfModified<MyBlob>(ContainerName, BlobName, "dummy", out newEtag);
-				Assert.Fail("#A00");
-			}
-			catch (InvalidCastException)
-			{
-				// expected condition
-			}
+			string newEtag; // pulling MyBlob
+			var output = Provider.GetBlobIfModified<MyBlob>(ContainerName, BlobName, "dummy", out newEtag);
+			Assert.IsFalse(output.HasValue);
 		}
 
 		/// <summary>This test does not check the behavior of 'UpdateIfNotModified'

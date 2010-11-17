@@ -153,7 +153,7 @@ namespace Lokad.Cloud.Mock
 		public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
 		{
 			return GetBlob(containerName, blobName, typeof (T), out etag)
-				.Convert(o => (T) o, Maybe<T>.Empty);
+				.Convert(o => o is T ? (T) o : Maybe<T>.Empty, Maybe<T>.Empty);
 		}
 
 		public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
@@ -239,7 +239,7 @@ namespace Lokad.Cloud.Mock
 				}
 				
 				newEtag = currentEtag;
-				return GetBlob<T>(containerName, blobName).Value;
+				return GetBlob<T>(containerName, blobName);
 			}
 		}
 
