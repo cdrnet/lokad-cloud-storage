@@ -160,7 +160,7 @@ namespace Lokad.Cloud.Management
 			}
 
 			ChangeDeploymentConfiguration(
-				config =>
+				(config, inProgress) =>
 					{
 						XAttribute instanceCount;
 						try
@@ -182,13 +182,21 @@ namespace Lokad.Cloud.Management
 
 						var oldCount = instanceCount.Value;
 						var newCount = count.ToString();
-						_log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}", oldCount, newCount);
+
+						if (inProgress)
+						{
+							_log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}. Application will be delayed because a deployment update is already in progress.", oldCount, newCount);
+						}
+						else
+						{
+							_log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}.", oldCount, newCount);
+						}
 
 						instanceCount.Value = newCount;
 					});
 		}
 
-		void ChangeDeploymentConfiguration(Action<XElement> updater)
+		void ChangeDeploymentConfiguration(Action<XElement, bool> updater)
 		{
 			PrepareRequest();
 
@@ -199,8 +207,9 @@ namespace Lokad.Cloud.Management
 
 			var config = Base64Decode(_deployment.Value.Configuration);
 			var xml = XDocument.Parse(config, LoadOptions.SetBaseUri | LoadOptions.PreserveWhitespace);
+			var inProgress = _deployment.Value.Status != Azure.Entities.DeploymentStatus.Running;
 
-			updater(xml.Root);
+			updater(xml.Root, inProgress);
 
 			var newConfig = xml.ToString(SaveOptions.DisableFormatting);
 
