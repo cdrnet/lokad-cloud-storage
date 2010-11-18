@@ -5,17 +5,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Web.Caching;
+using System.Linq;
 using Lokad.Cloud.Diagnostics;
 
 namespace Lokad.Cloud.Web
 {
 	public partial class Logs : System.Web.UI.Page
 	{
-		const string LogsCacheKey = "lokad-cloud-logs";
-
-		// limiting the number of logs to be displayed
-		const int MaxLogs = 20;
+		private const int PageSize = 20;
 
 		readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<ILog>();
 
@@ -31,9 +28,9 @@ namespace Lokad.Cloud.Web
 		protected void DeleteButton_Click(object sender, EventArgs e)
 		{
 			Page.Validate("del");
-			if(!Page.IsValid) return;
+			if (!Page.IsValid) return;
 
-			_logger.DeleteOldLogs(int.Parse(WeeksBox.Text));
+			_logger.DeleteOldLogs(DateTime.UtcNow.AddDays(-7*int.Parse(WeeksBox.Text)));
 
 			SetCurrentPageIndex(0);
 			LogsView.DataBind();
@@ -81,12 +78,8 @@ namespace Lokad.Cloud.Web
 		List<LogEntry> FetchLogs()
 		{
 			int currentIndex = GetCurrentPageIndex();
-			var logs = new List<LogEntry>(_logger.GetPagedLogs(currentIndex, MaxLogs, GetSelectedLevelThreshold()));
-
-			var nextPageAvailable = logs.Count == MaxLogs;
-
-			NextPage.Enabled = nextPageAvailable;
-
+			var logs = new List<LogEntry>(_logger.GetLogsOfLevelOrHigher(GetSelectedLevelThreshold(), currentIndex * PageSize).Take(PageSize));
+			NextPage.Enabled = logs.Count == PageSize;
 			return logs;
 		}
 
@@ -99,53 +92,6 @@ namespace Lokad.Cloud.Web
 			}
 
 			return EnumUtil.Parse<LogLevel>(selectedString);
-		}
-
-		[Obsolete]
-		IEnumerable<object> GetRecentLogs()
-		{
-			// HACK: cache logic is completely custom and would probably need to
-			// be abstracted away from the webrole project itself.
-
-			var cachedLogs = Cache[LogsCacheKey] as List<LogEntry> ?? new List<LogEntry>();
-
-			var newLogs = new List<LogEntry>();
-
-			// Retrieving logs from the blob storage until the cache catch-up.
-			var count = 0;
-			foreach(var log in _logger.GetRecentLogs())
-			{
-				if (cachedLogs.Count > 0 && cachedLogs[0].DateTime == log.DateTime)
-				{
-					break; // retrieve the logs for the cache instead
-				}
-
-				// adding new entries to cache
-				if(cachedLogs.Count == 0 || cachedLogs[0].DateTime != log.DateTime)
-				{
-					newLogs.Add(log);
-				}
-
-				yield return log;
-				if(MaxLogs == ++count) break;
-			}
-
-			// Retrieving logs from the cache. 
-			for(int i = 0; i < cachedLogs.Count && count < MaxLogs; i++)
-			{
-				var log = cachedLogs[i];
-
-				yield return log;
-				if (MaxLogs == ++count) break;
-			}
-
-			// Merging existing logs and newly retrieved ones.
-			cachedLogs.InsertRange(0, newLogs);
-
-			// Saving cache for 7 days
-			Cache.Add(LogsCacheKey, cachedLogs, null, 
-				Cache.NoAbsoluteExpiration, new TimeSpan(7, 0, 0, 0),
-				CacheItemPriority.Default, null);
 		}
 	}
 }

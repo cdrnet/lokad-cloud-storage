@@ -7,27 +7,30 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Security;
-using System.Text;
 using System.Xml.XPath;
 using Lokad.Cloud.Storage;
-using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Diagnostics
 {
-	/// <summary>Log entry (when retrieving logs with the <see cref="CloudLogger"/>.
+	/// <summary>
+	/// Log entry (when retrieving logs with the <see cref="CloudLogger"/>).
 	/// </summary>
 	public class LogEntry
 	{
-		public DateTime DateTime { get; set; }
+		public DateTime DateTimeUtc { get; set; }
 		public string Level { get; set; }
 		public string Message { get; set; }
 		public string Error { get; set; }
 		public string Source { get; set; }
 	}
 
-	/// <summary>Logger built on top of the Blob Storage.</summary>
+	/// <summary>
+	/// Logger built on top of the Blob Storage.
+	/// </summary>
 	/// <remarks>
+	/// <para>
 	/// Logs are formatted in XML with
 	/// <code>
 	/// &lt;log&gt;
@@ -35,37 +38,43 @@ namespace Lokad.Cloud.Diagnostics
 	///   &lt;error&gt; {1} &lt;/error&gt;
 	/// &lt;/log&gt;
 	/// </code>
-	/// 
 	/// Also, the logger is relying on date prefix in order to facilitate large
 	/// scale enumeration of the logs. Yet, in order to facilitate fast enumeration
-	/// of recent logs, an prefix inversion trick is used.
+	/// of recent logs, a prefix inversion trick is used.
+	/// </para>
+	/// <para>
+	/// We put entries to different containers depending on the log level. This helps
+	/// reading only interesting entries and easily skipping those below the threshold.
+	/// An entry is put to one container matching the level only, not to all containers
+	/// with the matching or a lower level. This is a tradeoff to avoid optimizing
+	/// for read spead at the cost of write speed, because we assume more frequent
+	/// writes than reads and, more importantly, writes to happen in time-critical
+	/// code paths while reading is almost never time-critical.
+	/// </para>
 	/// </remarks>
 	public class CloudLogger : ILog
 	{
-		public const string ContainerName = "lokad-cloud-logs";
-		public const string Delimiter = "/";
-		public const int DeleteBatchSize = 50;
+		private const string ContainerNamePrefix = "lokad-cloud-logs";
+		private const int DeleteBatchSize = 50;
 
-		private static readonly char[] DelimiterCharArray = Delimiter.ToCharArray();
-
-
-		readonly IBlobStorageProvider _provider;
-		readonly string _source;
-		LogLevel _logLevelThreshold;
+		private readonly IBlobStorageProvider _blobStorage;
+		private readonly string _source;
 
 		/// <summary>Minimal log level (inclusive), below this level,
 		/// notifications are ignored.</summary>
-		public LogLevel LogLevelThreshold
+		public LogLevel LogLevelThreshold { get; set; }
+
+		public CloudLogger(IBlobStorageProvider blobStorage, string source)
 		{
-			get { return _logLevelThreshold;  }
-			set { _logLevelThreshold = value; }
+			_blobStorage = blobStorage;
+			_source = source;
+
+			LogLevelThreshold = LogLevel.Min;
 		}
 
-		public CloudLogger(IBlobStorageProvider provider, string source)
+		public bool IsEnabled(LogLevel level)
 		{
-			_provider = provider;
-			_source = source;
-			_logLevelThreshold = LogLevel.Min;
+			return level >= LogLevelThreshold;
 		}
 
 		public void Log(LogLevel level, object message)
@@ -75,68 +84,197 @@ namespace Lokad.Cloud.Diagnostics
 
 		public void Log(LogLevel level, Exception ex, object message)
 		{
-			if (!IsEnabled(level)) return;
+			if (!IsEnabled(level))
+			{
+				return;
+			}
 
-			var blobName = GetNewLogBlobName(level);
+			var now = DateTime.UtcNow;
 
-			var log = string.Format(
+			var logEntry = new LogEntry
+				{
+					DateTimeUtc = now,
+					Level = level.ToString(),
+					Message = message.ToString(),
+					Error = ex != null ? ex.ToString() : string.Empty,
+					Source = _source ?? string.Empty
+				};
+
+			var blobContent = FormatLogEntry(logEntry);
+			var blobName = string.Format("{0}/{1}/", FormatDateTimeNamePrefix(logEntry.DateTimeUtc), logEntry.Level);
+			var blobContainer = LevelToContainer(level);
+
+			var attempt = 0;
+			while (!_blobStorage.PutBlob(blobContainer, blobName + attempt, blobContent, false))
+			{
+				attempt++;
+			}
+		}
+
+		/// <summary>
+		/// Lazily enuerate all logs of the specified level, ordered with the newest entry first.
+		/// </summary>
+		public IEnumerable<LogEntry> GetLogsOfLevel(LogLevel level, int skip = 0)
+		{
+			var containerName = LevelToContainer(level);
+			return _blobStorage.List(containerName, string.Empty)
+				.Select(blobName => _blobStorage.GetBlob<string>(containerName, blobName))
+				.Where(rawLog => rawLog.HasValue)
+				.Skip(skip)
+				.Select(rawLog => ParseLogEntry(rawLog.Value));
+		}
+
+		/// <summary>
+		/// Lazily enuerate all logs of the specified level or higher, ordered with the newest entry first.
+		/// </summary>
+		public IEnumerable<LogEntry> GetLogsOfLevelOrHigher(LogLevel levelThreshold, int skip = 0)
+		{
+			// We need to sort by date (desc), but want to do it lazily based on
+			// the guarantee that the enumerators themselves are ordered alike.
+			// To do that we always select the newest value, move next, and repeat.
+
+			var enumerators = EnumUtil<LogLevel>.Values
+				.Where(l => l >= levelThreshold && l < LogLevel.Max && l > LogLevel.Min)
+				.Select(level =>
+					{
+						var containerName = LevelToContainer(level);
+						return _blobStorage.List(containerName, string.Empty)
+							.Select(blobName => Tuple.From(containerName, blobName))
+							.GetEnumerator();
+					})
+				.ToList();
+
+			for (var i = enumerators.Count - 1; i >= 0; i--)
+			{
+				if (!enumerators[i].MoveNext())
+				{
+					enumerators.RemoveAt(i);
+				}
+			}
+
+			// Skip
+			for (var i = skip; i > 0 && enumerators.Count > 0; i--)
+			{
+				var max = enumerators.Aggregate((left, right) => string.Compare(left.Current.Value, right.Current.Value) < 0 ? left : right);
+				if (!max.MoveNext())
+				{
+					enumerators.Remove(max);
+				}
+			}
+
+			// actual iterator
+			while (enumerators.Count > 0)
+			{
+				var max = enumerators.Aggregate((left, right) => string.Compare(left.Current.Value, right.Current.Value) < 0 ? left : right);
+				var blob = _blobStorage.GetBlob<string>(max.Current.Key, max.Current.Value);
+				if (blob.HasValue)
+				{
+					yield return ParseLogEntry(blob.Value);
+				}
+
+				if (!max.MoveNext())
+				{
+					enumerators.Remove(max);
+				}
+			}
+		}
+
+		/// <summary>Lazily enumerates over the entire logs.</summary>
+		/// <returns></returns>
+		public IEnumerable<LogEntry> GetLogs(int skip = 0)
+		{
+			return GetLogsOfLevelOrHigher(LogLevel.Min, skip);
+		}
+
+		/// <summary>
+		/// Deletes all logs of all levels.
+		/// </summary>
+		public void DeleteAllLogs()
+		{
+			foreach (var level in EnumUtil<LogLevel>.Values.Where(l => l < LogLevel.Max && l > LogLevel.Min))
+			{
+				_blobStorage.DeleteContainer(LevelToContainer(level));
+			}
+		}
+
+		/// <summary>
+		/// Deletes all the logs older than the provided date.
+		/// </summary>
+		public void DeleteOldLogs(DateTime olderThanUtc)
+		{
+			foreach (var level in EnumUtil<LogLevel>.Values.Where(l => l < LogLevel.Max && l > LogLevel.Min))
+			{
+				DeleteOldLogsOfLevel(level, olderThanUtc);
+			}
+		}
+
+		/// <summary>
+		/// Deletes all the logs of a level and older than the provided date.
+		/// </summary>
+		public void DeleteOldLogsOfLevel(LogLevel level, DateTime olderThanUtc)
+		{
+			// Algorithm:
+			// Iterate over the logs, queuing deletions up to 50 items at a time,
+			// then restart; continue until no deletions are queued
+
+			var deleteQueue = new List<string>(DeleteBatchSize);
+			var blobContainer = LevelToContainer(level);
+
+			do
+			{
+				deleteQueue.Clear();
+
+				foreach (var blobName in _blobStorage.List(blobContainer, string.Empty))
+				{
+					var dateTime = ParseDateTimeFromName(blobName);
+					if (dateTime < olderThanUtc) deleteQueue.Add(blobName);
+
+					if (deleteQueue.Count == DeleteBatchSize) break;
+				}
+
+				foreach (var blobName in deleteQueue)
+				{
+					_blobStorage.DeleteBlob(blobContainer, blobName);
+				}
+
+			} while (deleteQueue.Count > 0);
+		}
+
+		private static string LevelToContainer(LogLevel level)
+		{
+			return ContainerNamePrefix + "-" + level.ToString().ToLower();
+		}
+
+		private static string FormatLogEntry(LogEntry logEntry)
+		{
+			return string.Format(
 				@"
 <log>
-  <message>{0}</message>
-  <error>{1}</error>
-  <source>{2}</source>
+  <level>{0}</level>
+  <timestamp>{1}</timestamp>
+  <message>{2}</message>
+  <error>{3}</error>
+  <source>{4}</source>
 </log>
 ",
-				SecurityElement.Escape(message.ToString()),
-				ex != null ? SecurityElement.Escape(ex.ToString()) : string.Empty,
-				string.IsNullOrEmpty(_source) ? "" : SecurityElement.Escape(_source));
-
-
-			// on first execution, container needs to be created.
-			var policy = ActionPolicy.With(e =>
-				{
-					var storageException = e as StorageClientException;
-					if(storageException == null) return false;
-					return storageException.ErrorCode == StorageErrorCode.ContainerNotFound;
-				})
-				.Retry(2, (e, i) => _provider.CreateContainer(ContainerName));
-			
-			policy.Do(() =>
-				{
-					var attempt = 0;
-					while (!_provider.PutBlob(ContainerName, blobName + attempt, log, false))
-					{
-						attempt++;
-					}
-				});
+				logEntry.Level,
+				logEntry.DateTimeUtc.ToString("o", CultureInfo.InvariantCulture),
+				SecurityElement.Escape(logEntry.Message),
+				SecurityElement.Escape(logEntry.Error),
+				SecurityElement.Escape(logEntry.Source));
 		}
 
-		public bool IsEnabled(LogLevel level)
+		private static LogEntry ParseLogEntry(string blobContent)
 		{
-			return level >= _logLevelThreshold;
-		}
-
-		private static string GetNamePrefix(string blobName)
-		{
-			return blobName.Substring(0, 23); // prefix is always 23 char long
-		}
-
-		private static LogEntry DecodeLogEntry(string blobName, string blobContent)
-		{
-			var prefix = GetNamePrefix(blobName);
-			var dateTime = ToDateTime(prefix);
-
-			var level = blobName.Substring(23).Split(DelimiterCharArray, StringSplitOptions.RemoveEmptyEntries)[0];
-			
-			using(var stream = new StringReader(blobContent))
+			using (var stream = new StringReader(blobContent))
 			{
 				var xpath = new XPathDocument(stream);
 				var nav = xpath.CreateNavigator();
 
 				return new LogEntry
 					{
-						DateTime = dateTime,
-						Level = level,
+						Level = nav.SelectSingleNode("/log/level").InnerXml,
+						DateTimeUtc = DateTime.ParseExact(nav.SelectSingleNode("/log/timestamp").InnerXml, "o", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal).ToUniversalTime(),
 						Message = nav.SelectSingleNode("/log/message").InnerXml,
 						Error = nav.SelectSingleNode("/log/error").InnerXml,
 						Source = nav.SelectSingleNode("/log/source").InnerXml,
@@ -144,147 +282,30 @@ namespace Lokad.Cloud.Diagnostics
 			}
 		}
 
-		/// <summary>Lazily enumerates over the entire logs.</summary>
-		/// <returns></returns>
-		public IEnumerable<LogEntry> GetRecentLogs()
-		{
-			foreach(var blobName in _provider.List(ContainerName, string.Empty))
-			{
-				var rawlog = _provider.GetBlob<string>(ContainerName, blobName);
-				if (!rawlog.HasValue)
-				{
-					continue;
-				}
-
-				yield return DecodeLogEntry(blobName, rawlog.Value);
-			}
-		}
-
-		/// <summary>Lazily loads a page of logs.</summary>
-		/// <param name="pageIndex">The zero-based index of the page.</param>
-		/// <param name="pageSize">The size of the page.</param>
-		/// <returns>The logs (silently fails if the page is empty).</returns>
-		public IEnumerable<LogEntry> GetPagedLogs(int pageIndex, int pageSize)
-		{
-			return GetPagedLogs(pageIndex, pageSize, LogLevel.Min);
-		}
-
-		/// <summary>Lazily loads a page of logs.</summary>
-		/// <param name="pageIndex">The zero-based index of the page.</param>
-		/// <param name="pageSize">The size of the page.</param>
-		/// <param name="levelThreshold">Minimal log level (inclusive) for entries to be included.</param>
-		/// <returns>The logs (silently fails if the page is empty).</returns>
-		public IEnumerable<LogEntry> GetPagedLogs(int pageIndex, int pageSize, LogLevel levelThreshold)
-		{
-			Enforce.Argument(() => pageIndex, Rules.Is.AtLeast(0));
-			Enforce.Argument(() => pageSize, Rules.Is.AtLeast(2), Rules.Is.AtMost(100));
-
-			int skipItems = pageIndex * pageSize;
-
-			int count = 0;
-			foreach (var blobName in _provider.List(ContainerName, String.Empty))
-			{
-				if (count >= skipItems)
-				{
-					if (count - skipItems >= pageSize)
-					{
-						yield break;
-					}
-
-					var content = _provider.GetBlob<string>(ContainerName, blobName);
-					if (!content.HasValue)
-					{
-						continue;
-					}
-
-					var entry = DecodeLogEntry(blobName, content.Value);
-					if(EnumUtil.Parse<LogLevel>(entry.Level) < levelThreshold)
-					{
-						continue;
-					}
-
-					yield return entry;
-				}
-				count++;
-			}
-		}
-
-		/// <summary>Deletes all the logs older than <paramref name="maxWeeks"/> weeks.</summary>
-		/// <param name="maxWeeks">The max number of weeks of logs to preserve.</param>
-		/// <remarks>The implementation is far from being efficient, but it is expected to be used sparingly.</remarks>
-		public void DeleteOldLogs(int maxWeeks)
-		{
-			Enforce.Argument(() => maxWeeks, Rules.Is.AtLeast(1));
-
-			DeleteOldLogs(DateTime.UtcNow.AddDays(-7 * maxWeeks));
-		}
-
-		// This is used for testing only
-		// limit should be universal time
-		internal void DeleteOldLogs(DateTime limit)
-		{
-			// Algorithm:
-			// Iterate over the logs, queuing deletions up to 50 items at a time,
-			// then restart; continue until no deletions are queued
-
-			var deleteQueue = new List<string>(DeleteBatchSize);
-
-			do
-			{
-				deleteQueue.Clear();
-
-				foreach(var blobName in _provider.List(ContainerName, string.Empty))
-				{
-					var prefix = GetNamePrefix(blobName);
-					var dateTime = ToDateTime(prefix);
-					if(dateTime < limit) deleteQueue.Add(blobName);
-
-					if(deleteQueue.Count == DeleteBatchSize) break;
-				}
-
-				foreach(var blobName in deleteQueue)
-				{
-					_provider.DeleteBlob(ContainerName, blobName);
-				}
-			} while(deleteQueue.Count > 0);
-		}
-
-		static string GetNewLogBlobName(LogLevel level)
-		{
-			var builder = new StringBuilder();
-			builder.Append(ToPrefix(DateTime.UtcNow));
-			builder.Append(Delimiter);
-			builder.Append(level.ToString());
-			builder.Append(Delimiter);
-
-			return builder.ToString();
-		}
-
 		/// <summary>Time prefix with inversion in order to enumerate
 		/// starting from the most recent.</summary>
-		/// <remarks>This method is the symmetric of <see cref="ToDateTime"/>.</remarks>
-		public static string ToPrefix(DateTime dateTime)
+		/// <remarks>This method is the symmetric of <see cref="ParseDateTimeFromName"/>.</remarks>
+		public static string FormatDateTimeNamePrefix(DateTime dateTimeUtc)
 		{
-			dateTime = dateTime.ToUniversalTime();
-
 			// yyyy/MM/dd/hh/mm/ss/fff
 			return string.Format("{0}/{1}/{2}/{3}/{4}/{5}/{6}",
-				(10000 - dateTime.Year).ToString(CultureInfo.InvariantCulture),
-				(12 - dateTime.Month).ToString("00"),
-				(31 - dateTime.Day).ToString("00"),
-				(24 - dateTime.Hour).ToString("00"),
-				(60 - dateTime.Minute).ToString("00"),
-				(60 - dateTime.Second).ToString("00"),
-				(999 - dateTime.Millisecond).ToString("000"));
+				(10000 - dateTimeUtc.Year).ToString(CultureInfo.InvariantCulture),
+				(12 - dateTimeUtc.Month).ToString("00"),
+				(31 - dateTimeUtc.Day).ToString("00"),
+				(24 - dateTimeUtc.Hour).ToString("00"),
+				(60 - dateTimeUtc.Minute).ToString("00"),
+				(60 - dateTimeUtc.Second).ToString("00"),
+				(999 - dateTimeUtc.Millisecond).ToString("000"));
 		}
 
 		/// <summary>Convert a prefix with inversion into a <c>DateTime</c>.</summary>
-		/// <remarks>This method is the symmetric of <see cref="ToPrefix"/>.</remarks>
-		public static DateTime ToDateTime(string prefix)
+		/// <remarks>This method is the symmetric of <see cref="FormatDateTimeNamePrefix"/>.</remarks>
+		public static DateTime ParseDateTimeFromName(string nameOrPrefix)
 		{
-			var tokens = prefix.Split('/');
+			// prefix is always 23 char long
+			var tokens = nameOrPrefix.Substring(0, 23).Split('/');
 
-			if(tokens.Length != 7) throw new ArgumentException("Incorrect prefix.", "prefix");
+			if (tokens.Length != 7) throw new ArgumentException("Incorrect prefix.", "nameOrPrefix");
 
 			var year = 10000 - int.Parse(tokens[0], CultureInfo.InvariantCulture);
 			var month = 12 - int.Parse(tokens[1], CultureInfo.InvariantCulture);

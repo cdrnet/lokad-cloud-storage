@@ -28,11 +28,12 @@ namespace Lokad.Cloud.Web
             {
                 var doc = new RsmReport
                     {
-                        Messages = _logger.GetPagedLogs(0, 20, LogLevel.Warn)
+                        Messages = _logger.GetLogsOfLevelOrHigher(LogLevel.Warn)
+                            .Take(20)
                             .Select(entry => new MonitoringMessageReport
                                 {
-                                    Id = entry.DateTime.ToString("yyyy-MM-ddTHH-mm-ss-ffff"),
-                                    Updated = entry.DateTime,
+                                    Id = entry.DateTimeUtc.ToString("yyyy-MM-ddTHH-mm-ss-ffff"),
+                                    Updated = entry.DateTimeUtc,
                                     Title = entry.Message,
                                     Summary = entry.Error,
                                     Tags = RsmReport.GetTags("log", entry.Level)
