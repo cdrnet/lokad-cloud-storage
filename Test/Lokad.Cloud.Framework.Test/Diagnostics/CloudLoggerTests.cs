@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Diagnostics.Test
 		public void Setup()
 		{
 			// cleanup
-			_logger.DeleteAllLogs();
+			_logger.DeleteOldLogs(DateTime.UtcNow.AddDays(1));
 		}
 
 		[Test]
