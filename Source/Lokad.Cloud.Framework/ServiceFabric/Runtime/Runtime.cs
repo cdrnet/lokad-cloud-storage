@@ -31,7 +31,6 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 		/// <summary>Container used to populate cloud service properties.</summary>
 		public IContainer RuntimeContainer { get; set; }
 
-
 		/// <summary>IoC constructor.</summary>
 		public Runtime(CloudInfrastructureProviders providers, ICloudDiagnosticsRepository diagnosticsRepository)
 		{
@@ -115,12 +114,12 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			}
 			finally
 			{
-				_providers.Log.Log(LogLevel.Debug, string.Format("Runtime stopping on worker {0}.", CloudEnvironment.PartitionKey));
+				_providers.Log.Log(LogLevel.Debug, string.Format("Runtime: stopping on worker {0}.", CloudEnvironment.PartitionKey));
 
 				_providers.RuntimeFinalizer.FinalizeRuntime();
 				TryDumpDiagnostics();
 
-				_providers.Log.Log(LogLevel.Debug, string.Format("Runtime stopped on worker {0}.", CloudEnvironment.PartitionKey));
+				_providers.Log.Log(LogLevel.Debug, string.Format("Runtime: stopped on worker {0}.", CloudEnvironment.PartitionKey));
 			}
 		}
 
@@ -143,7 +142,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 		public void Stop()
 		{
 			_isStopRequested = true;
-			_providers.Log.Log(LogLevel.Debug, "Runtime::Stop");
+			_providers.Log.Log(LogLevel.Debug, string.Format("Runtime: Stop() on worker {0}.", CloudEnvironment.PartitionKey));
 
 			if (_executeThread != null)
 			{
@@ -211,13 +210,13 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			catch (ThreadAbortException)
 			{
 				Thread.ResetAbort();
-				_providers.Log.WarnFormat("Runtime skipped acquiring statistics on {0}", CloudEnvironment.PartitionKey);
+				_providers.Log.WarnFormat("Runtime: skipped acquiring statistics on worker {0}", CloudEnvironment.PartitionKey);
 				// TODO: consider 2nd trial here
 			}
 			// ReSharper disable EmptyGeneralCatchClause
 			catch(Exception e)
 			{
-				_providers.Log.ErrorFormat("Runtime failed to acquire statistics on {0}: {1}", CloudEnvironment.PartitionKey, e.ToString());
+				_providers.Log.ErrorFormat("Runtime: failed to acquire statistics on worker {0}: {1}", CloudEnvironment.PartitionKey, e.ToString());
 				// might fail when shutting down on exception
 				// logging is likely to fail as well in this case
 				// Suppress exception, can't do anything (will be recycled anyway)
