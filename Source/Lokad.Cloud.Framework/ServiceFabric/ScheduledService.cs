@@ -83,10 +83,9 @@ namespace Lokad.Cloud.ServiceFabric
 
 		DateTimeOffset _workerScopeLastExecuted;
 
-		bool _isRegisteredForFinalization;
 		bool _isLeaseOwner;
 
-		/// <summary>Constructor.</summary>
+		/// <summary>Default Constructor</summary>
 		protected ScheduledService()
 		{
 			// runtime fixed settings
@@ -107,6 +106,21 @@ namespace Lokad.Cloud.ServiceFabric
 				{
 					_defaultTriggerPeriod = settings.TriggerInterval.Seconds();
 				}
+			}
+		}
+
+		public override void Initialize()
+		{
+			base.Initialize();
+
+			// Auto-register the service for finalization:
+			// 1) Registration should not be made within the constructor
+			//    because providers are not ready at this phase.
+			// 2) Hasty finalization is needed only for cloud-scoped scheduled
+			//    scheduled services (because they have a lease).
+			if (!_scheduledPerWorker)
+			{
+				Providers.RuntimeFinalizer.Register(this);
 			}
 		}
 
@@ -143,17 +157,6 @@ namespace Lokad.Cloud.ServiceFabric
 			}
 
 			// 2. CHECK WHETHER WE SHOULD EXECUTE NOW, ACQUIRE LEASE IF SO
-
-			// Auto-register once the service for finalization:
-			// 1) Registration should not be made within the constructor
-			//    because providers are not ready at this phase.
-			// 2) Hasty finalization is needed only for cloud-scoped scheduled
-			//    scheduled services (because they have a lease).
-			if (!_isRegisteredForFinalization)
-			{
-				_isRegisteredForFinalization = true;
-				Providers.RuntimeFinalizer.Register(this);
-			} 
 
 			// checking if the last update is not too recent, and eventually
 			// update this value if it's old enough. When the update fails,

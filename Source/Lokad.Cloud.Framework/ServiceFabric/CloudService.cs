@@ -46,7 +46,7 @@ namespace Lokad.Cloud.ServiceFabric
 		}
 
 		/// <summary>Let you iterate over the state of each cloud service.</summary>
-        public static CloudServiceStateName GetPrefix()
+		public static CloudServiceStateName GetPrefix()
 		{
 			return new CloudServiceStateName(null);
 		}
@@ -56,7 +56,7 @@ namespace Lokad.Cloud.ServiceFabric
 	/// <summary>Base class for cloud services.</summary>
 	/// <remarks>Do not inherit directly from <see cref="CloudService"/>, inherit from
 	/// <see cref="QueueService{T}"/> or <see cref="ScheduledService"/> instead.</remarks>
-	public abstract class CloudService
+	public abstract class CloudService : IInitializable
 	{
 		/// <summary>Name of the container associated to temporary items. Each blob
 		/// is prefixed with his lifetime expiration date.</summary>
@@ -130,10 +130,14 @@ namespace Lokad.Cloud.ServiceFabric
 
 			_defaultState = settings.AutoStart ? CloudServiceState.Started : CloudServiceState.Stopped;
 			_state = _defaultState;
-			if(settings.ProcessingTimeoutSeconds > 0)
+			if (settings.ProcessingTimeoutSeconds > 0)
 			{
 				ExecutionTimeout = TimeSpan.FromSeconds(settings.ProcessingTimeoutSeconds);
 			}
+		}
+
+		public virtual void Initialize()
+		{
 		}
 
 		/// <summary>

@@ -165,6 +165,7 @@
     <Compile Include="RoleConfigurationSettings.cs" />
     <Compile Include="ServiceFabric\CloudService.cs" />
     <Compile Include="ServiceFabric\CloudServiceSettingsAttribute.cs" />
+    <Compile Include="ServiceFabric\IInitializable.cs" />
     <Compile Include="ServiceFabric\QueueService.cs" />
     <Compile Include="ServiceFabric\QueueServiceSettingsAttribute.cs" />
     <Compile Include="ServiceFabric\RuntimeFinalizer.cs" />
@@ -249,6 +250,7 @@
     <Content Include="ServiceFabric\ReadMe.txt" />
     <Content Include="ServiceFabric\Runtime\ReadMe.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

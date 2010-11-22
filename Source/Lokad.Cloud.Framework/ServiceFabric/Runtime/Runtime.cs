@@ -157,7 +157,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 		}
 
 		/// <summary>
-		/// Load and get all service instances using the provided IoC container.
+		/// Load and get all initialized service instances using the provided IoC container.
 		/// </summary>
 		static IEnumerable<T> LoadServices<T>(IContainer container)
 		{
@@ -170,7 +170,16 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			foreach (var type in serviceTypes)
 			{
 				builder.Register(type)
-					.OnActivating(ActivatingHandler.InjectUnsetProperties)
+					.OnActivating((s, e) =>
+						{
+							e.Context.InjectUnsetProperties(e.Instance);
+
+							var initializable = e.Instance as IInitializable;
+							if (initializable != null)
+							{
+								initializable.Initialize();
+							}
+						})
 					.FactoryScoped()
 					.ExternallyOwned();
 
@@ -178,6 +187,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 				// cloud services - we manage their lifetime on our own using
 				// e.g. RuntimeFinalizer
 			}
+
 			builder.Build(container);
 
 			return serviceTypes.Select(type => (T) container.Resolve(type));
