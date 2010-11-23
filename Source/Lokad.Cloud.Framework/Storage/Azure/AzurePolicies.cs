@@ -140,23 +140,34 @@ namespace Lokad.Cloud.Storage.Azure
 		static bool TransientServerErrorExceptionFilter(Exception exception)
 		{
 			var serverException = exception as StorageServerException;
-			if (serverException == null)
+			if (serverException != null)
 			{
-				// we only handle server exceptions here
+				if (IsErrorCodeMatch(serverException,
+					StorageErrorCode.ServiceInternalError,
+					StorageErrorCode.ServiceTimeout))
+				{
+					return true;
+				}
+
+				if (IsErrorStringMatch(serverException,
+					StorageErrorCodeStrings.InternalError,
+					StorageErrorCodeStrings.ServerBusy,
+					StorageErrorCodeStrings.OperationTimedOut))
+				{
+					return true;
+				}
+
 				return false;
 			}
 
-			if (IsErrorCodeMatch(serverException,
-				StorageErrorCode.ServiceInternalError,
-				StorageErrorCode.ServiceTimeout))
-			{
-				return true;
-			}
+			// HACK: StorageClient does not catch internal errors very well.
+			// Hence we end up here manually catching exception that should have been correctly 
+			// typed by the StorageClient:
 
-			if (IsErrorStringMatch(serverException,
-				StorageErrorCodeStrings.InternalError,
-				StorageErrorCodeStrings.ServerBusy,
-				StorageErrorCodeStrings.OperationTimedOut))
+			// System.Net.InternalException is internal, but uncaught on some race conditions.
+			// We therefore assume this is a transient error and retry.
+			var exceptionType = exception.GetType();
+			if (exceptionType.FullName == "System.Net.InternalException")
 			{
 				return true;
 			}
@@ -166,18 +177,6 @@ namespace Lokad.Cloud.Storage.Azure
 
 		static bool TransientTableErrorExceptionFilter(Exception exception)
 		{
-			// HACK: StorageClient does not catch very well, internal errors of the table storage.
-			// Hence we end up here manually catching exception that should have been correctly 
-			// typed by the StorageClient, such as:
-			// The remote server returned an error: (500) Internal Server Error.
-			var webException = exception as WebException;
-			if (null != webException && 
-				(webException.Status == WebExceptionStatus.ProtocolError ||
-				 webException.Status == WebExceptionStatus.ConnectionClosed))
-			{
-				return true; 
-			}
-
 			var dataServiceRequestException = exception as DataServiceRequestException;
 			if (dataServiceRequestException != null)
 			{
@@ -202,6 +201,27 @@ namespace Lokad.Cloud.Storage.Azure
 				{
 					return true;
 				}
+			}
+
+			// HACK: StorageClient does not catch internal errors very well.
+			// Hence we end up here manually catching exception that should have been correctly 
+			// typed by the StorageClient:
+
+			// The remote server returned an error: (500) Internal Server Error.
+			var webException = exception as WebException;
+			if (null != webException &&
+				(webException.Status == WebExceptionStatus.ProtocolError ||
+				 webException.Status == WebExceptionStatus.ConnectionClosed))
+			{
+				return true;
+			}
+
+			// System.Net.InternalException is internal, but uncaught on some race conditions.
+			// We therefore assume this is a transient error and retry.
+			var exceptionType = exception.GetType();
+			if (exceptionType.FullName == "System.Net.InternalException")
+			{
+				return true;
 			}
 
 			return false;
@@ -276,7 +296,6 @@ namespace Lokad.Cloud.Storage.Azure
 
 			return false;
 		}
-
 
 		public static string GetErrorCode(DataServiceRequestException ex)
 		{
