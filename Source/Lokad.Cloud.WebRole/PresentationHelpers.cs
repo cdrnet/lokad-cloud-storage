@@ -7,12 +7,12 @@ using System;
 
 namespace Lokad.Cloud.Web
 {
-	// TODO (ruegg, 200912): Move to Lokad.Shared
-
 	internal static class PresentationHelpers
 	{
 		public static string PrettyFormat(this TimeSpan timeSpan)
 		{
+			// TODO: Reuse Lokad.Shared FormatUtil, once it supports this scenario (implemented but currently internal)
+
 			const int second = 1;
 			const int minute = 60 * second;
 			const int hour = 60 * minute;
@@ -39,23 +39,6 @@ namespace Lokad.Cloud.Web
 
 			var years = (int)Math.Floor(timeSpan.Days / 365.0);
 			return years <= 1 ? "one year" : years + " years";
-		}
-
-		public static string PrettyFormatRelativeToNow(this DateTimeOffset dateTime)
-		{
-			var now = DateTimeOffset.UtcNow;
-
-			if (dateTime.UtcTicks == 0)
-			{
-				return String.Empty;
-			}
-
-			if (dateTime >= now)
-			{
-				return "just now";
-			}
-
-			return PrettyFormat(now - dateTime) + " ago";
 		}
 	}
 }

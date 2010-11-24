@@ -81,8 +81,8 @@ namespace Lokad.Cloud.Web
 						Messages = group.OrderByDescending(m => m.PersistenceTime)
 							.Select(m => new
 								{
-									Inserted = m.InsertionTime.PrettyFormatRelativeToNow(),
-									Persisted = m.PersistenceTime.PrettyFormatRelativeToNow(),
+									Inserted = FormatUtil.TimeOffsetUtc(m.InsertionTime.UtcDateTime),
+									Persisted = FormatUtil.TimeOffsetUtc(m.PersistenceTime.UtcDateTime),
 									Reason = FormatReason(m),
 									Content = FormatContent(m),
 									m.Key

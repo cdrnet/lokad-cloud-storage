@@ -110,7 +110,7 @@ namespace Lokad.Cloud.Web
 				return "untracked";
 			}
 
-			return info.LastExecuted.PrettyFormatRelativeToNow();
+			return FormatUtil.TimeOffsetUtc(info.LastExecuted.UtcDateTime);
 		}
 
 		string PrettyFormatLease(CloudServiceSchedulingInfo info)
