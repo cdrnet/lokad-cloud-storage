@@ -19,7 +19,7 @@ namespace Lokad.Cloud.Web
 	public partial class Workloads : Page
 	{
 		// TODO: reuse constant, or abstract with management class
-		const string FailingMessagesStoreName = "failing-messages";
+		public const string FailingMessagesStoreName = "failing-messages";
 		const string DataNotAvailableMessage = "Raw data was lost, message not restoreable. Maybe the queue was deleted in the meantime.";
 		const string XmlNotAvailableMegssage = "XML representation not available, but message is restoreable.";
 

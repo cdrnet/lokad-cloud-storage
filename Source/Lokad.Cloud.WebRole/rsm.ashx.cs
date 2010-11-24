@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Diagnostics.Rsm;
+using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Web
 {
@@ -11,6 +13,7 @@ namespace Lokad.Cloud.Web
     public class RsmHttpHandler : IHttpHandler
     {
         readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<ILog>();
+        readonly IQueueStorageProvider _queues = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
 
         public void ProcessRequest(HttpContext context)
         {
@@ -28,16 +31,9 @@ namespace Lokad.Cloud.Web
             {
                 var doc = new RsmReport
                     {
-                        Messages = _logger.GetLogsOfLevelOrHigher(LogLevel.Warn)
-                            .Take(20)
-                            .Select(entry => new MonitoringMessageReport
-                                {
-                                    Id = entry.DateTimeUtc.ToString("yyyy-MM-ddTHH-mm-ss-ffff"),
-                                    Updated = entry.DateTimeUtc,
-                                    Title = entry.Message,
-                                    Summary = entry.Error,
-                                    Tags = RsmReport.GetTags("log", entry.Level)
-                                })
+                        Messages = ListLogMessages().ToList(),
+                        Indicators = ListQueueIndicators()
+                            .Concat(ListQueueQuarantineIndicators())
                             .ToList()
                     };
 
@@ -48,6 +44,57 @@ namespace Lokad.Cloud.Web
                 // helper to facilitate troubleshooting the endpoint if needed
                 context.Response.Write(ex.ToString());
             }
+        }
+
+        private IEnumerable<MonitoringMessageReport> ListLogMessages()
+        {
+            return _logger.GetLogsOfLevelOrHigher(LogLevel.Warn)
+                .Take(20)
+                .Select(entry => new MonitoringMessageReport
+                    {
+                        Id = entry.DateTimeUtc.ToString("yyyy-MM-ddTHH-mm-ss-ffff"),
+                        Updated = entry.DateTimeUtc,
+                        Title = entry.Message,
+                        Summary = entry.Error,
+                        Tags = RsmReport.GetTags("log", entry.Level.ToLower())
+                    });
+        }
+
+        private IEnumerable<MonitoringIndicatorReport> ListQueueIndicators()
+        {
+            var now = DateTime.UtcNow;
+
+            return _queues.List(null)
+                .SelectMany(name => new[]
+                    {
+                        new MonitoringIndicatorReport
+                            {
+                                Name = string.Format("/queues/messages/{0}/count", name),
+                                Value = _queues.GetApproximateCount(name).ToString(),
+                                Updated = now
+                            },
+                        new MonitoringIndicatorReport
+                            {
+                                Name = string.Format("/queues/messages/{0}/latency", name),
+                                Value = _queues.GetApproximateLatency(name).Convert(latency => latency.ToString(), "none"),
+                                Updated = now
+                            }
+                    });
+        }
+
+        private IEnumerable<MonitoringIndicatorReport> ListQueueQuarantineIndicators()
+        {
+            var now = DateTime.UtcNow;
+
+            return new[]
+                {
+                    new MonitoringIndicatorReport
+                        {
+                            Name = "/queues/quarantine/count",
+                            Value = _queues.ListPersisted(Workloads.FailingMessagesStoreName).Count().ToString(),
+                            Updated = now
+                        }
+                };
         }
 
         public bool IsReusable
