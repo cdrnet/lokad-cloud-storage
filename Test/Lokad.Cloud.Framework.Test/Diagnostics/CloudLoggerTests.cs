@@ -39,7 +39,7 @@ namespace Lokad.Cloud.Diagnostics.Test
 		{
 			Thread.Sleep(100);
 			var now = DateTime.UtcNow;
-			Thread.Sleep(100);
+			Thread.Sleep(250);
 
 			_logger.Error(
 				new InvalidOperationException("CloudLoggerTests.Log"),
@@ -60,7 +60,7 @@ namespace Lokad.Cloud.Diagnostics.Test
 		{
 			Thread.Sleep(100);
 			var now = DateTime.UtcNow;
-			Thread.Sleep(100);
+			Thread.Sleep(250);
 
 			_logger.Error(
 				new InvalidOperationException("CloudLoggerTests.Log"),
@@ -81,7 +81,7 @@ namespace Lokad.Cloud.Diagnostics.Test
 		{
 			Thread.Sleep(100);
 			var now = DateTime.UtcNow;
-			Thread.Sleep(100);
+			Thread.Sleep(250);
 
 			// Add 30 log messages
 			for (int i = 0; i < 10; i++)
