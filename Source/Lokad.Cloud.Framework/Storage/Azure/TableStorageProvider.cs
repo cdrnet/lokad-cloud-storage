@@ -295,7 +295,8 @@ namespace Lokad.Cloud.Storage.Azure
 											// Fails to behave properly in multi-threaded situations
 											catch (StorageClientException cex)
 											{
-												if (cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
+												if (cex.ExtendedErrorInformation == null
+													|| cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
 												{
 													throw;
 												}
