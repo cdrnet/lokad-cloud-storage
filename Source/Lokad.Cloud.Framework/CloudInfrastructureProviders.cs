@@ -15,42 +15,37 @@ namespace Lokad.Cloud
 	/// by the Lokad.Cloud framework itself. This class is placed in the
 	/// <c>Lokad.Cloud.Framework</c> for convenience while inheriting a
 	/// <see cref="CloudService"/>.</remarks>
-	public class CloudInfrastructureProviders
+	public class CloudInfrastructureProviders : CloudStorageProviders
 	{
-		/// <summary>Abstracts the Blob Storage.</summary>
-		public IBlobStorageProvider BlobStorage { get; private set; }
-
-		/// <summary>Abstracts the Queue Storage.</summary>
-		public IQueueStorageProvider QueueStorage { get; private set; }
-
-		/// <summary>Abstracts the Table Storage.</summary>
-		public ITableStorageProvider TableStorage { get; private set; }
-
 		/// <summary>Error Logger</summary>
 		public ILog Log { get; private set; }
 
 		/// <summary>Abstracts the Management API.</summary>
 		public IProvisioningProvider Provisioning { get; set; }
 
-		/// <summary>Abstracts the finalizer (used for fast resource release
-		/// in case of runtime shutdown).</summary>
-		public IRuntimeFinalizer RuntimeFinalizer { get; set; }
-
 		/// <summary>IoC constructor.</summary>
 		public CloudInfrastructureProviders(
-			IBlobStorageProvider blobStorage, 
+			IBlobStorageProvider blobStorage,
 			IQueueStorageProvider queueStorage,
 			ITableStorageProvider tableStorage,
 			ILog log,
 			IProvisioningProvider provisioning,
 			IRuntimeFinalizer runtimeFinalizer)
+			: base(blobStorage, queueStorage, tableStorage, runtimeFinalizer)
 		{
-			BlobStorage = blobStorage;
-			QueueStorage = queueStorage;
-			TableStorage = tableStorage;
 			Log = log;
 			Provisioning = provisioning;
-			RuntimeFinalizer = runtimeFinalizer;
+		}
+
+		/// <summary>IoC constructor 2.</summary>
+		public CloudInfrastructureProviders(
+			CloudStorageProviders storageProviders,
+			ILog log,
+			IProvisioningProvider provisioning)
+			: base(storageProviders)
+		{
+			Log = log;
+			Provisioning = provisioning;
 		}
 	}
 }
