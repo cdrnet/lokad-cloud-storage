@@ -39,13 +39,13 @@ namespace Lokad.Cloud.Storage.Test
 		public void Setup()
 		{
 			Provider.CreateContainer(ContainerName);
-			Provider.DeleteBlob(ContainerName, BlobName);
+			Provider.DeleteBlobIfExists(ContainerName, BlobName);
 		}
 
 		[Test]
 		public void GetAndDelete()
 		{
-			Provider.DeleteBlob(ContainerName, BlobName);
+			Provider.DeleteBlobIfExists(ContainerName, BlobName);
 			Assert.IsFalse(Provider.GetBlob<int>(ContainerName, BlobName).HasValue, "#A00");
 		}
 
@@ -60,7 +60,7 @@ namespace Lokad.Cloud.Storage.Test
 		[Test]
 		public void MissingBlobHasNoEtag()
 		{
-			Provider.DeleteBlob(ContainerName, BlobName);
+			Provider.DeleteBlobIfExists(ContainerName, BlobName);
 			var etag = Provider.GetBlobEtag(ContainerName, BlobName);
 			Assert.IsNull(etag, "#A00");
 		}
@@ -175,8 +175,9 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.IsFalse(output.HasValue);
 		}
 
-		/// <summary>This test does not check the behavior of 'UpdateIfNotModified'
-		/// in case of concurrency stress.</summary>
+		/// <remarks>
+		/// This test does not check the behavior in case of concurrency stress.
+		/// </remarks>
 		[Test]
 		public void UpdateIfNotModifiedNoStress()
 		{
@@ -190,8 +191,9 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.AreEqual(2, val.Value, "#A01");
 		}
 
-		/// <summary>Loose check of the behavior of 'UpdateIfNotModified'
-		/// under concurrency stress.</summary>
+		/// <remarks>
+		/// Loose check of the behavior under concurrency stress.
+		/// </remarks>
 		[Test]
 		public virtual void UpdateIfNotModifiedWithStress()
 		{
@@ -213,6 +215,76 @@ namespace Lokad.Cloud.Storage.Test
 			var count = Provider.GetBlob<int>(ContainerName, BlobName).Value;
 
 			Assert.AreEqual(count, array.Count(x => x), "#A02 number of writes should match counter value.");
+		}
+
+		/// <remarks>
+		/// This test does not check the behavior in case of concurrency stress.
+		/// </remarks>
+		[Test]
+		public void UpsertBlockOrSkipNoStress()
+		{
+			var blobName = "test" + Guid.NewGuid().ToString("N");
+			Assert.IsFalse(Provider.GetBlob<int>(ContainerName, blobName).HasValue);
+
+			int inserted = 0, updated = 10;
+
+// ReSharper disable AccessToModifiedClosure
+
+			// skip insert
+			Assert.IsFalse(Provider.UpsertBlobOrSkip(ContainerName, blobName, () => Maybe<int>.Empty, x => ++updated).HasValue);
+			Assert.AreEqual(0, inserted);
+			Assert.AreEqual(10, updated);
+			Assert.IsFalse(Provider.GetBlob<int>(ContainerName, blobName).HasValue);
+
+			// do insert
+			Assert.IsTrue(Provider.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => ++updated).HasValue);
+			Assert.AreEqual(1, inserted);
+			Assert.AreEqual(10, updated);
+			Assert.AreEqual(1, Provider.GetBlob<int>(ContainerName, blobName).Value);
+
+			// skip update
+			Assert.IsFalse(Provider.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => Maybe<int>.Empty).HasValue);
+			Assert.AreEqual(1, inserted);
+			Assert.AreEqual(10, updated);
+			Assert.AreEqual(1, Provider.GetBlob<int>(ContainerName, blobName).Value);
+
+			// do update
+			Assert.IsTrue(Provider.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => ++updated).HasValue);
+			Assert.AreEqual(1, inserted);
+			Assert.AreEqual(11, updated);
+			Assert.AreEqual(11, Provider.GetBlob<int>(ContainerName, blobName).Value);
+
+			// cleanup
+			Provider.DeleteBlobIfExists(ContainerName, blobName);
+
+// ReSharper restore AccessToModifiedClosure
+		}
+
+		/// <remarks>
+		/// Loose check of the behavior under concurrency stress.
+		/// </remarks>
+		[Test]
+		public void UpsertBlockOrSkipWithStress()
+		{
+			Provider.PutBlob(ContainerName, BlobName, 0);
+
+			var array = new Maybe<int>[8];
+			array = array.SelectInParallel(
+				k => Provider.UpsertBlobOrSkip<int>(
+					ContainerName, BlobName,
+					() => 1,
+					i => i + 1), array.Length);
+
+			Assert.IsFalse(array.Exists(x => !x.HasValue), "No skips");
+
+			var sorted = array.Select(m => m.Value)
+				.OrderBy(i => i)
+				.ToArray();
+
+			for (int i = 0; i < array.Length; i++)
+			{
+				Assert.AreEqual(i + 1, sorted[i], "Concurrency should be resolved, every call should increment by one.");
+			}
 		}
 
 		// TODO: CreatePutGetRangeDelete is way to complex as a unit test
@@ -342,7 +414,7 @@ namespace Lokad.Cloud.Storage.Test
 
 			string ignored;
 			var blob = Provider.GetBlobXml(ContainerName, BlobName, out ignored);
-			Provider.DeleteBlob(ContainerName, BlobName);
+			Provider.DeleteBlobIfExists(ContainerName, BlobName);
 
 			Assert.IsTrue(blob.HasValue);
 			var xml = blob.Value;

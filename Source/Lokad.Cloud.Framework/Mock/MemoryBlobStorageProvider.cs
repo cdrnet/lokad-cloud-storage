@@ -308,7 +308,41 @@ namespace Lokad.Cloud.Mock
 			return UpdateIfNotModified<T>(containerName, blobName, x => Result.CreateSuccess(updater(x)));
 		}
 
-		public bool DeleteBlob(string containerName, string blobName)
+		public Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+		{
+			lock (_syncRoot)
+			{
+				Maybe<T> input;
+				if (Containers.ContainsKey(containerName))
+				{
+					if (Containers[containerName].BlobNames.Contains(blobName))
+					{
+						var blobData = Containers[containerName].GetBlob(blobName);
+						input = blobData == null ? Maybe<T>.Empty : (T)blobData;
+					}
+					else
+					{
+						input = Maybe<T>.Empty;
+					}
+				}
+				else
+				{
+					Containers.Add(containerName, new MockContainer());
+					input = Maybe<T>.Empty;
+				}
+
+				var output = input.HasValue ? update(input.Value) : insert();
+
+				if (output.HasValue)
+				{
+					Containers[containerName].SetBlob(blobName, output.Value);
+				}
+
+				return output;
+			}
+		}
+
+		public bool DeleteBlobIfExists(string containerName, string blobName)
 		{
 			lock (_syncRoot)
 			{
@@ -320,6 +354,12 @@ namespace Lokad.Cloud.Mock
 				Containers[containerName].RemoveBlob(blobName);
 				return true;
 			}
+		}
+
+		[Obsolete]
+		bool IBlobStorageProvider.DeleteBlob(string containerName, string blobName)
+		{
+			return DeleteBlobIfExists(containerName, blobName);
 		}
 
 		public IEnumerable<string> List(string containerName, string prefix)

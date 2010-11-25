@@ -181,7 +181,23 @@ namespace Lokad.Cloud.Storage
 		/// <seealso cref="UpdateIfNotModified{T}(string,string,System.Func{T,Lokad.Result{T}})"/>
 		bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater);
 
+		/// <summary>
+		/// Inserts or updates a blob depending on whether it already exists or not.
+		/// If the insert or update lambdas return empty, the blob will not be changed.
+		/// </summary>
+		/// <remarks>
+		/// This procedure can not be used to delete the blob. The provided lambdas can
+		/// be executed multiple times in case of concurrency-related retrials, so be careful
+		/// with side-effects (like incrementing a counter in them).
+		/// </remarks>
+		/// <returns>The value returned by the lambda. If empty, then no change was applied.</returns>
+		Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
+
 		/// <summary>Deletes a blob.</summary>
+		bool DeleteBlobIfExists(string containerName, string blobName);
+
+		/// <summary>Deletes a blob.</summary>
+		[Obsolete("Use DeleteBlobIfExists instead.")]
 		bool DeleteBlob(string containerName, string blobName);
 
 		/// <summary>Iterates over the blobs considering the specified prefix.</summary>

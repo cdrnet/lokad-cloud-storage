@@ -44,11 +44,11 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 
 		void Update<T>(BlobName<T> name, Func<Maybe<T>, T> updater)
 		{
-			T result;
-			_provider.AtomicUpdate(
+			// TODO: Convert to insert/update instead of updater
+			_provider.UpsertBlob(
 				name,
-				updater,
-				out result);
+				() => updater(Maybe<T>.Empty),
+				t => updater(t));
 		}
 
 		void Set<T>(BlobName<T> name, T value)
@@ -69,7 +69,7 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 
 			foreach (var blob in matchingBlobs)
 			{
-				_provider.DeleteBlob(blob.ContainerName, blob.ToString());
+				_provider.DeleteBlobIfExists(blob.ContainerName, blob.ToString());
 			}
 		}
 

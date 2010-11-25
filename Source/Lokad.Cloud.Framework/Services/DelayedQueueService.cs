@@ -23,7 +23,7 @@ namespace Lokad.Cloud.Services
 		protected override void StartOnSchedule()
 		{
 			// lazy enumeration over the delayed messages
-            foreach (var parsedName in BlobStorage.List(new DelayedMessageName()))
+			foreach (var parsedName in BlobStorage.List(new DelayedMessageName()))
 			{
 				if (DateTimeOffset.UtcNow <= parsedName.TriggerTime)
 				{
@@ -41,7 +41,7 @@ namespace Lokad.Cloud.Services
 				}
 
 				QueueStorage.Put(dm.Value.QueueName, dm.Value.InnerMessage);
-				BlobStorage.DeleteBlob(parsedName);
+				BlobStorage.DeleteBlobIfExists(parsedName);
 			}
 		}
 	}

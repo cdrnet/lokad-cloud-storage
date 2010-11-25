@@ -147,7 +147,7 @@ namespace Lokad.Cloud.Management
 		public void ResetSchedule(string serviceName)
 		{
 			var blobRef = new ScheduledServiceStateName(serviceName);
-			_blobProvider.DeleteBlob(blobRef);
+			_blobProvider.DeleteBlobIfExists(blobRef);
 		}
 
 		/// <summary>

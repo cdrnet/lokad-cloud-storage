@@ -5,10 +5,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Xml.Linq;
 using Lokad.Diagnostics;
 using Lokad.Serialization;
@@ -41,6 +43,7 @@ namespace Lokad.Cloud.Storage.Azure
 		readonly ExecutionCounter _countGetBlob;
 		readonly ExecutionCounter _countGetBlobIfModified;
 		readonly ExecutionCounter _countUpdateIfNotModified;
+		readonly ExecutionCounter _countUpsertBlobOrSkip;
 		readonly ExecutionCounter _countDeleteBlob;
 
 		public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer)
@@ -57,6 +60,7 @@ namespace Lokad.Cloud.Storage.Azure
 					_countGetBlob = new ExecutionCounter("BlobStorageProvider.GetBlob", 0, 0),
 					_countGetBlobIfModified = new ExecutionCounter("BlobStorageProvider.GetBlobIfModified", 0, 0),
 					_countUpdateIfNotModified = new ExecutionCounter("BlobStorageProvider.UpdateIfNotModified", 0, 0),
+					_countUpsertBlobOrSkip = new ExecutionCounter("BlobStorageProvider.UpdateBlob", 0, 0),
 					_countDeleteBlob = new ExecutionCounter("BlobStorageProvider.DeleteBlob", 0, 0),
 				});
 		}
@@ -222,7 +226,7 @@ namespace Lokad.Cloud.Storage.Azure
 		/// <param name="overwrite">If <c>false</c>, then no write happens if the blob already exists.</param>
 		/// <param name="expectedEtag">When specified, no writing occurs unless the blob etag
 		/// matches the one specified as argument.</param>
-		/// <returns></returns>
+		/// <returns>The ETag of the written blob, if it was written.</returns>
 		Maybe<string> UploadBlobContent(CloudBlob blob, Stream stream, bool overwrite, string expectedEtag)
 		{
 			BlobRequestOptions options;
@@ -565,7 +569,118 @@ namespace Lokad.Cloud.Storage.Azure
 			}
 		}
 
-		public bool DeleteBlob(string containerName, string blobName)
+		/// <summary>
+		/// Inserts or updates a blob depending on whether it already exists or not.
+		/// If the insert or update lambdas return empty, the blob will not be changed.
+		/// </summary>
+		/// <remarks>
+		/// This procedure can not be used to delete the blob. The provided lambdas can
+		/// be executed multiple times in case of concurrency-related retrials, so be careful
+		/// with side-effects (like incrementing a counter in them).
+		/// </remarks>
+		/// <returns>The value returned by the lambda. If empty, then no change was applied.</returns>
+		public Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+		{
+			var timestamp = _countUpsertBlobOrSkip.Open();
+
+			var container = _blobStorage.GetContainerReference(containerName);
+			var blob = container.GetBlockBlobReference(blobName);
+
+			Maybe<T> output;
+
+			TimeSpan retryInterval;
+			var retryPolicy = AzurePolicies.OptimisticConcurrency();
+			for (int retryCount = 0; retryPolicy(retryCount, null, out retryInterval); retryCount++)
+			{
+				// 1. DOWNLOAD EXISTING INPUT BLOB, IF IT EXISTS
+
+				Maybe<T> input;
+				bool inputBlobExists = false;
+				string inputETag = null;
+
+				try
+				{
+					using (var readStream = new MemoryStream())
+					{
+						_azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+							{
+								readStream.Seek(0, SeekOrigin.Begin);
+								blob.DownloadToStream(readStream);
+								VerifyContentHash(blob, readStream, containerName, blobName);
+							}));
+
+						inputETag = blob.Properties.ETag;
+						inputBlobExists = !String.IsNullOrEmpty(inputETag);
+
+						readStream.Seek(0, SeekOrigin.Begin);
+						input = _serializer.TryDeserializeAs<T>(readStream).ToMaybe();
+					}
+				}
+				catch (StorageClientException ex)
+				{
+					// creating the container when missing
+					if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
+						|| ex.ErrorCode == StorageErrorCode.BlobNotFound
+							|| ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+					{
+						input = Maybe<T>.Empty;
+
+						// caution: the container might have been freshly deleted
+						// (multiple retries are needed in such a situation)
+						AzurePolicies.SlowInstantiation.Do(() => _azureServerPolicy.Get(container.CreateIfNotExist));
+					}
+					else
+					{
+						throw;
+					}
+				}
+
+				// 2. APPLY UPADTE OR INSERT (DEPENDING ON INPUT)
+
+				output = input.HasValue ? update(input.Value) : insert();
+
+				// 3. IF EMPTY OUTPUT THEN WE CAN SKIP THE WHOLE OPERATION
+
+				if (!output.HasValue)
+				{
+					_countUpsertBlobOrSkip.Close(timestamp);
+					return output;
+				}
+
+				// 4. TRY TO INSERT OR UPDATE BLOB
+
+				using (var writeStream = new MemoryStream())
+				{
+					_serializer.Serialize(output.Value, writeStream);
+					writeStream.Seek(0, SeekOrigin.Begin);
+
+					// Semantics:
+					// Insert: Blob must not exist -> do not overwrite
+					// Update: Blob must exists -> overwrite and verify matching ETag
+
+					bool succeeded = inputBlobExists
+						? UploadBlobContent(blob, writeStream, true, inputETag).HasValue
+						: UploadBlobContent(blob, writeStream, false, null).HasValue;
+
+					if (succeeded)
+					{
+						_countUpsertBlobOrSkip.Close(timestamp);
+						return output;
+					}
+				}
+
+				// 5. WAIT UNTIL NEXT TRIAL (retry policy)
+
+				if (retryInterval > TimeSpan.Zero)
+				{
+					Thread.Sleep(retryInterval);
+				}
+			}
+
+			throw new TimeoutException("Failed to resolve optimistic concurrency errors within a limited number of retrials");
+		}
+
+		public bool DeleteBlobIfExists(string containerName, string blobName)
 		{
 			var timestamp = _countDeleteBlob.Open();
 
@@ -588,6 +703,12 @@ namespace Lokad.Cloud.Storage.Azure
 				}
 				throw;
 			}
+		}
+
+		[Obsolete]
+		bool IBlobStorageProvider.DeleteBlob(string containerName, string blobName)
+		{
+			return DeleteBlobIfExists(containerName, blobName);
 		}
 
 		public IEnumerable<string> List(string containerName, string prefix)

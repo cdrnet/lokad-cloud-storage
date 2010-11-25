@@ -234,7 +234,7 @@ namespace Lokad.Cloud.Diagnostics
 
 				foreach (var blobName in deleteQueue)
 				{
-					_blobStorage.DeleteBlob(blobContainer, blobName);
+					_blobStorage.DeleteBlobIfExists(blobContainer, blobName);
 				}
 
 			} while (deleteQueue.Count > 0);

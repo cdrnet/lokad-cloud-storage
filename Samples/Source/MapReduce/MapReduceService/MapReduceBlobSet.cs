@@ -206,7 +206,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 			// 7. Delete blobset's blobs
 			foreach (var blobName in _blobStorage.List(blobsetPrefix))
 			{
-				_blobStorage.DeleteBlob(blobName);
+				_blobStorage.DeleteBlobIfExists(blobName);
 			}
 		}
 
@@ -260,7 +260,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 			// 4. Delete reduced data
 			foreach(var blobName in _blobStorage.List(reducedBlobPrefix))
 			{
-				_blobStorage.DeleteBlob(blobName);
+				_blobStorage.DeleteBlobIfExists(blobName);
 			}
 		}
 
@@ -319,21 +319,21 @@ namespace Lokad.Cloud.Samples.MapReduce
 		/// <remarks>Messages enqueued cannot be deleted but they cause no harm.</remarks>
 		public void DeleteJobData(string jobName)
 		{
-			_blobStorage.DeleteBlob(MapReduceConfigurationName.Create(jobName));
+			_blobStorage.DeleteBlobIfExists(MapReduceConfigurationName.Create(jobName));
 
 			foreach(var blobName in _blobStorage.List(InputBlobName.GetPrefix(jobName)))
 			{
-				_blobStorage.DeleteBlob(blobName);
+				_blobStorage.DeleteBlobIfExists(blobName);
 			}
 
 			foreach(var blobName in _blobStorage.List(ReducedBlobName.GetPrefix(jobName)))
 			{
-				_blobStorage.DeleteBlob(blobName);
+				_blobStorage.DeleteBlobIfExists(blobName);
 			}
 
-			_blobStorage.DeleteBlob(AggregatedBlobName.Create(jobName));
+			_blobStorage.DeleteBlobIfExists(AggregatedBlobName.Create(jobName));
 
-			_blobStorage.DeleteBlob(BlobCounterName.Create(jobName));
+			_blobStorage.DeleteBlobIfExists(BlobCounterName.Create(jobName));
 		}
 
 		/// <summary>Gets the existing jobs.</summary>
@@ -404,7 +404,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 				return new MapReduceConfigurationName(ConfigPrefix, jobName);
 			}
 
-            public static MapReduceConfigurationName GetPrefix()
+			public static MapReduceConfigurationName GetPrefix()
 			{
 				return new MapReduceConfigurationName(ConfigPrefix, null);
 			}
@@ -440,7 +440,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 				return new InputBlobName(InputPrefix, jobName, blobSetId, blobId);
 			}
 
-            public static InputBlobName GetPrefix(string jobName, int blobSetId)
+			public static InputBlobName GetPrefix(string jobName, int blobSetId)
 			{
 				return new InputBlobName(InputPrefix, jobName, blobSetId, null);
 			}

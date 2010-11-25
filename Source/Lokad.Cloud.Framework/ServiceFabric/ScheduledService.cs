@@ -133,7 +133,7 @@ namespace Lokad.Cloud.ServiceFabric
 
 			if (_scheduledPerWorker)
 			{
-				var blobState = BlobStorage.GetBlobOrDelete(stateReference);
+				var blobState = BlobStorage.GetBlob(stateReference);
 				if (!blobState.HasValue)
 				{
 					// even though we will never change it from here, a state blob 
@@ -162,34 +162,33 @@ namespace Lokad.Cloud.ServiceFabric
 			// update this value if it's old enough. When the update fails,
 			// it simply means that another worker is already on its ways
 			// to execute the service.
-			var updated = BlobStorage.UpdateIfNotModified(
+
+			var resultIfChanged = BlobStorage.UpsertBlobOrSkip(
 				stateReference,
-				currentState =>
+				() =>
+					{
+						// create new state and lease, and execute
+						var now = DateTimeOffset.UtcNow;
+						var newState = GetDefaultState();
+						newState.LastExecuted = now;
+						newState.Lease = CreateLease(now);
+						return newState;
+					},
+				state =>
 					{
 						var now = DateTimeOffset.UtcNow;
-
-						if (!currentState.HasValue)
-						{
-							// initialize default state
-							var newState = GetDefaultState();
-
-							// create lease and execute
-							newState.LastExecuted = now;
-							newState.Lease = CreateLease(now);
-							return Result.CreateSuccess(newState);
-						}
-
-						var state = currentState.Value;
 						if (now.Subtract(state.TriggerInterval) < state.LastExecuted)
 						{
-							return Result<ScheduledServiceState>.CreateError("No need to update.");
+							// was recently executed somewhere; skip
+							return Maybe<ScheduledServiceState>.Empty;
 						}
 
 						if (state.Lease != null)
 						{
 							if (state.Lease.Timeout > now)
 							{
-								return Result<ScheduledServiceState>.CreateError("Update needed but blocked by lease.");
+								// update needed but blocked by lease; skip
+								return Maybe<ScheduledServiceState>.Empty;
 							}
 
 							Log.WarnFormat(
@@ -200,12 +199,12 @@ namespace Lokad.Cloud.ServiceFabric
 						// create lease and execute
 						state.LastExecuted = now;
 						state.Lease = CreateLease(now);
-						return Result.CreateSuccess(state);
+						return state;
 					});
 
 			// 3. IF WE SHOULD NOT EXECUTE NOW, SKIP
 
-			if (!updated)
+			if (!resultIfChanged.HasValue)
 			{
 				return ServiceExecutionFeedback.Skipped;
 			}
@@ -238,29 +237,20 @@ namespace Lokad.Cloud.ServiceFabric
 			// a lease has been forcefully removed from the console and another service
 			// has taken a lease in the meantime.
 
-			var stateReference = new ScheduledServiceStateName(Name);
-
-			ScheduledServiceState ignoredResult;
-			BlobStorage.AtomicUpdate(
-				stateReference,
-				currentState =>
+			BlobStorage.UpdateBlobIfExistsOrSkip(
+				new ScheduledServiceStateName(Name),
+				state =>
 					{
-						if (!currentState.HasValue)
-						{
-							return GetDefaultState();
-						}
-
-						var state = currentState.Value;
 						if (state.Lease == null || state.Lease.Owner != _workerKey)
 						{
-							return state;
+							// skip
+							return Maybe<ScheduledServiceState>.Empty;
 						}
 
 						// remove lease
 						state.Lease = null;
 						return state;
-					},
-				out ignoredResult);
+					});
 		}
 
 		/// <summary>Don't call this method. Disposing the scheduled service

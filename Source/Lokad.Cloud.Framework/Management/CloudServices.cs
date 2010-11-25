@@ -128,7 +128,7 @@ namespace Lokad.Cloud.Management
 		public void ResetServiceState(string serviceName)
 		{
 			var blobRef = new CloudServiceStateName(serviceName);
-			_blobProvider.DeleteBlob(blobRef);
+			_blobProvider.DeleteBlobIfExists(blobRef);
 		}
 	}
 }

@@ -41,6 +41,19 @@ namespace Lokad.Cloud.Storage.Azure
 		/// </summary>
 		public static ActionPolicy NetworkCorruption { get; private set; }
 
+		/// <summary>
+		/// Retry policy for optimistic concurrency retrials. The exception parameter is ignored, it can be null.
+		/// </summary>
+		public static ShouldRetry OptimisticConcurrency()
+		{
+			var random = new Random();
+			return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+				{
+					retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
+					return currentRetryCount <= 30;
+				};
+		}
+
 		// Instrumentation
 		static readonly ExecutionCounter CountOnTransientServerError;
 		static readonly ExecutionCounter CountOnTransientTableError;

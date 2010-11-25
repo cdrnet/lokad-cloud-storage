@@ -55,13 +55,10 @@ namespace Lokad.Cloud.Storage
 		}
 
 		/// <summary>Atomic increment the counter value.</summary>
-		/// <remarks>If the counter does not exist before hand, it gets created with a zero value.</remarks>
+		/// <remarks>If the counter does not exist before hand, it gets created with the provided increment value.</remarks>
 		public decimal Increment(decimal increment)
 		{
-			decimal counter;
-			_provider.AtomicUpdate(_containerName, _blobName, x => x.HasValue ? x.Value + increment : increment, out counter);
-
-			return counter;
+			return _provider.UpsertBlob(_containerName, _blobName, () => increment, x => x + increment);
 		}
 
 		/// <summary>Reset the counter at the given value.</summary>
@@ -75,7 +72,7 @@ namespace Lokad.Cloud.Storage
 		/// and <c>false</c> otherwise.</returns>
 		public bool Delete()
 		{
-			return _provider.DeleteBlob(_containerName, _blobName);
+			return _provider.DeleteBlobIfExists(_containerName, _blobName);
 		}
 	}
 }
