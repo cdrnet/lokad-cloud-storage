@@ -42,21 +42,12 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 				.Select(x => x.Value);
 		}
 
-		void Update<T>(BlobName<T> name, Func<Maybe<T>, T> updater)
+		void Upsert<T>(BlobName<T> name, Func<Maybe<T>, T> updater)
 		{
-			// TODO: Convert to insert/update instead of updater
 			_provider.UpsertBlob(
 				name,
 				() => updater(Maybe<T>.Empty),
 				t => updater(t));
-		}
-
-		void Set<T>(BlobName<T> name, T value)
-		{
-			_provider.PutBlob(
-				name,
-				value,
-				true);
 		}
 
 		void RemoveWhile<TReference>(TReference prefix, Func<TReference, string> segmentProvider, string timeSegmentBefore)
@@ -101,27 +92,27 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 		}
 
 		/// <summary>
-		/// Update the statistics of an execution profile.
+		/// Upsert the statistics of an execution profile.
 		/// </summary>
 		public void UpdateExecutionProfilingStatistics(string timeSegment, string contextName, Func<Maybe<ExecutionProfilingStatistics>, ExecutionProfilingStatistics> updater)
 		{
-			Update(ExecutionProfilingStatisticsName.New(timeSegment, contextName), updater);
+			Upsert(ExecutionProfilingStatisticsName.New(timeSegment, contextName), updater);
 		}
 
 		/// <summary>
-		/// Update the statistics of a cloud partition.
+		/// Upsert the statistics of a cloud partition.
 		/// </summary>
 		public void UpdatePartitionStatistics(string timeSegment, string partitionName, Func<Maybe<PartitionStatistics>, PartitionStatistics> updater)
 		{
-			Update(PartitionStatisticsName.New(timeSegment, partitionName), updater);
+			Upsert(PartitionStatisticsName.New(timeSegment, partitionName), updater);
 		}
 
 		/// <summary>
-		/// Update the statistics of a cloud service.
+		/// Upsert the statistics of a cloud service.
 		/// </summary>
 		public void UpdateServiceStatistics(string timeSegment, string serviceName, Func<Maybe<ServiceStatistics>, ServiceStatistics> updater)
 		{
-			Update(ServiceStatisticsName.New(timeSegment, serviceName), updater);
+			Upsert(ServiceStatisticsName.New(timeSegment, serviceName), updater);
 		}
 
 		/// <summary>
