@@ -237,7 +237,7 @@ namespace Lokad.Cloud.ServiceFabric
 			// a lease has been forcefully removed from the console and another service
 			// has taken a lease in the meantime.
 
-			BlobStorage.UpdateBlobIfExistsOrSkip(
+			BlobStorage.UpdateBlobIfExistOrSkip(
 				new ScheduledServiceStateName(Name),
 				state =>
 					{

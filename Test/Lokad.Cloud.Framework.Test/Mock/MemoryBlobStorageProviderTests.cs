@@ -19,6 +19,7 @@ namespace Lokad.Cloud.Mock.Test
 		{
 		}
 
+		[Obsolete]
 		public override void UpdateIfNotModifiedWithStress()
 		{
 			// Test invalid with memory blob storage because

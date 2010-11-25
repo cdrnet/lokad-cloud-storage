@@ -131,14 +131,13 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void SetTriggerInterval(string serviceName, TimeSpan triggerInterval)
 		{
-			var blobRef = new ScheduledServiceStateName(serviceName);
-			_blobProvider.UpdateIfNotModified(blobRef,
-				blob =>
-				{
-					var state = blob.Value;
-					state.TriggerInterval = triggerInterval;
-					return state;
-				});
+			_blobProvider.UpdateBlobIfExist(
+				new ScheduledServiceStateName(serviceName),
+				state =>
+					{
+						state.TriggerInterval = triggerInterval;
+						return state;
+					});
 		}
 
 		/// <summary>
@@ -146,8 +145,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void ResetSchedule(string serviceName)
 		{
-			var blobRef = new ScheduledServiceStateName(serviceName);
-			_blobProvider.DeleteBlobIfExists(blobRef);
+			_blobProvider.DeleteBlobIfExists(new ScheduledServiceStateName(serviceName));
 		}
 
 		/// <summary>
@@ -155,22 +153,13 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void ReleaseLease(string serviceName)
 		{
-			var blobRef = new ScheduledServiceStateName(serviceName);
-			_blobProvider.UpdateIfNotModified(
-				blobRef,
-				currentState =>
-				{
-					if (!currentState.HasValue)
+			_blobProvider.UpdateBlobIfExist(
+				new ScheduledServiceStateName(serviceName),
+				state =>
 					{
-						return Result<ScheduledServiceState>.CreateError("No service state available.");
-					}
-
-					var state = currentState.Value;
-
-					// remove lease
-					state.Lease = null;
-					return Result.CreateSuccess(state);
-				});
+						state.Lease = null;
+						return state;
+					});
 		}
 	}
 }

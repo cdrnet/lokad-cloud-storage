@@ -114,12 +114,10 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void ToggleServiceState(string serviceName)
 		{
-			var blobRef = new CloudServiceStateName(serviceName);
-			_blobProvider.UpdateIfNotModified(
-				blobRef,
-				s => s.HasValue
-					? (s.Value == CloudServiceState.Started ? CloudServiceState.Stopped : CloudServiceState.Started)
-					: CloudServiceState.Started);
+			_blobProvider.UpsertBlob(
+				new CloudServiceStateName(serviceName),
+				() => CloudServiceState.Started,
+				state => state == CloudServiceState.Started ? CloudServiceState.Stopped : CloudServiceState.Started);
 		}
 
 		/// <summary>

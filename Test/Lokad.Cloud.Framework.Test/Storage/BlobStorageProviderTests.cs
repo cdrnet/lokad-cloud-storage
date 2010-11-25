@@ -179,6 +179,7 @@ namespace Lokad.Cloud.Storage.Test
 		/// This test does not check the behavior in case of concurrency stress.
 		/// </remarks>
 		[Test]
+		[Obsolete]
 		public void UpdateIfNotModifiedNoStress()
 		{
 			Provider.PutBlob(ContainerName, BlobName, 1);
@@ -195,6 +196,7 @@ namespace Lokad.Cloud.Storage.Test
 		/// Loose check of the behavior under concurrency stress.
 		/// </remarks>
 		[Test]
+		[Obsolete]
 		public virtual void UpdateIfNotModifiedWithStress()
 		{
 			Provider.PutBlob(ContainerName, BlobName, 0);

@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Net;
 using System.Reflection;
@@ -486,17 +485,20 @@ namespace Lokad.Cloud.Storage.Azure
 			}
 		}
 
+		[Obsolete]
 		public bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater)
 		{
 			return UpdateIfNotModified<T>(containerName, blobName, x => Result.CreateSuccess(updater(x)));
 		}
 
+		[Obsolete]
 		public bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater)
 		{
 			Result<T> ignored;
 			return UpdateIfNotModified(containerName, blobName, updater, out ignored);
 		}
 
+		[Obsolete]
 		public bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater, out T result)
 		{
 			Result<T> rresult;
@@ -506,6 +508,7 @@ namespace Lokad.Cloud.Storage.Azure
 			return flag;
 		}
 
+		[Obsolete]
 		public bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater, out Result<T> result)
 		{
 			var timestamp = _countUpdateIfNotModified.Open();

@@ -23,7 +23,7 @@ namespace Lokad.Cloud.Storage
 		/// <remarks>This operation is idempotent.</remarks>
 		bool CreateContainerIfNotExist(string containerName);
 
-		[Obsolete("Use CreateContainerIfNotExist instead")]
+		[Obsolete("Use CreateContainerIfNotExist instead. This method will be removed in future versions.")]
 		bool CreateContainer(string containerName);
 
 		/// <summary>Delete a container.</summary>
@@ -31,7 +31,7 @@ namespace Lokad.Cloud.Storage
 		/// <remarks>This operation is idempotent.</remarks>
 		bool DeleteContainerIfExist(string containerName);
 
-		[Obsolete("Use DeleteContainerIfExist instead")]
+		[Obsolete("Use DeleteContainerIfExist instead. This method will be removed in future versions.")]
 		bool DeleteContainer(string containerName);
 
 		/// <summary>Puts a blob (overwrite if the blob already exists).</summary>
@@ -178,15 +178,19 @@ namespace Lokad.Cloud.Storage
 		/// then no update is performed and the method returns <c>false</c>.</returns>
 		/// <remarks>If there is not such blob available, the update is performed with
 		/// the default <c>T</c> value.</remarks>
+		[Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
 		bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater, out Result<T> result);
 
 		/// <seealso cref="UpdateIfNotModified{T}(string,string,System.Func{T,Lokad.Result{T}},out Lokad.Result{T})"/>
+		[Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
 		bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater, out T result);
 
 		/// <summary>Update a blob while guaranteeing an atomic update process.</summary>
+		[Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
 		bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater);
 
 		/// <seealso cref="UpdateIfNotModified{T}(string,string,System.Func{T,Lokad.Result{T}})"/>
+		[Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
 		bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater);
 
 		/// <summary>
@@ -194,9 +198,16 @@ namespace Lokad.Cloud.Storage
 		/// If the insert or update lambdas return empty, the blob will not be changed.
 		/// </summary>
 		/// <remarks>
-		/// This procedure can not be used to delete the blob. The provided lambdas can
-		/// be executed multiple times in case of concurrency-related retrials, so be careful
-		/// with side-effects (like incrementing a counter in them).
+		/// <para>
+		/// The provided lambdas can be executed multiple times in case of
+		/// concurrency-related retrials, so be careful with side-effects
+		/// (like incrementing a counter in them).
+		/// </para>
+		/// <para>
+		/// This method is idempotent if and only if the provided lambdas are idempotent
+		/// and if the object returned by the insert lambda is an invariant to the update lambda
+		/// (if the second condition is not met, it is idempotent after the first successful call).
+		/// </para>
 		/// </remarks>
 		/// <returns>The value returned by the lambda. If empty, then no change was applied.</returns>
 		Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
@@ -206,7 +217,7 @@ namespace Lokad.Cloud.Storage
 		bool DeleteBlobIfExist(string containerName, string blobName);
 
 		/// <summary>Deletes a blob.</summary>
-		[Obsolete("Use DeleteBlobIfExist instead.")]
+		[Obsolete("Use DeleteBlobIfExist instead. This method will be removed in future versions.")]
 		bool DeleteBlob(string containerName, string blobName);
 
 		/// <summary>Iterates over the blobs considering the specified prefix.</summary>
