@@ -193,7 +193,7 @@ namespace Lokad.Cloud.Diagnostics
 		{
 			foreach (var level in EnumUtil<LogLevel>.Values.Where(l => l < LogLevel.Max && l > LogLevel.Min))
 			{
-				_blobStorage.DeleteContainer(LevelToContainer(level));
+				_blobStorage.DeleteContainerIfExist(LevelToContainer(level));
 			}
 		}
 
@@ -234,7 +234,7 @@ namespace Lokad.Cloud.Diagnostics
 
 				foreach (var blobName in deleteQueue)
 				{
-					_blobStorage.DeleteBlobIfExists(blobContainer, blobName);
+					_blobStorage.DeleteBlobIfExist(blobContainer, blobName);
 				}
 
 			} while (deleteQueue.Count > 0);

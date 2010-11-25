@@ -60,7 +60,7 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 
 			foreach (var blob in matchingBlobs)
 			{
-				_provider.DeleteBlobIfExists(blob.ContainerName, blob.ToString());
+				_provider.DeleteBlobIfExist(blob.ContainerName, blob.ToString());
 			}
 		}
 

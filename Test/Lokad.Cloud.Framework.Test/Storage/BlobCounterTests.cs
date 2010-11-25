@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Storage.Test
 		public void GetValueIncrement()
 		{
 			var provider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
-			provider.CreateContainer(ContainerName);
+			provider.CreateContainerIfNotExist(ContainerName);
 
 			var counter = new BlobCounter(provider, ContainerName, BlobName);
 
@@ -49,7 +49,7 @@ namespace Lokad.Cloud.Storage.Test
 		public void IncrementMultiThread()
 		{
 			var provider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
-			provider.CreateContainer(ContainerName);
+			provider.CreateContainerIfNotExist(ContainerName);
 
 			//creating thread parameters
 			var count = new BlobCounter(provider, ContainerName, "SomeBlobName");

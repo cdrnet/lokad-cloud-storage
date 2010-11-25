@@ -76,7 +76,7 @@ namespace Lokad.Cloud.Test
 				Assert.IsTrue(blob.HasValue);
 				Assert.AreEqual("message", blob.Value);
 
-				Assert.IsTrue(providers.BlobStorage.DeleteContainer("test-container-standalone"));
+				Assert.IsTrue(providers.BlobStorage.DeleteContainerIfExist("test-container-standalone"));
 			}
 		}
 	}

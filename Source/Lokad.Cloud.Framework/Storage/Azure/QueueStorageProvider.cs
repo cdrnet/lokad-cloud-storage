@@ -336,7 +336,7 @@ namespace Lokad.Cloud.Storage.Azure
 		{
 			foreach (var blobName in _blobStorage.List(OverflowingMessagesContainerName, queueName))
 			{
-				_blobStorage.DeleteBlobIfExists(OverflowingMessagesContainerName, blobName);
+				_blobStorage.DeleteBlobIfExist(OverflowingMessagesContainerName, blobName);
 			}
 		}
 
@@ -403,7 +403,7 @@ namespace Lokad.Cloud.Storage.Azure
 					var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(rawMessage.AsBytes);
 					if (messageWrapper.IsSuccess)
 					{
-						_blobStorage.DeleteBlobIfExists(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
+						_blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
 					}
 
 					// TODO: else-case would mean that we won't delete the overflow blob, consider to report it
@@ -635,7 +635,7 @@ namespace Lokad.Cloud.Storage.Azure
 			var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(persistedMessage.Data);
 			if (messageWrapper.IsSuccess)
 			{
-				_blobStorage.DeleteBlobIfExists(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
+				_blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
 			}
 
 			// 3. DELETE PERSISTED MESSAGE

@@ -36,9 +36,9 @@ namespace Lokad.Cloud.Mock.Test
 
 			var storage = new MemoryBlobStorageProvider();
 
-			storage.CreateContainer(containerName1);
-			storage.CreateContainer(containerName2);
-			storage.CreateContainer(containerName3);
+			storage.CreateContainerIfNotExist(containerName1);
+			storage.CreateContainerIfNotExist(containerName2);
+			storage.CreateContainerIfNotExist(containerName3);
 
 			storage.PutBlob(containerName1, blobPrefix + "/" + "blob1", new DateTime(2009,08,27));
 			storage.PutBlob(containerName1, blobPrefix + "/" + "blob2", new DateTime(2009, 08, 28));
@@ -68,8 +68,8 @@ namespace Lokad.Cloud.Mock.Test
 			const string blobPrefix = "mockBlobPrefix";
 
 			var storage = new MemoryBlobStorageProvider();
-			storage.CreateContainer(containerNamePrefix+1);
-			storage.CreateContainer(containerNamePrefix+2);
+			storage.CreateContainerIfNotExist(containerNamePrefix + 1);
+			storage.CreateContainerIfNotExist(containerNamePrefix + 2);
 
 			var threads = Enumerable.Range(0, 32)
 									.Select(i=> 

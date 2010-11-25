@@ -38,14 +38,14 @@ namespace Lokad.Cloud.Storage.Test
 		[TestFixtureSetUp]
 		public void Setup()
 		{
-			Provider.CreateContainer(ContainerName);
-			Provider.DeleteBlobIfExists(ContainerName, BlobName);
+			Provider.CreateContainerIfNotExist(ContainerName);
+			Provider.DeleteBlobIfExist(ContainerName, BlobName);
 		}
 
 		[Test]
 		public void GetAndDelete()
 		{
-			Provider.DeleteBlobIfExists(ContainerName, BlobName);
+			Provider.DeleteBlobIfExist(ContainerName, BlobName);
 			Assert.IsFalse(Provider.GetBlob<int>(ContainerName, BlobName).HasValue, "#A00");
 		}
 
@@ -60,7 +60,7 @@ namespace Lokad.Cloud.Storage.Test
 		[Test]
 		public void MissingBlobHasNoEtag()
 		{
-			Provider.DeleteBlobIfExists(ContainerName, BlobName);
+			Provider.DeleteBlobIfExist(ContainerName, BlobName);
 			var etag = Provider.GetBlobEtag(ContainerName, BlobName);
 			Assert.IsNull(etag, "#A00");
 		}
@@ -255,7 +255,7 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.AreEqual(11, Provider.GetBlob<int>(ContainerName, blobName).Value);
 
 			// cleanup
-			Provider.DeleteBlobIfExists(ContainerName, blobName);
+			Provider.DeleteBlobIfExist(ContainerName, blobName);
 
 // ReSharper restore AccessToModifiedClosure
 		}
@@ -295,7 +295,7 @@ namespace Lokad.Cloud.Storage.Test
 			var privateContainerName = "test-" + Guid.NewGuid().ToString("N");
 
 			var provider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
-			provider.CreateContainer(privateContainerName);
+			provider.CreateContainerIfNotExist(privateContainerName);
 
 			var blobNames = new[]
 			{
@@ -350,7 +350,7 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.IsNull(allEtags[allEtags.Length - 1], "Etag should be null");
 			Assert.IsFalse(allBlobs[allBlobs.Length - 1].HasValue, "Blob should not have a value");
 
-			provider.DeleteContainer(privateContainerName);
+			provider.DeleteContainerIfExist(privateContainerName);
 		}
 
 
@@ -360,7 +360,7 @@ namespace Lokad.Cloud.Storage.Test
 			var privateContainerName = "test-" + Guid.NewGuid().ToString("N");
 
 			var provider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
-			provider.CreateContainer(privateContainerName);
+			provider.CreateContainerIfNotExist(privateContainerName);
 
 			int? value1 = 10;
 			int? value2 = null;
@@ -374,7 +374,7 @@ namespace Lokad.Cloud.Storage.Test
 			Assert.AreEqual(value1.Value, output1.Value);
 			Assert.IsFalse(value2.HasValue);
 
-			provider.DeleteContainer(privateContainerName);
+			provider.DeleteContainerIfExist(privateContainerName);
 		}
 
 		[Test]
@@ -414,7 +414,7 @@ namespace Lokad.Cloud.Storage.Test
 
 			string ignored;
 			var blob = Provider.GetBlobXml(ContainerName, BlobName, out ignored);
-			Provider.DeleteBlobIfExists(ContainerName, BlobName);
+			Provider.DeleteBlobIfExist(ContainerName, BlobName);
 
 			Assert.IsTrue(blob.HasValue);
 			var xml = blob.Value;

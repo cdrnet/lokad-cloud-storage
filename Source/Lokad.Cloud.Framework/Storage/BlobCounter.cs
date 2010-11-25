@@ -72,7 +72,7 @@ namespace Lokad.Cloud.Storage
 		/// and <c>false</c> otherwise.</returns>
 		public bool Delete()
 		{
-			return _provider.DeleteBlobIfExists(_containerName, _blobName);
+			return _provider.DeleteBlobIfExist(_containerName, _blobName);
 		}
 	}
 }

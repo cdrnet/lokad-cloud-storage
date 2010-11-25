@@ -89,7 +89,7 @@ namespace Lokad.Cloud.Storage
             var result = provider.UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
             if (!result.HasValue)
             {
-                provider.DeleteBlobIfExists(containerName, blobName);
+                provider.DeleteBlobIfExist(containerName, blobName);
             }
 
             return result;
@@ -169,7 +169,7 @@ namespace Lokad.Cloud.Storage
             var result = provider.UpsertBlobOrSkip(containerName, blobName, insert, update);
             if (!result.HasValue)
             {
-                provider.DeleteBlobIfExists(containerName, blobName);
+                provider.DeleteBlobIfExist(containerName, blobName);
             }
 
             return result;
@@ -192,7 +192,7 @@ namespace Lokad.Cloud.Storage
 
         public static bool DeleteBlobIfExists<T>(this IBlobStorageProvider provider, BlobName<T> fullName)
         {
-            return provider.DeleteBlobIfExists(fullName.ContainerName, fullName.ToString());
+            return provider.DeleteBlobIfExist(fullName.ContainerName, fullName.ToString());
         }
 
         static readonly Random _rand = new Random();
@@ -247,10 +247,10 @@ namespace Lokad.Cloud.Storage
             AtomicUpdate(provider, name.ContainerName, name.ToString(), updater, out result);
         }
 
-        [Obsolete("Use DeleteBlobIfExists instead")]
+        [Obsolete("Use DeleteBlobIfExist instead")]
         public static bool DeleteBlob<T>(this IBlobStorageProvider provider, BlobName<T> fullName)
         {
-            return provider.DeleteBlobIfExists(fullName.ContainerName, fullName.ToString());
+            return provider.DeleteBlobIfExist(fullName.ContainerName, fullName.ToString());
         }
 
         public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, BlobName<T> name)
@@ -278,12 +278,12 @@ namespace Lokad.Cloud.Storage
             }
             catch (SerializationException)
             {
-                provider.DeleteBlobIfExists(containerName, blobName);
+                provider.DeleteBlobIfExist(containerName, blobName);
                 return Maybe<T>.Empty;
             }
             catch (InvalidCastException)
             {
-                provider.DeleteBlobIfExists(containerName, blobName);
+                provider.DeleteBlobIfExist(containerName, blobName);
                 return Maybe<T>.Empty;
             }
         }

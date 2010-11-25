@@ -65,7 +65,7 @@ namespace Lokad.Cloud.Storage.Azure
 				});
 		}
 
-		public bool CreateContainer(string containerName)
+		public bool CreateContainerIfNotExist(string containerName)
 		{
 			//workaround since Azure is presently returning OutOfRange exception when using a wrong name.
 			if (!StorageExtensions.IsContainerNameValid(containerName))
@@ -89,7 +89,13 @@ namespace Lokad.Cloud.Storage.Azure
 			}
 		}
 
-		public bool DeleteContainer(string containerName)
+		[Obsolete]
+		bool IBlobStorageProvider.CreateContainer(string containerName)
+		{
+			return CreateContainerIfNotExist(containerName);
+		}
+
+		public bool DeleteContainerIfExist(string containerName)
 		{
 			var container = _blobStorage.GetContainerReference(containerName);
 			try
@@ -107,6 +113,12 @@ namespace Lokad.Cloud.Storage.Azure
 
 				throw;
 			}
+		}
+
+		[Obsolete]
+		bool IBlobStorageProvider.DeleteContainer(string containerName)
+		{
+			return DeleteContainerIfExist(containerName);
 		}
 
 		public void PutBlob<T>(string containerName, string blobName, T item)
@@ -680,7 +692,7 @@ namespace Lokad.Cloud.Storage.Azure
 			throw new TimeoutException("Failed to resolve optimistic concurrency errors within a limited number of retrials");
 		}
 
-		public bool DeleteBlobIfExists(string containerName, string blobName)
+		public bool DeleteBlobIfExist(string containerName, string blobName)
 		{
 			var timestamp = _countDeleteBlob.Open();
 
@@ -708,7 +720,7 @@ namespace Lokad.Cloud.Storage.Azure
 		[Obsolete]
 		bool IBlobStorageProvider.DeleteBlob(string containerName, string blobName)
 		{
-			return DeleteBlobIfExists(containerName, blobName);
+			return DeleteBlobIfExist(containerName, blobName);
 		}
 
 		public IEnumerable<string> List(string containerName, string prefix)

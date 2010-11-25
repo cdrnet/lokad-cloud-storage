@@ -37,7 +37,7 @@ namespace Lokad.Cloud.Mock
 			_serializer = new CloudFormatter();
 		}
 
-		public bool CreateContainer(string containerName)
+		public bool CreateContainerIfNotExist(string containerName)
 		{
 			lock (_syncRoot)
 			{
@@ -56,7 +56,13 @@ namespace Lokad.Cloud.Mock
 			}	
 		}
 
-		public bool DeleteContainer(string containerName)
+		[Obsolete]
+		bool IBlobStorageProvider.CreateContainer(string containerName)
+		{
+			return CreateContainerIfNotExist(containerName);
+		}
+
+		public bool DeleteContainerIfExist(string containerName)
 		{
 			lock (_syncRoot)
 			{
@@ -68,6 +74,12 @@ namespace Lokad.Cloud.Mock
 				Containers.Remove(containerName);
 				return true;
 			}
+		}
+
+		[Obsolete]
+		bool IBlobStorageProvider.DeleteContainer(string containerName)
+		{
+			return DeleteContainerIfExist(containerName);
 		}
 
 		public void PutBlob<T>(string containerName, string blobName, T item)
@@ -342,7 +354,7 @@ namespace Lokad.Cloud.Mock
 			}
 		}
 
-		public bool DeleteBlobIfExists(string containerName, string blobName)
+		public bool DeleteBlobIfExist(string containerName, string blobName)
 		{
 			lock (_syncRoot)
 			{
@@ -359,7 +371,7 @@ namespace Lokad.Cloud.Mock
 		[Obsolete]
 		bool IBlobStorageProvider.DeleteBlob(string containerName, string blobName)
 		{
-			return DeleteBlobIfExists(containerName, blobName);
+			return DeleteBlobIfExist(containerName, blobName);
 		}
 
 		public IEnumerable<string> List(string containerName, string prefix)

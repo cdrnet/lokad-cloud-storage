@@ -70,7 +70,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void RemoveConfiguration()
 		{
-			_blobProvider.DeleteBlobIfExists(
+			_blobProvider.DeleteBlobIfExist(
 				AssemblyLoader.ContainerName,
 				AssemblyLoader.ConfigurationBlobName);
 		}

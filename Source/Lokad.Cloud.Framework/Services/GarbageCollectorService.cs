@@ -44,7 +44,7 @@ namespace Lokad.Cloud.Services
 				}
 
 				// if the overflowing message is expired, delete it
-				BlobStorage.DeleteBlobIfExists(TemporaryContainer, blobName);
+				BlobStorage.DeleteBlobIfExist(TemporaryContainer, blobName);
 
 				// don't freeze the worker with this service
 				if (DateTimeOffset.UtcNow > executionExpiration)

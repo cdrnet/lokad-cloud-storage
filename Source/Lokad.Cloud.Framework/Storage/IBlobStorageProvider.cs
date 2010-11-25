@@ -20,10 +20,18 @@ namespace Lokad.Cloud.Storage
 		/// <summary>Creates a new blob container.</summary>
 		/// <returns><c>true</c> if the container was actually created and <c>false</c> if
 		/// the container already exists.</returns>
+		/// <remarks>This operation is idempotent.</remarks>
+		bool CreateContainerIfNotExist(string containerName);
+
+		[Obsolete("Use CreateContainerIfNotExist instead")]
 		bool CreateContainer(string containerName);
 
 		/// <summary>Delete a container.</summary>
-		/// <remarks>Returns <c>true</c> if the container has been actually deleted.</remarks>
+		/// <returns><c>true</c> if the container has actually been deleted.</returns>
+		/// <remarks>This operation is idempotent.</remarks>
+		bool DeleteContainerIfExist(string containerName);
+
+		[Obsolete("Use DeleteContainerIfExist instead")]
 		bool DeleteContainer(string containerName);
 
 		/// <summary>Puts a blob (overwrite if the blob already exists).</summary>
@@ -194,10 +202,11 @@ namespace Lokad.Cloud.Storage
 		Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
 
 		/// <summary>Deletes a blob.</summary>
-		bool DeleteBlobIfExists(string containerName, string blobName);
+		/// <remarks>This operation is idempotent.</remarks>
+		bool DeleteBlobIfExist(string containerName, string blobName);
 
 		/// <summary>Deletes a blob.</summary>
-		[Obsolete("Use DeleteBlobIfExists instead.")]
+		[Obsolete("Use DeleteBlobIfExist instead.")]
 		bool DeleteBlob(string containerName, string blobName);
 
 		/// <summary>Iterates over the blobs considering the specified prefix.</summary>

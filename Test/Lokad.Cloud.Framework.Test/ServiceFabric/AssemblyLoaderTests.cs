@@ -36,7 +36,7 @@ namespace Lokad.Cloud.ServiceFabric.Test
 			}
 
 			var provider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
-			provider.CreateContainer(AssemblyLoader.ContainerName);
+			provider.CreateContainerIfNotExist(AssemblyLoader.ContainerName);
 
 			// put the sample assembly
 			provider.PutBlob(AssemblyLoader.ContainerName, AssemblyLoader.PackageBlobName, buffer);
