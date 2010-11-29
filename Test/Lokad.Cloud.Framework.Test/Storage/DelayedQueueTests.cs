@@ -36,7 +36,7 @@ namespace Lokad.Cloud.Storage.Test
 
 			var prefix = new DelayedMessageName(trigger, Guid.Empty);
 
-			var blobReferences = blobStorage.List(prefix);
+			var blobReferences = blobStorage.ListBlobNames(prefix);
 
 			Assert.AreEqual(1, blobReferences.Count(), "Wrong blob count");
 		}

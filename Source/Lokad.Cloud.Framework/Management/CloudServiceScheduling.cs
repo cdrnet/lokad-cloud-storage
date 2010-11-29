@@ -38,8 +38,10 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public List<CloudServiceSchedulingInfo> GetSchedules()
 		{
-			return _blobProvider.List(ScheduledServiceStateName.GetPrefix())
-				.Select(blobRef => Tuple.From(blobRef, _blobProvider.GetBlobOrDelete(blobRef)))
+			// TODO: Redesign to make it self-contained (so that we don't need to pass the name as well)
+
+			return _blobProvider.ListBlobNames(ScheduledServiceStateName.GetPrefix())
+				.Select(name => Tuple.From(name, _blobProvider.GetBlob(name)))
 				.Where(pair => pair.Value.HasValue)
 				.Select(pair =>
 					{
@@ -101,7 +103,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public List<string> GetScheduledServiceNames()
 		{
-			return _blobProvider.List(ScheduledServiceStateName.GetPrefix())
+			return _blobProvider.ListBlobNames(ScheduledServiceStateName.GetPrefix())
 				.Select(reference => reference.ServiceName).ToList();
 		}
 

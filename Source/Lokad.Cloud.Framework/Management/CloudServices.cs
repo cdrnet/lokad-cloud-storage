@@ -37,8 +37,10 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public List<CloudServiceInfo> GetServices()
 		{
-			return _blobProvider.List(CloudServiceStateName.GetPrefix())
-				.Select(blobRef => Tuple.From(blobRef, _blobProvider.GetBlobOrDelete(blobRef)))
+			// TODO: Redesign to make it self-contained (so that we don't need to pass the name as well)
+
+			return _blobProvider.ListBlobNames(CloudServiceStateName.GetPrefix())
+				.Select(name => Tuple.From(name, _blobProvider.GetBlob(name)))
 				.Where(pair => pair.Value.HasValue)
 				.Select(pair => new CloudServiceInfo
 					{
@@ -66,7 +68,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public List<string> GetServiceNames()
 		{
-			return _blobProvider.List(CloudServiceStateName.GetPrefix())
+			return _blobProvider.ListBlobNames(CloudServiceStateName.GetPrefix())
 				.Select(reference => reference.ServiceName).ToList();
 		}
 
@@ -96,8 +98,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void EnableService(string serviceName)
 		{
-			var blobRef = new CloudServiceStateName(serviceName);
-			_blobProvider.PutBlob(blobRef, CloudServiceState.Started);
+			_blobProvider.PutBlob(new CloudServiceStateName(serviceName), CloudServiceState.Started);
 		}
 
 		/// <summary>
@@ -105,8 +106,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void DisableService(string serviceName)
 		{
-			var blobRef = new CloudServiceStateName(serviceName);
-			_blobProvider.PutBlob(blobRef, CloudServiceState.Stopped);
+			_blobProvider.PutBlob(new CloudServiceStateName(serviceName), CloudServiceState.Stopped);
 		}
 
 		/// <summary>
@@ -125,8 +125,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void ResetServiceState(string serviceName)
 		{
-			var blobRef = new CloudServiceStateName(serviceName);
-			_blobProvider.DeleteBlobIfExists(blobRef);
+			_blobProvider.DeleteBlobIfExists(new CloudServiceStateName(serviceName));
 		}
 	}
 }

@@ -374,7 +374,7 @@ namespace Lokad.Cloud.Mock
 			return DeleteBlobIfExist(containerName, blobName);
 		}
 
-		public IEnumerable<string> List(string containerName, string prefix)
+		public IEnumerable<string> ListBlobNames(string containerName, string blobNamePrefix = null)
 		{
 			lock (_syncRoot)
 			{
@@ -383,7 +383,36 @@ namespace Lokad.Cloud.Mock
 					return Enumerable.Empty<string>();
 				}
 
-				return Containers[containerName].BlobNames.Where(name => name.StartsWith(prefix));
+				var names = Containers[containerName].BlobNames;
+				return String.IsNullOrEmpty(blobNamePrefix) ? names : names.Where(name => name.StartsWith(blobNamePrefix));
+			}
+		}
+
+		public IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0)
+		{
+			var names = ListBlobNames(containerName, blobNamePrefix);
+
+			if (skip > 0)
+			{
+				names = names.Skip(skip);
+			}
+
+			return names.Select(name => GetBlob<T>(containerName, name))
+				.Where(blob => blob.HasValue)
+				.Select(blob => blob.Value);
+		}
+
+		[Obsolete]
+		IEnumerable<string> IBlobStorageProvider.List(string containerName, string prefix)
+		{
+			return ListBlobNames(containerName, prefix);
+		}
+
+		public void DeleteAllBlobs(string containerName, string blobNamePrefix = null)
+		{
+			foreach (var blobName in ListBlobNames(containerName, blobNamePrefix))
+			{
+				DeleteBlobIfExist(containerName, blobName);
 			}
 		}
 

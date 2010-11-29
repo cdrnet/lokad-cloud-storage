@@ -380,7 +380,7 @@ namespace Lokad.Cloud.Storage.Test
 		}
 
 		[Test]
-		public void List()
+		public void ListBlobNames()
 		{
 			var prefix = Guid.NewGuid().ToString("N");
 
@@ -397,11 +397,40 @@ namespace Lokad.Cloud.Storage.Test
 				Provider.PutBlob(ContainerName, n, n);
 			}
 
-			var list = Provider.List(ContainerName, prefix).ToArray();
+			var list = Provider.ListBlobNames(ContainerName, prefix).ToArray();
 
 			Assert.AreEqual(prefixed.Length, list.Length, "#A00");
 
 			foreach(var n in list)
+			{
+				Assert.IsTrue(prefixed.Contains(n), "#A01");
+				Assert.IsFalse(unprefixed.Contains(n), "#A02");
+			}
+		}
+
+		[Test]
+		public void ListBlobs()
+		{
+			var prefix = Guid.NewGuid().ToString("N");
+
+			var prefixed = Range.Array(10).Convert(i => prefix + Guid.NewGuid().ToString("N"));
+			var unprefixed = Range.Array(13).Convert(i => Guid.NewGuid().ToString("N"));
+
+			foreach (var n in prefixed)
+			{
+				Provider.PutBlob(ContainerName, n, n);
+			}
+
+			foreach (var n in unprefixed)
+			{
+				Provider.PutBlob(ContainerName, n, n);
+			}
+
+			var list = Provider.ListBlobs<string>(ContainerName, prefix).ToArray();
+
+			Assert.AreEqual(prefixed.Length, list.Length, "#A00");
+
+			foreach (var n in list)
 			{
 				Assert.IsTrue(prefixed.Contains(n), "#A01");
 				Assert.IsFalse(unprefixed.Contains(n), "#A02");

@@ -334,10 +334,7 @@ namespace Lokad.Cloud.Storage.Azure
 
 		void DeleteOverflowingMessages(string queueName)
 		{
-			foreach (var blobName in _blobStorage.List(OverflowingMessagesContainerName, queueName))
-			{
-				_blobStorage.DeleteBlobIfExist(OverflowingMessagesContainerName, blobName);
-			}
+			_blobStorage.DeleteAllBlobs(OverflowingMessagesContainerName, queueName);
 		}
 
 		public void Clear(string queueName)
@@ -554,7 +551,7 @@ namespace Lokad.Cloud.Storage.Azure
 		public IEnumerable<string> ListPersisted(string storeName)
 		{
 			var blobPrefix = PersistedMessageBlobName.GetPrefix(storeName);
-			return _blobStorage.List(blobPrefix).Select(blobReference => blobReference.Key);
+			return _blobStorage.ListBlobNames(blobPrefix).Select(blobReference => blobReference.Key);
 		}
 
 		public Maybe<PersistedMessage> GetPersisted(string storeName, string key)

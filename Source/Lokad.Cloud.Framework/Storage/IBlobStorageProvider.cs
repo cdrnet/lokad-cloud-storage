@@ -220,8 +220,23 @@ namespace Lokad.Cloud.Storage
 		[Obsolete("Use DeleteBlobIfExist instead. This method will be removed in future versions.")]
 		bool DeleteBlob(string containerName, string blobName);
 
-		/// <summary>Iterates over the blobs considering the specified prefix.</summary>
+		/// <summary>
+		/// List the blob names of all blobs matching both the provided container name and the optional blob name prefix.
+		/// </summary>
+		IEnumerable<string> ListBlobNames(string containerName, string blobNamePrefix = null);
+
+		/// <summary>
+		/// List and get all blobs matching both the provided container name and the optional blob name prefix.
+		/// </summary>
+		IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0);
+
+		[Obsolete("User ListBlobNames instead, or ListBlobs if you're interested in the blobs instead of just their names. This method will be removed in future versions.", false)]
 		IEnumerable<string> List(string containerName, string prefix);
+
+		/// <summary>
+		/// Delete all blobs matching both the provided container name and the optional blob name prefix.
+		/// </summary>
+		void DeleteAllBlobs(string containerName, string blobNamePrefix = null);
 
 		/// <summary>Requests a new lease on the blob and returns its new lease ID</summary>
 		Result<string> TryAcquireLease(string containerName, string blobName);

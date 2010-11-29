@@ -30,7 +30,7 @@ namespace Lokad.Cloud.Services
 			var executionExpiration = DateTimeOffset.UtcNow.Add(MaxExecutionTime);
 
 			// lazy enumeration over the overflowing messages
-			foreach (var blobName in BlobStorage.List(TemporaryContainer, null))
+			foreach (var blobName in BlobStorage.ListBlobNames(TemporaryContainer, null))
 			{
 				// HACK: targeted object is irrelevant
 				var parsedName = UntypedBlobName.Parse<TemporaryBlobName<object>>(blobName);

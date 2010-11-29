@@ -243,6 +243,8 @@ namespace Lokad.Cloud.Storage
             return provider.UpsertBlobOrDelete(name.ContainerName, name.ToString(), insert, update);
         }
 
+        /// <summary>Deletes a blob.</summary>
+        /// <remarks>This operation is idempotent.</remarks>
         public static bool DeleteBlobIfExists<T>(this IBlobStorageProvider provider, BlobName<T> fullName)
         {
             return provider.DeleteBlobIfExist(fullName.ContainerName, fullName.ToString());
@@ -323,6 +325,7 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Gets the corresponding object. If the deserialization fails
         /// just delete the existing copy.</summary>
+        [Obsolete("No longer needed since GetBlob is now robust against serialization errors. Use GetBlob instead. This method will be removed in future versions.")]
         public static Maybe<T> GetBlobOrDelete<T>(this IBlobStorageProvider provider, string containerName, string blobName)
         {
             try
@@ -343,6 +346,7 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Gets the corresponding object. If the deserialization fails
         /// just delete the existing copy.</summary>
+        [Obsolete("No longer needed since GetBlob is now robust against serialization errors. Use GetBlob instead. This method will be removed in future versions.")]
         public static Maybe<T> GetBlobOrDelete<T>(this IBlobStorageProvider provider, BlobName<T> name)
         {
             return provider.GetBlobOrDelete<T>(name.ContainerName, name.ToString());
@@ -364,11 +368,36 @@ namespace Lokad.Cloud.Storage
             return provider.PutBlob(name.ContainerName, name.ToString(), item, etag);
         }
 
-        public static IEnumerable<T> List<T>(
-            this IBlobStorageProvider provider, T prefix) where T : UntypedBlobName
+        /// <summary>
+        /// List and get all blobs matching the provided blob name prefix.
+        /// </summary>
+        public static IEnumerable<T> ListBlobs<T>(this IBlobStorageProvider provider, BlobName<T> blobNamePrefix, int skip = 0)
         {
-            return provider.List(prefix.ContainerName, prefix.ToString())
+            return provider.ListBlobs<T>(blobNamePrefix.ContainerName, blobNamePrefix.ToString(), skip);
+        }
+
+        /// <summary>
+        /// List the blob names of all blobs matching the provided blob name prefix.
+        /// </summary>
+        public static IEnumerable<T> ListBlobNames<T>(this IBlobStorageProvider provider, T blobNamePrefix) where T : UntypedBlobName
+        {
+            return provider.ListBlobNames(blobNamePrefix.ContainerName, blobNamePrefix.ToString())
                 .Select(UntypedBlobName.Parse<T>);
+        }
+
+        [Obsolete("User ListBlobNames instead, or ListBlobs if you're interested in the blobs instead of just their names. This method will be removed in future versions.", false)]
+        public static IEnumerable<T> List<T>(this IBlobStorageProvider provider, T blobNamePrefix) where T : UntypedBlobName
+        {
+            return provider.ListBlobNames(blobNamePrefix.ContainerName, blobNamePrefix.ToString())
+                .Select(UntypedBlobName.Parse<T>);
+        }
+
+        /// <summary>
+        /// Delete all blobs matching the provided blob name prefix.
+        /// </summary>
+        public static void DeleteAllBlobs(this IBlobStorageProvider provider, UntypedBlobName blobNamePrefix)
+        {
+            provider.DeleteAllBlobs(blobNamePrefix.ContainerName, blobNamePrefix.ToString());
         }
 
         [Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead. This method will be removed in future versions.", false)]

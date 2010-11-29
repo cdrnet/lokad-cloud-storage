@@ -38,7 +38,7 @@ namespace SimpleBlob
         {            
             // TODO: change your connection string here
             var providers = Standalone.CreateProviders("DefaultEndpointsProtocol=https;AccountName=;AccountKey=");
-            var blobStorage = providers.BlobStorage;
+            var blobs = providers.BlobStorage;
 
             var potterBook = new Book { Author = "J. K. Rowling", Title = "Harry Potter" };
             // Resulting blob name is: Bloomsbury Publishing/1
@@ -49,13 +49,12 @@ namespace SimpleBlob
             var poemsRef = new BookName {Publisher = "Harvard University Press", BookId = 2};
             
             // writing entities to the storage
-            blobStorage.PutBlob(potterRef, potterBook);
-            blobStorage.PutBlob(poemsRef, poemsBook);
+            blobs.PutBlob(potterRef, potterBook);
+            blobs.PutBlob(poemsRef, poemsBook);
 
             // retrieving all entities from 'Bloomsbury Publishing'
-            foreach (var bookName in blobStorage.List(new BookName { Publisher = "Bloomsbury Publishing" }))
+            foreach (var book in blobs.ListBlobs(new BookName { Publisher = "Bloomsbury Publishing" }))
             {
-                var book = blobStorage.GetBlob(bookName).Value;
                 Console.WriteLine("{0} by {1}", book.Title, book.Author);
             }
 

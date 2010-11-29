@@ -47,17 +47,17 @@ namespace Lokad.Cloud.Mock.Test
 			storage.PutBlob(containerName2, blobPrefix + "/" + "blob2", new DateTime(1984, 07, 06));
 			storage.PutBlob(containerName1, secondBlobPrefix + "/" + "blob1", new DateTime(2009, 08, 30));
 
-			var blobNames = storage.List(containerName1, blobPrefix);
-			Assert.AreEqual(blobNames.Count(),3,"first container with first prefix does not hold 3 blobs");
+			Assert.AreEqual(3, storage.ListBlobNames(containerName1, blobPrefix).Count(),
+				"first container with first prefix does not hold 3 blobs");
 
-			blobNames = storage.List(containerName2, blobPrefix);
-			Assert.AreEqual(blobNames.Count(), 1, "second container with first prefix does not hold 1 blobs");
+			Assert.AreEqual(1, storage.ListBlobNames(containerName2, blobPrefix).Count(),
+				"second container with first prefix does not hold 1 blobs");
 
-			blobNames = storage.List(containerName3, blobPrefix);
-			Assert.AreEqual(blobNames.Count(), 0, "third container with first prefix does not hold 0 blob");
+			Assert.AreEqual(0, storage.ListBlobNames(containerName3, blobPrefix).Count(),
+				"third container with first prefix does not hold 0 blob");
 
-			blobNames = storage.List(containerName1, secondBlobPrefix);
-			Assert.AreEqual(blobNames.Count(), 1, "first container with second prefix does not hold 1 blobs");
+			Assert.AreEqual(1, storage.ListBlobNames(containerName1, secondBlobPrefix).Count(),
+				"first container with second prefix does not hold 1 blobs");
 
 		}
 
@@ -86,12 +86,10 @@ namespace Lokad.Cloud.Mock.Test
 			
 			Thread.Sleep(2000);
 
-			var blobNames = storage.List("container-1", blobPrefix);
-			Assert.AreEqual(1600, blobNames.Count(), 
+			Assert.AreEqual(1600, storage.ListBlobNames("container-1", blobPrefix).Count(),
 				"first container with corresponding prefix does not hold 3 blobs");
 
-			blobNames = storage.List("container-2", blobPrefix);
-			Assert.AreEqual(1600, blobNames.Count(), 
+			Assert.AreEqual(1600, storage.ListBlobNames("container-2", blobPrefix).Count(),
 				"second container with corresponding prefix does not hold 1 blobs");
 
 		}

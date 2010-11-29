@@ -51,8 +51,7 @@ namespace Lokad.Cloud.Mock.Services.Test
 				service.StartService();
 			}
 
-			var blobNames = providersForCloudStorage.BlobStorage.List(containerName, "");
-			var sum = blobNames.Select(e => providersForCloudStorage.BlobStorage.GetBlob<double>(containerName, e).Value).Sum();
+			var sum = providersForCloudStorage.BlobStorage.ListBlobs<double>(containerName).Sum();
  
 			//0*0+1*1+2*2+3*3+...+9*9 = 285
 			Assert.AreEqual(285, sum, "result is different from expected.");	
@@ -87,11 +86,11 @@ namespace Lokad.Cloud.Mock.Services.Test
 
 				if (message.IsStart)
 				{
-                    var counterName = TemporaryBlobName<decimal>.GetNew(message.Expiration);
+					var counterName = TemporaryBlobName<decimal>.GetNew(message.Expiration);
 					var counter = new BlobCounter(blobStorage, counterName);
 					counter.Reset(BlobCounter.Aleph);
 
-					var blobNames = blobStorage.List(message.ContainerName, "");
+					var blobNames = blobStorage.ListBlobNames(message.ContainerName).ToList();
 					
 					foreach (var blobName in blobNames)
 					{
@@ -105,7 +104,7 @@ namespace Lokad.Cloud.Mock.Services.Test
 					}
 
 					// dealing with rare race condition
-					if (0m >= counter.Increment(-BlobCounter.Aleph + blobNames.Count()))
+					if (0m >= counter.Increment(-BlobCounter.Aleph + blobNames.Count))
 					{
 						Finish(counter);
 					}

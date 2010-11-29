@@ -116,12 +116,9 @@ namespace Lokad.Cloud.Diagnostics
 		/// </summary>
 		public IEnumerable<LogEntry> GetLogsOfLevel(LogLevel level, int skip = 0)
 		{
-			var containerName = LevelToContainer(level);
-			return _blobStorage.List(containerName, string.Empty)
-				.Select(blobName => _blobStorage.GetBlob<string>(containerName, blobName))
-				.Where(rawLog => rawLog.HasValue)
-				.Skip(skip)
-				.Select(rawLog => ParseLogEntry(rawLog.Value));
+			return _blobStorage
+				.ListBlobs<string>(LevelToContainer(level), skip: skip)
+				.Select(ParseLogEntry);
 		}
 
 		/// <summary>
@@ -138,7 +135,7 @@ namespace Lokad.Cloud.Diagnostics
 				.Select(level =>
 					{
 						var containerName = LevelToContainer(level);
-						return _blobStorage.List(containerName, string.Empty)
+						return _blobStorage.ListBlobNames(containerName, string.Empty)
 							.Select(blobName => Tuple.From(containerName, blobName))
 							.GetEnumerator();
 					})
@@ -224,7 +221,7 @@ namespace Lokad.Cloud.Diagnostics
 			{
 				deleteQueue.Clear();
 
-				foreach (var blobName in _blobStorage.List(blobContainer, string.Empty))
+				foreach (var blobName in _blobStorage.ListBlobNames(blobContainer, string.Empty))
 				{
 					var dateTime = ParseDateTimeFromName(blobName);
 					if (dateTime < olderThanUtc) deleteQueue.Add(blobName);

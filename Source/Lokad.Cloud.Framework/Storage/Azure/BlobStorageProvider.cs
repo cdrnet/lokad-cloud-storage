@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -726,13 +727,16 @@ namespace Lokad.Cloud.Storage.Azure
 			return DeleteBlobIfExist(containerName, blobName);
 		}
 
-		public IEnumerable<string> List(string containerName, string prefix)
+		public IEnumerable<string> ListBlobNames(string containerName, string blobNamePrefix = null)
 		{
 			// Enumerated blobs do not have a "name" property,
 			// thus the name must be extracted from their URI
 			// http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/c5e36676-8d07-46cc-b803-72621a0898b0/?prof=required
 
-			if(prefix == null) prefix = "";
+			if (blobNamePrefix == null)
+			{
+				blobNamePrefix = string.Empty;
+			}
 
 			var container = _blobStorage.GetContainerReference(containerName);
 
@@ -743,21 +747,23 @@ namespace Lokad.Cloud.Storage.Azure
 
 			// if no prefix is provided, then enumerate the whole container
 			IEnumerator<IListBlobItem> enumerator;
-			if (string.IsNullOrEmpty(prefix))
+			if (string.IsNullOrEmpty(blobNamePrefix))
 			{
 				enumerator = container.ListBlobs(options).GetEnumerator();
 			}
 			else
 			{
 				// 'CloudBlobDirectory' must be used for prefixed enumeration
-				var directory = container.GetDirectoryReference(prefix);
+				var directory = container.GetDirectoryReference(blobNamePrefix);
 
 				// HACK: [vermorel] very ugly override, but otherwise an "/" separator gets forcibly added
 				typeof (CloudBlobDirectory).GetField("prefix", BindingFlags.Instance | BindingFlags.NonPublic)
-					.SetValue(directory, prefix);
+					.SetValue(directory, blobNamePrefix);
 
 				enumerator = directory.ListBlobs(options).GetEnumerator();
 			}
+
+			// TODO: Parallelize
 
 			while(true)
 			{
@@ -780,6 +786,35 @@ namespace Lokad.Cloud.Storage.Azure
 
 				// removing /container/ from the blob name (dev storage: /account/container/)
 				yield return Uri.UnescapeDataString(enumerator.Current.Uri.AbsolutePath.Substring(container.Uri.LocalPath.Length + 1));
+			}
+		}
+
+		public IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0)
+		{
+			var names = ListBlobNames(containerName, blobNamePrefix);
+
+			if (skip > 0)
+			{
+				names = names.Skip(skip);
+			}
+
+			return names.Select(name => GetBlob<T>(containerName, name))
+				.Where(blob => blob.HasValue)
+				.Select(blob => blob.Value);
+		}
+
+		[Obsolete]
+		IEnumerable<string> IBlobStorageProvider.List(string containerName, string prefix)
+		{
+			return ListBlobNames(containerName, prefix);
+		}
+
+		public void DeleteAllBlobs(string containerName, string blobNamePrefix = null)
+		{
+			// TODO: Parallelize
+			foreach (var blobName in ListBlobNames(containerName, blobNamePrefix))
+			{
+				DeleteBlobIfExist(containerName, blobName);
 			}
 		}
 

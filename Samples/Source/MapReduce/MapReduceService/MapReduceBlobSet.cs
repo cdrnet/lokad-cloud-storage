@@ -162,7 +162,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 
 			// 2. Do map for all blobs in the blobset
 			string ignored;
-			foreach (var blobName in _blobStorage.List(blobsetPrefix))
+			foreach (var blobName in _blobStorage.ListBlobNames(blobsetPrefix))
 			{
 				var inputBlob = _blobStorage.GetBlob(blobName.ContainerName, blobName.ToString(), mapIn, out ignored);
 				if (!inputBlob.HasValue)
@@ -200,14 +200,11 @@ namespace Lokad.Cloud.Samples.MapReduce
 			if (totalCompletedBlobSets == config.BlobSetCount)
 			{
 				_queueStorage.Put(JobsQueueName,
-					new JobMessage() {JobName = jobName, BlobSetId = null, Type = MessageType.ReducedDataToAggregate});
+					new JobMessage {JobName = jobName, BlobSetId = null, Type = MessageType.ReducedDataToAggregate});
 			}
 
 			// 7. Delete blobset's blobs
-			foreach (var blobName in _blobStorage.List(blobsetPrefix))
-			{
-				_blobStorage.DeleteBlobIfExists(blobName);
-			}
+			_blobStorage.DeleteAllBlobs(blobsetPrefix);
 		}
 
 		/// <summary>Performs the aggregate operation on a blobset.</summary>
@@ -229,7 +226,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 
 			// 2. Load reduced items and do aggregation
 			string ignored;
-			foreach(var blobName in _blobStorage.List(reducedBlobPrefix))
+			foreach (var blobName in _blobStorage.ListBlobNames(reducedBlobPrefix))
 			{
 				var blob = _blobStorage.GetBlob(blobName.ContainerName, blobName.ToString(), mapOut, out ignored);
 				if(!blob.HasValue)
@@ -258,10 +255,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 			_blobStorage.PutBlob(aggregatedBlobName.ContainerName, aggregatedBlobName.ToString(), aggregateResults[0], mapOut, false, out ignored);
 
 			// 4. Delete reduced data
-			foreach(var blobName in _blobStorage.List(reducedBlobPrefix))
-			{
-				_blobStorage.DeleteBlobIfExists(blobName);
-			}
+			_blobStorage.DeleteAllBlobs(reducedBlobPrefix);
 		}
 
 		/// <summary>Gets the number of completed blobsets of a job.</summary>
@@ -321,18 +315,10 @@ namespace Lokad.Cloud.Samples.MapReduce
 		{
 			_blobStorage.DeleteBlobIfExists(MapReduceConfigurationName.Create(jobName));
 
-			foreach(var blobName in _blobStorage.List(InputBlobName.GetPrefix(jobName)))
-			{
-				_blobStorage.DeleteBlobIfExists(blobName);
-			}
-
-			foreach(var blobName in _blobStorage.List(ReducedBlobName.GetPrefix(jobName)))
-			{
-				_blobStorage.DeleteBlobIfExists(blobName);
-			}
+			_blobStorage.DeleteAllBlobs(InputBlobName.GetPrefix(jobName));
+			_blobStorage.DeleteAllBlobs(ReducedBlobName.GetPrefix(jobName));
 
 			_blobStorage.DeleteBlobIfExists(AggregatedBlobName.Create(jobName));
-
 			_blobStorage.DeleteBlobIfExists(BlobCounterName.Create(jobName));
 		}
 
@@ -342,7 +328,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 		{
 			var names = new List<string>();
 
-			foreach(var blobName in _blobStorage.List(MapReduceConfigurationName.GetPrefix()))
+			foreach (var blobName in _blobStorage.ListBlobNames(MapReduceConfigurationName.GetPrefix()))
 			{
 				names.Add(blobName.JobName);
 			}

@@ -202,14 +202,14 @@ namespace Lokad.Cloud.Azure.Test
 			queueProvider.Put(queueName, data);
 
 			// HACK: implicit pattern for listing overflowing messages
-			var overflowingCount = blobProvider.List(
+			var overflowingCount = blobProvider.ListBlobNames(
 				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
 
 			Assert.AreEqual(1, overflowingCount, "#A00");
 
 			queueProvider.DeleteQueue(queueName);
 
-			overflowingCount = blobProvider.List(
+			overflowingCount = blobProvider.ListBlobNames(
 				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
 
 			Assert.AreEqual(0, overflowingCount, "#A01");
@@ -232,14 +232,14 @@ namespace Lokad.Cloud.Azure.Test
 			queueProvider.Put(queueName, data);
 
 			// HACK: implicit pattern for listing overflowing messages
-			var overflowingCount = blobProvider.List(
+			var overflowingCount = blobProvider.ListBlobNames(
 				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
 
 			Assert.AreEqual(1, overflowingCount, "#A00");
 
 			queueProvider.Clear(queueName);
 
-			overflowingCount = blobProvider.List(
+			overflowingCount = blobProvider.ListBlobNames(
 				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
 
 			Assert.AreEqual(0, overflowingCount, "#A01");
@@ -375,9 +375,8 @@ namespace Lokad.Cloud.Azure.Test
 			// put
 			provider.Put(QueueName, data);
 
-			Assert.AreEqual(1,
-				blobProvider.List(QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(),
-				"#A01");
+			Assert.AreEqual(1, blobProvider.ListBlobNames(
+				QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A01");
 
 			// get
 			var retrieved = provider.Get<byte[]>(QueueName, 1).First();
@@ -385,9 +384,8 @@ namespace Lokad.Cloud.Azure.Test
 			// persist
 			provider.Persist(retrieved, storeName, "manual test");
 
-			Assert.AreEqual(1,
-				blobProvider.List(QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(),
-				"#A02");
+			Assert.AreEqual(1, blobProvider.ListBlobNames(
+				QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A02");
 
 			// abandon should fail (since not invisible anymore)
 			Assert.IsFalse(provider.Abandon(retrieved), "#A03");
@@ -403,9 +401,8 @@ namespace Lokad.Cloud.Azure.Test
 			// delete persisted message
 			provider.DeletePersisted(storeName, key);
 
-			Assert.AreEqual(0,
-				blobProvider.List(QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(),
-				"#A06");
+			Assert.AreEqual(0, blobProvider.ListBlobNames(
+				QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A06");
 
 			// list no longer contains key
 			Assert.IsFalse(provider.ListPersisted(storeName).Any(), "#A07");

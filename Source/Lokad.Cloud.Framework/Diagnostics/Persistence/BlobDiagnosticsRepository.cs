@@ -21,46 +21,35 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 	[UsedImplicitly]
 	public class BlobDiagnosticsRepository : ICloudDiagnosticsRepository
 	{
-		readonly IBlobStorageProvider _provider;
+		readonly IBlobStorageProvider _blobs;
 
 		/// <summary>
 		/// Creates an Instance of the <see cref="BlobDiagnosticsRepository"/> class.
 		/// </summary>
-		public BlobDiagnosticsRepository(IBlobStorageProvider provider)
+		public BlobDiagnosticsRepository(IBlobStorageProvider blobStorageProvider)
 		{
-			_provider = provider;
-		}
-
-		IEnumerable<T> GetAll<T, TReference>(TReference prefix)
-			where TReference : BlobName<T>
-			where T : class
-		{
-			return _provider
-				.List(prefix)
-				.Select(reference => _provider.GetBlobOrDelete(reference))
-				.Where(x => x.HasValue)
-				.Select(x => x.Value);
+			_blobs = blobStorageProvider;
 		}
 
 		void Upsert<T>(BlobName<T> name, Func<Maybe<T>, T> updater)
 		{
-			_provider.UpsertBlob(
+			_blobs.UpsertBlob(
 				name,
 				() => updater(Maybe<T>.Empty),
 				t => updater(t));
 		}
 
-		void RemoveWhile<TReference>(TReference prefix, Func<TReference, string> segmentProvider, string timeSegmentBefore)
-			where TReference : UntypedBlobName
+		void RemoveWhile<TName>(TName prefix, Func<TName, string> segmentProvider, string timeSegmentBefore)
+			where TName : UntypedBlobName
 		{
 			// since the blobs are strictly ordered we can stop once we reach the condition.
-			var matchingBlobs = _provider
-				.List(prefix)
-				.TakeWhile(blobRef => String.Compare(segmentProvider(blobRef), timeSegmentBefore, StringComparison.Ordinal) < 0);
+			var matchingBlobs = _blobs
+				.ListBlobNames(prefix)
+				.TakeWhile(blobName => String.Compare(segmentProvider(blobName), timeSegmentBefore, StringComparison.Ordinal) < 0);
 
 			foreach (var blob in matchingBlobs)
 			{
-				_provider.DeleteBlobIfExist(blob.ContainerName, blob.ToString());
+				_blobs.DeleteBlobIfExist(blob.ContainerName, blob.ToString());
 			}
 		}
 
@@ -69,8 +58,7 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 		/// </summary>
 		public IEnumerable<ExecutionProfilingStatistics> GetExecutionProfilingStatistics(string timeSegment)
 		{
-			return GetAll<ExecutionProfilingStatistics, ExecutionProfilingStatisticsName>(
-				ExecutionProfilingStatisticsName.GetPrefix(timeSegment));
+			return _blobs.ListBlobs(ExecutionProfilingStatisticsName.GetPrefix(timeSegment));
 		}
 
 		/// <summary>
@@ -78,8 +66,7 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 		/// </summary>
 		public IEnumerable<PartitionStatistics> GetAllPartitionStatistics(string timeSegment)
 		{
-			return GetAll<PartitionStatistics, PartitionStatisticsName>(
-				PartitionStatisticsName.GetPrefix(timeSegment));
+			return _blobs.ListBlobs(PartitionStatisticsName.GetPrefix(timeSegment));
 		}
 
 		/// <summary>
@@ -87,8 +74,7 @@ namespace Lokad.Cloud.Diagnostics.Persistence
 		/// </summary>
 		public IEnumerable<ServiceStatistics> GetAllServiceStatistics(string timeSegment)
 		{
-			return GetAll<ServiceStatistics, ServiceStatisticsName>(
-				ServiceStatisticsName.GetPrefix(timeSegment));
+			return _blobs.ListBlobs(ServiceStatisticsName.GetPrefix(timeSegment));
 		}
 
 		/// <summary>
