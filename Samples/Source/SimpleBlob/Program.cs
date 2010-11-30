@@ -2,9 +2,9 @@
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
+
 using System;
 using System.Runtime.Serialization;
-using Lokad.Cloud;
 using Lokad.Cloud.Storage;
 
 namespace SimpleBlob
@@ -35,10 +35,11 @@ namespace SimpleBlob
     class Program
     {
         static void Main(string[] args)
-        {            
-            // TODO: change your connection string here
-            var providers = Standalone.CreateProviders("DefaultEndpointsProtocol=https;AccountName=;AccountKey=");
-            var blobs = providers.BlobStorage;
+        {
+            // insert your own connection string here, or use one of the other options:
+            var blobStorage = CloudStorage
+                .ForAzureConnectionString("DefaultEndpointsProtocol=https;AccountName=YOURACCOUNT;AccountKey=YOURKEY")
+                .BuildBlobStorage();
 
             var potterBook = new Book { Author = "J. K. Rowling", Title = "Harry Potter" };
             // Resulting blob name is: Bloomsbury Publishing/1
@@ -49,11 +50,11 @@ namespace SimpleBlob
             var poemsRef = new BookName {Publisher = "Harvard University Press", BookId = 2};
             
             // writing entities to the storage
-            blobs.PutBlob(potterRef, potterBook);
-            blobs.PutBlob(poemsRef, poemsBook);
+            blobStorage.PutBlob(potterRef, potterBook);
+            blobStorage.PutBlob(poemsRef, poemsBook);
 
             // retrieving all entities from 'Bloomsbury Publishing'
-            foreach (var book in blobs.ListBlobs(new BookName { Publisher = "Bloomsbury Publishing" }))
+            foreach (var book in blobStorage.ListBlobs(new BookName { Publisher = "Bloomsbury Publishing" }))
             {
                 Console.WriteLine("{0} by {1}", book.Title, book.Author);
             }

@@ -7,8 +7,8 @@ using System;
 
 namespace Lokad.Cloud.Storage
 {
-	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-	public class SideEffectFreeAttribute : IdempotentAttribute
-	{
-	}
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+    public class SideEffectFreeAttribute : IdempotentAttribute
+    {
+    }
 }

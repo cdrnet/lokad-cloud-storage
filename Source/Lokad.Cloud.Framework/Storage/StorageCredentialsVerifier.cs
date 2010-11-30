@@ -3,7 +3,6 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Microsoft.WindowsAzure.StorageClient;
 using Autofac;
 
 namespace Lokad.Cloud.Storage
@@ -13,7 +12,7 @@ namespace Lokad.Cloud.Storage
 	/// </summary>
 	public class StorageCredentialsVerifier
 	{
-		private CloudBlobClient _storage;
+		private readonly IBlobStorageProvider _storage;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:StorageCredentialsVerifier" /> class.
@@ -23,7 +22,7 @@ namespace Lokad.Cloud.Storage
 		{
 			try
 			{
-				_storage = container.Resolve<CloudBlobClient>();
+				_storage = container.Resolve<IBlobStorageProvider>();
 			}
 			catch(ComponentNotRegisteredException) { }
 			catch(DependencyResolutionException) { }
@@ -42,7 +41,7 @@ namespace Lokad.Cloud.Storage
 				var containers = _storage.ListContainers();
 
 				// It is necssary to enumerate in order to actually send the request
-				foreach(var c in containers)
+				foreach (var c in containers)
 				{
 				}
 

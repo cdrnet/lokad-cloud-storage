@@ -2,9 +2,9 @@
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
+
 using System;
 using System.Runtime.Serialization;
-using Lokad.Cloud;
 using Lokad.Cloud.Storage;
 
 namespace SimpleTable
@@ -23,11 +23,13 @@ namespace SimpleTable
     {
         static void Main(string[] args)
         {
-            // TODO: change your connection string here
-            var providers = Standalone.CreateProviders("DefaultEndpointsProtocol=https;AccountName=;AccountKey=");
-            
+            // insert your own connection string here, or use one of the other options:
+            var tableStorage = CloudStorage
+                .ForAzureConnectionString("DefaultEndpointsProtocol=https;AccountName=YOURACCOUNT;AccountKey=YOURKEY")
+                .BuildTableStorage();
+
             // 'books' is the name of the table
-            var books = new CloudTable<Book>(providers.TableStorage, "books");
+            var books = new CloudTable<Book>(tableStorage, "books");
 
             var potterBook = new Book { Author = "J. K. Rowling", Title = "Harry Potter" };
             var poemsBook = new Book { Author = "John Keats", Title = "Complete Poems" };
