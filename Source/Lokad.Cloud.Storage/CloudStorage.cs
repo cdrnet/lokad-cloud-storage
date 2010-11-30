@@ -86,7 +86,7 @@ namespace Lokad.Cloud.Storage
     {
         public override IBlobStorageProvider BuildBlobStorage()
         {
-            return new Mock.MemoryBlobStorageProvider
+            return new InMemory.MemoryBlobStorageProvider
             {
                 DataSerializer = DataSerializer
             };
@@ -94,7 +94,7 @@ namespace Lokad.Cloud.Storage
 
         public override ITableStorageProvider BuildTableStorage()
         {
-            return new Mock.MemoryTableStorageProvider
+            return new InMemory.MemoryTableStorageProvider
             {
                 DataSerializer = DataSerializer
             };
@@ -102,7 +102,7 @@ namespace Lokad.Cloud.Storage
 
         public override IQueueStorageProvider BuildQueueStorage()
         {
-            return new Mock.MemoryQueueStorageProvider
+            return new InMemory.MemoryQueueStorageProvider
             {
                 DataSerializer = DataSerializer
             };

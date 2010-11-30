@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2010
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -8,11 +8,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using Lokad.Cloud.Storage;
 using Lokad.Serialization;
 using Lokad.Threading;
 
-namespace Lokad.Cloud.Mock
+namespace Lokad.Cloud.Storage.InMemory
 {
     /// <summary>Mock in-memory Blob Storage.</summary>
     /// <remarks>

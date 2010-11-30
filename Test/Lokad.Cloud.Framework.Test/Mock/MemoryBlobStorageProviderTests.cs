@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using System.Threading;
+using Lokad.Cloud.Storage.InMemory;
 using Lokad.Cloud.Storage.Test;
 using NUnit.Framework;
 
@@ -94,7 +95,7 @@ namespace Lokad.Cloud.Mock.Test
 
 		}
 
-		public static void AddValueToContainer(object parameters)
+		private static void AddValueToContainer(object parameters)
 		{
 			if (parameters is ThreadParameters)
 			{

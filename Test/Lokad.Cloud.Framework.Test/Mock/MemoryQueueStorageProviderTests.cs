@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Mock.Test
@@ -26,8 +27,8 @@ namespace Lokad.Cloud.Mock.Test
 			var queueStorage = new MemoryQueueStorageProvider();
 			var fakeMessages = Enumerable.Range(0, 3).Select(i => new FakeMessage(i)).ToArray();
 
-			var firstQueueName = "firstQueueName";
-			var secondQueueName = "secondQueueName";
+			const string firstQueueName = "firstQueueName";
+			const string secondQueueName = "secondQueueName";
 
 			queueStorage.PutRange(firstQueueName, fakeMessages.Take(2));
 			queueStorage.PutRange(secondQueueName, fakeMessages.Skip(2).ToArray());
@@ -42,7 +43,7 @@ namespace Lokad.Cloud.Mock.Test
 			var queueStorage = new MemoryQueueStorageProvider();
 			var fakeMessages = Enumerable.Range(0, 10).Select(i => new FakeMessage(i)).ToArray();
 
-			var firstQueueName = "firstQueueName";
+			const string firstQueueName = "firstQueueName";
 
 			queueStorage.PutRange(firstQueueName, fakeMessages.Take(6));
 			var allFirstItems = queueStorage.Get<FakeMessage>(firstQueueName, 6);
@@ -69,7 +70,7 @@ namespace Lokad.Cloud.Mock.Test
 			var queueStorage = new MemoryQueueStorageProvider();
 			var fakeMessages = Enumerable.Range(0, 10).Select(i => new FakeMessage(i)).ToArray();
 
-			var firstQueueName = "firstQueueName";
+			const string firstQueueName = "firstQueueName";
 
 			queueStorage.PutRange(firstQueueName, fakeMessages.Take(6));
 			var queuesName = queueStorage.List("");

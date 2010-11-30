@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.InMemory;
 using Lokad.Cloud.Storage.Test;
 using NUnit.Framework;
 
@@ -54,7 +55,7 @@ namespace Lokad.Cloud.Mock.Test
 			var entities =
 				Enumerable.Range(0, 100).Select(
 					i =>
-						new CloudEntity<object>()
+						new CloudEntity<object>
 							{
 								PartitionKey = "Pkey-" + (i % partitionCount).ToString("0"),
 								RowKey = "RowKey-" + i.ToString("00"),
@@ -93,7 +94,9 @@ namespace Lokad.Cloud.Mock.Test
 
 			//The next test should handle non existing table names.
 			var isSuccess = false;
-		   
+
+			// TODO: Looks like something is not finished here
+
 			 var emptyEnumeration =  tableStorage.Get<object>("IAmNotATable", "IaMNotAPartiTion");
 
 			 Assert.AreEqual(0, emptyEnumeration.Count(), "#B08");
@@ -105,7 +108,7 @@ namespace Lokad.Cloud.Mock.Test
 			var tableStorage = new MemoryTableStorageProvider();
 			tableStorage.CreateTable("myTable");
 
-			int partitionCount = 10;
+			const int partitionCount = 10;
 
 			var entities =
 				Enumerable.Range(0, 100).Select(
@@ -122,7 +125,7 @@ namespace Lokad.Cloud.Mock.Test
 			var isSucces = false;
 			try
 			{
-				tableStorage.Insert("myTable", new[] { new CloudEntity<object>() { PartitionKey = "Pkey-6", RowKey = "RowKey-56" } });
+				tableStorage.Insert("myTable", new[] { new CloudEntity<object> { PartitionKey = "Pkey-6", RowKey = "RowKey-56" } });
 			}
 			catch (Exception exception)
 			{

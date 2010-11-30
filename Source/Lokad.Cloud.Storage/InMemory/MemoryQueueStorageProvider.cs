@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2010
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -7,10 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Lokad.Cloud.Storage;
 using Lokad.Serialization;
 
-namespace Lokad.Cloud.Mock
+namespace Lokad.Cloud.Storage.InMemory
 {
     /// <summary>Mock in-memory Queue Storage.</summary>
     public class MemoryQueueStorageProvider : IQueueStorageProvider
