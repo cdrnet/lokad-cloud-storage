@@ -19,20 +19,30 @@ namespace Lokad.Cloud.Test.Storage.InMemory
         {
         }
 
-        [Obsolete("Memory queue storage does not overflow.")]
-        public override void ClearRemovesOverflowingBlobs() { }
+        public override void ClearRemovesOverflowingBlobs()
+        {
+            // Memory queue storage does not overflow.
+        }
 
-        [Obsolete("Memory queue storage does not overflow.")]
-        public override void DeleteRemovesOverflowingBlobs() { }
+        public override void DeleteRemovesOverflowingBlobs()
+        {
+            // Memory queue storage does not overflow.
+        }
 
-        [Obsolete("Memory queue storage does not overflow.")]
-        public override void PersistRestoreOverflowing() { }
+        public override void PersistRestoreOverflowing()
+        {
+            // Memory queue storage does not overflow.
+        }
 
-        [Obsolete("Memory queue storage does not overflow.")]
-        public override void PutGetDeleteOverflowing() { }
+        public override void PutGetDeleteOverflowing()
+        {
+            // Memory queue storage does not overflow.
+        }
 
-        [Obsolete("Memory queue storage does not support any timing.")]
-        public override void QueueLatency() { }
+        public override void QueueLatency()
+        {
+            // Memory queue storage does not support any timing.
+        }
 
         [Test]
         public void GetOnMissingQueueDoesNotFail()

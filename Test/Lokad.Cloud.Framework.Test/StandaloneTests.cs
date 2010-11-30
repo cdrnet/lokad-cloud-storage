@@ -18,13 +18,13 @@ namespace Lokad.Cloud.Test
             if (settings.HasValue)
             {
                 providers = Standalone.CreateProviders(settings.Value);
-                VerifyBlobProviderWorks(providers, true);
+                VerifyBlobProviderWorks(providers);
             }
             else
             {
                 providers = Standalone.CreateProviders(
                     new RoleConfigurationSettings { DataConnectionString = "UseDevelopmentStorage=true" });
-                VerifyBlobProviderWorks(providers, false);
+                VerifyBlobProviderWorks(providers);
             }
             Assert.IsInstanceOf(typeof(Cloud.Storage.Azure.BlobStorageProvider), providers.BlobStorage);
         }
@@ -33,7 +33,7 @@ namespace Lokad.Cloud.Test
         public void CanCreatePopulatedProvidersFromConnectionString()
         {
             var providers = Standalone.CreateProviders("UseDevelopmentStorage=true");
-            VerifyBlobProviderWorks(providers, false);
+            VerifyBlobProviderWorks(providers);
             Assert.IsInstanceOf(typeof(Cloud.Storage.Azure.BlobStorageProvider), providers.BlobStorage);
         }
 
@@ -41,7 +41,7 @@ namespace Lokad.Cloud.Test
         public void CanCreatePopulatedProvidersFromAppconfig()
         {
             var providers = Standalone.CreateProvidersFromConfiguration("autofac");
-            VerifyBlobProviderWorks(providers, true);
+            VerifyBlobProviderWorks(providers);
             Assert.IsInstanceOf(typeof(Cloud.Storage.Azure.BlobStorageProvider), providers.BlobStorage);
         }
 
@@ -49,7 +49,7 @@ namespace Lokad.Cloud.Test
         public void CanCreatePopulatedDevelopmentStorageProviders()
         {
             var providers = Standalone.CreateDevelopmentStorageProviders();
-            VerifyBlobProviderWorks(providers, false);
+            VerifyBlobProviderWorks(providers);
             Assert.IsInstanceOf(typeof(Cloud.Storage.Azure.BlobStorageProvider), providers.BlobStorage);
         }
 
@@ -57,27 +57,17 @@ namespace Lokad.Cloud.Test
         public void CanCreatePopulatedMockStorageProviders()
         {
             var providers = Standalone.CreateMockProviders();
-            VerifyBlobProviderWorks(providers, true);
+            VerifyBlobProviderWorks(providers);
             Assert.IsInstanceOf(typeof(Cloud.Storage.InMemory.MemoryBlobStorageProvider), providers.BlobStorage);
         }
 
-        static void VerifyBlobProviderWorks(CloudInfrastructureProviders providers, bool verifyBlobRoundtrip)
+        static void VerifyBlobProviderWorks(CloudInfrastructureProviders providers)
         {
+            // no verification that the providers actually work, this is not an integration test.
             Assert.NotNull(providers);
             Assert.NotNull(providers.BlobStorage);
             Assert.NotNull(providers.QueueStorage);
             Assert.NotNull(providers.TableStorage);
-
-            if (verifyBlobRoundtrip)
-            {
-                Assert.IsTrue(providers.BlobStorage.PutBlob("test-container-standalone", "blob", "message", false));
-
-                var blob = providers.BlobStorage.GetBlob<string>("test-container-standalone", "blob");
-                Assert.IsTrue(blob.HasValue);
-                Assert.AreEqual("message", blob.Value);
-
-                Assert.IsTrue(providers.BlobStorage.DeleteContainerIfExist("test-container-standalone"));
-            }
         }
     }
 }

@@ -95,6 +95,7 @@
     <None Include="App.template.config">
       <SubType>Designer</SubType>
     </None>
+    <Compile Include="CloudStorageTests.cs" />
     <Compile Include="Diagnostics\CloudLoggerTests.cs" />
     <Compile Include="Diagnostics\ExecutionCounterTests.cs" />
     <Compile Include="GlobalSetup.cs" />

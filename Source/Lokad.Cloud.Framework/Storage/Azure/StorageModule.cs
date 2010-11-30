@@ -42,6 +42,8 @@ namespace Lokad.Cloud.Storage.Azure
 			builder.Register(context => BlobStorageProvider(context));
 			builder.Register(context => QueueStorageProvider(context));
 			builder.Register(context => TableStorageProvider(context));
+
+			builder.Register(context => CloudStorageProviders(context));
 			builder.Register(context => CloudInfrastructureProviders(context));
 			// ReSharper restore ConvertClosureToMethodGroup
 		}
@@ -65,14 +67,17 @@ namespace Lokad.Cloud.Storage.Azure
 		static CloudInfrastructureProviders CloudInfrastructureProviders(IContext c)
 		{
 			return new CloudInfrastructureProviders(
-				// storage providers supporting the O/C mapper scenario
+				c.Resolve<CloudStorageProviders>(),
+				c.ResolveOptional<ILog>(),
+				c.ResolveOptional<IProvisioningProvider>());
+		}
+
+		static CloudStorageProviders CloudStorageProviders(IContext c)
+		{
+			return new CloudStorageProviders(
 				c.Resolve<IBlobStorageProvider>(),
 				c.Resolve<IQueueStorageProvider>(),
 				c.Resolve<ITableStorageProvider>(),
-
-				// optional providers supporting the execution framework scenario
-				c.ResolveOptional<ILog>(),
-				c.ResolveOptional<IProvisioningProvider>(),
 				c.ResolveOptional<IRuntimeFinalizer>());
 		}
 
