@@ -15,20 +15,20 @@ namespace Lokad.Cloud.Storage.InMemory
     public class MemoryQueueStorageProvider : IQueueStorageProvider
     {
         /// <summary>Root used to synchronize accesses to <c>_inprocess</c>.</summary>
-        readonly object _sync = new object();
+        private readonly object _sync = new object();
 
-        readonly Dictionary<string,Queue<object>> _queues;
-        readonly HashSet<Pair<string,object>> _inProgressMessages;
-        readonly HashSet<Quad<string,string,string,object>> _persistedMessages;
+        private readonly Dictionary<string, Queue<byte[]>> _queues;
+        private readonly Dictionary<object, Triple<string, object, List<byte[]>>> _inProcessMessages;
+        private readonly HashSet<Quad<string, string, string, byte[]>> _persistedMessages;
 
         internal IDataSerializer DataSerializer { get; set; }
         
         /// <summary>Default constructor.</summary>
         public MemoryQueueStorageProvider()
         {
-            _queues = new Dictionary<string, Queue<object>>();
-            _inProgressMessages = new HashSet<Pair<string, object>>();
-            _persistedMessages = new HashSet<Quad<string, string, string, object>>();
+            _queues = new Dictionary<string, Queue<byte[]>>();
+            _inProcessMessages = new Dictionary<object, Triple<string, object, List<byte[]>>>();
+            _persistedMessages = new HashSet<Quad<string, string, string, byte[]>>();
             DataSerializer = new CloudFormatter();
         }
 
@@ -46,8 +46,21 @@ namespace Lokad.Cloud.Storage.InMemory
                 {
                     if (_queues.ContainsKey(queueName) && _queues[queueName].Any())
                     {
-                        var message = _queues[queueName].Dequeue();
-                        _inProgressMessages.Add(Tuple.From(queueName, message));
+                        var messageBytes = _queues[queueName].Dequeue();
+                        object message;
+                        using (var stream = new MemoryStream(messageBytes))
+                        {
+                            message = DataSerializer.Deserialize(stream, typeof (T));
+                        }
+
+                        Triple<string, object, List<byte[]>> inProcess;
+                        if (!_inProcessMessages.TryGetValue(message, out inProcess))
+                        {
+                            inProcess = Tuple.From(queueName, message, new List<byte[]>());
+                            _inProcessMessages.Add(message, inProcess);
+                        }
+
+                        inProcess.Item3.Add(messageBytes);
                         items.Add((T)message);
                     }
                 }
@@ -59,17 +72,19 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
+                byte[] messageBytes;
                 using (var stream = new MemoryStream())
                 {
                     DataSerializer.Serialize(message, stream);
-                } //Checking the message is serializable.
+                    messageBytes = stream.ToArray();
+                }
 
                 if (!_queues.ContainsKey(queueName))
                 {
-                    _queues.Add(queueName, new Queue<object>());
+                    _queues.Add(queueName, new Queue<byte[]>());
                 }
 
-                _queues[queueName].Enqueue(message);
+                _queues[queueName].Enqueue(messageBytes);
             }
         }
 
@@ -86,7 +101,12 @@ namespace Lokad.Cloud.Storage.InMemory
             lock (_sync)
             {
                 _queues[queueName].Clear();
-                _inProgressMessages.RemoveWhere(p => p.Key == queueName);
+
+                var toDelete = _inProcessMessages.Where(pair => pair.Value.Item1 == queueName).ToList();
+                foreach(var pair in toDelete)
+                {
+                    _inProcessMessages.Remove(pair.Key);
+                }
             }
         }
 
@@ -94,13 +114,18 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                var entry = _inProgressMessages.FirstOrEmpty(p => p.Value == (object) message);
-                if (!entry.HasValue)
+                Triple<string, object, List<byte[]>> inProcess;
+                if (!_inProcessMessages.TryGetValue(message, out inProcess))
                 {
                     return false;
                 }
 
-                _inProgressMessages.Remove(entry.Value);
+                inProcess.Item3.RemoveAt(0);
+                if (inProcess.Item3.Count == 0)
+                {
+                    _inProcessMessages.Remove(inProcess.Item2);
+                }
+
                 return true;
             }
         }
@@ -117,23 +142,26 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                var firstOrEmpty = _inProgressMessages.FirstOrEmpty(p => p.Value == (object) message);
-                if (!firstOrEmpty.HasValue)
+                Triple<string, object, List<byte[]>> inProcess;
+                if (!_inProcessMessages.TryGetValue(message, out inProcess))
                 {
                     return false;
                 }
 
                 // Add back to queue
-                var entry = firstOrEmpty.Value;
-                if (!_queues.ContainsKey(entry.Key))
+                if (!_queues.ContainsKey(inProcess.Item1))
                 {
-                    _queues.Add(entry.Key, new Queue<object>());
+                    _queues.Add(inProcess.Item1, new Queue<byte[]>());
                 }
 
-                _queues[entry.Key].Enqueue(entry.Value);
+                _queues[inProcess.Item1].Enqueue(inProcess.Item3[0]);
 
                 // Remove from invisible queue
-                _inProgressMessages.Remove(entry);
+                inProcess.Item3.RemoveAt(0);
+                if (inProcess.Item3.Count == 0)
+                {
+                    _inProcessMessages.Remove(inProcess.Item2);
+                }
 
                 return true;
             }
@@ -151,18 +179,22 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                var firstOrEmpty = _inProgressMessages.FirstOrEmpty(p => p.Value == (object) message);
-                if (!firstOrEmpty.HasValue)
+                Triple<string, object, List<byte[]>> inProcess;
+                if (!_inProcessMessages.TryGetValue(message, out inProcess))
                 {
                     return;
                 }
 
                 // persist
                 var key = Guid.NewGuid().ToString("N");
-                _persistedMessages.Add(Tuple.From(storeName, key, firstOrEmpty.Value.Key, (object) message));
+                _persistedMessages.Add(Tuple.From(storeName, key, inProcess.Item1, inProcess.Item3[0]));
 
                 // Remove from invisible queue
-                _inProgressMessages.Remove(firstOrEmpty.Value);
+                inProcess.Item3.RemoveAt(0);
+                if (inProcess.Item3.Count == 0)
+                {
+                    _inProcessMessages.Remove(inProcess.Item2);
+                }
             }
         }
 
@@ -190,6 +222,11 @@ namespace Lokad.Cloud.Storage.InMemory
 
         public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
         {
+            var intermediateDataSerializer = DataSerializer as IIntermediateDataSerializer;
+            var xmlProvider = intermediateDataSerializer != null
+                ? Maybe.From(intermediateDataSerializer)
+                : Maybe<IIntermediateDataSerializer>.Empty;
+
             lock (_sync)
             {
                 var tuple = _persistedMessages.FirstOrEmpty(x => x.Item1 == storeName && x.Item2 == key);
@@ -197,7 +234,9 @@ namespace Lokad.Cloud.Storage.InMemory
                     {
                         QueueName = x.Item3,
                         StoreName = x.Item1,
-                        Key = x.Item2
+                        Key = x.Item2,
+                        IsDataAvailable = true,
+                        DataXml = xmlProvider.Convert(s => s.UnpackXml(new MemoryStream(x.Item4)))
                     });
             }
         }
@@ -219,7 +258,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
                 if (!_queues.ContainsKey(item.Item3))
                 {
-                    _queues.Add(item.Item3, new Queue<object>());
+                    _queues.Add(item.Item3, new Queue<byte[]>());
                 }
 
                 _queues[item.Item3].Enqueue(item.Item4);
@@ -237,7 +276,13 @@ namespace Lokad.Cloud.Storage.InMemory
                 }
 
                 _queues.Remove(queueName);
-                _inProgressMessages.RemoveWhere(p => p.Key == queueName);
+
+                var toDelete = _inProcessMessages.Where(pair => pair.Value.Item1 == queueName).ToList();
+                foreach (var pair in toDelete)
+                {
+                    _inProcessMessages.Remove(pair.Key);
+                }
+
                 return true;
             }
         }
@@ -246,7 +291,7 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                Queue<object> queue;
+                Queue<byte[]> queue;
                 return _queues.TryGetValue(queueName, out queue)
                     ? queue.Count : 0;
             }

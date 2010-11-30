@@ -4,30 +4,30 @@
 #endregion
 
 using System.IO;
-using Lokad.Cloud.Test;
+using Lokad.Cloud.Storage;
 using Lokad.Serialization;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test
+namespace Lokad.Cloud.Test.Storage
 {
-	[TestFixture]
-	public class MessageWrapperTests
-	{
-		[Test]
-		public void Serialization()
-		{
-			// overflowing message
-			var om = new MessageWrapper {ContainerName = "con", BlobName = "blo"};
+    [TestFixture]
+    public class MessageWrapperTests
+    {
+        [Test]
+        public void Serialization()
+        {
+            // overflowing message
+            var om = new MessageWrapper {ContainerName = "con", BlobName = "blo"};
 
-			var stream = new MemoryStream();
-			var serializer = GlobalSetup.Container.Resolve<IDataSerializer>();
+            var stream = new MemoryStream();
+            var serializer = GlobalSetup.Container.Resolve<IDataSerializer>();
 
-			serializer.Serialize(om, stream);
-			stream.Position = 0;
-			var omBis = (MessageWrapper) serializer.Deserialize(stream, typeof(MessageWrapper));
+            serializer.Serialize(om, stream);
+            stream.Position = 0;
+            var omBis = (MessageWrapper) serializer.Deserialize(stream, typeof (MessageWrapper));
 
-			Assert.AreEqual(om.ContainerName, omBis.ContainerName, "#A00");
-			Assert.AreEqual(om.BlobName, omBis.BlobName, "#A01");
-		}
-	}
+            Assert.AreEqual(om.ContainerName, omBis.ContainerName, "#A00");
+            Assert.AreEqual(om.BlobName, omBis.BlobName, "#A01");
+        }
+    }
 }

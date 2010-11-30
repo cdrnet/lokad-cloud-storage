@@ -3,22 +3,20 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Test;
+using Lokad.Cloud.Storage;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test
+namespace Lokad.Cloud.Test.Storage
 {
-	[TestFixture]
-	public class StorageCredentialsVerifierTests
-	{
-		[Test]
-		public void VerifyCredentials()
-		{
-			var verifier = new StorageCredentialsVerifier(GlobalSetup.Container);
+    [TestFixture]
+    public class StorageCredentialsVerifierTests
+    {
+        [Test]
+        public void VerifyCredentials()
+        {
+            var verifier = new StorageCredentialsVerifier(GlobalSetup.Container);
 
-			Assert.IsTrue(verifier.VerifyCredentials(), "Credentials should be verified");
-		}
-
-	}
-
+            Assert.IsTrue(verifier.VerifyCredentials(), "Credentials should be verified");
+        }
+    }
 }

@@ -7,442 +7,425 @@ using System;
 using System.Linq;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;
-using Lokad.Cloud.Test;
 using NUnit.Framework;
 using System.Text;
 using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Azure.Test
+namespace Lokad.Cloud.Test.Storage
 {
-	[TestFixture]
-	public class QueueStorageProviderTests
-	{
-		private const string BaseQueueName = "tests-queuestorageprovider-";
-		private string QueueName;
+    [TestFixture]
+    public class QueueStorageProviderTests
+    {
+        private const string BaseQueueName = "tests-queuestorageprovider-";
+        private string QueueName;
+
+        private static readonly Random _rand = new Random();
+
+        private readonly IQueueStorageProvider _queueStorage;
+        private readonly IBlobStorageProvider _blobStorage;
+
+        public QueueStorageProviderTests()
+        {
+            _queueStorage = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
+            _blobStorage = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
+        }
+
+        protected QueueStorageProviderTests(IQueueStorageProvider queueStorageProvider, IBlobStorageProvider blobStorageProvider)
+        {
+            _queueStorage = queueStorageProvider;
+            _blobStorage = blobStorageProvider;
+        }
+
+        [SetUp]
+        public void Setup()
+        {
+            QueueName = BaseQueueName + Guid.NewGuid().ToString("N");
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _queueStorage.DeleteQueue(QueueName);
+        }
+
+        [Test]
+        public void PutGetDelete()
+        {
+            var message = new MyMessage();
+
+            _queueStorage.DeleteQueue(QueueName); // deleting queue on purpose 
+            // (it's slow but necessary to really validate the retry policy)
+
+            _queueStorage.Put(QueueName, message);
+            var retrieved = _queueStorage.Get<MyMessage>(QueueName, 1).First();
+
+            Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
+
+            _queueStorage.Delete(retrieved);
+        }
+
+        [Test]
+        public virtual void PutGetDeleteOverflowing()
+        {
+            // 20k chosen so that it doesn't fit into the queue.
+            var message = new MyMessage { MyBuffer = new byte[20000] };
+
+            // fill buffer with random content
+            _rand.NextBytes(message.MyBuffer);
+
+            _queueStorage.Clear(QueueName);
+
+            _queueStorage.Put(QueueName, message);
+            var retrieved = _queueStorage.Get<MyMessage>(QueueName, 1).First();
+
+            Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
+            CollectionAssert.AreEquivalent(message.MyBuffer, retrieved.MyBuffer, "#A02");
+
+            for (int i = 0; i < message.MyBuffer.Length; i++)
+            {
+                Assert.AreEqual(message.MyBuffer[i], retrieved.MyBuffer[i], "#A02-" + i);
+            }
+
+            _queueStorage.Delete(retrieved);
+        }
+
+        [Test]
+        public void PutGetDeleteIdenticalStructOrNative()
+        {
+            var testStruct = new MyStruct
+                {
+                    IntegerValue = 12,
+                    StringValue = "hello"
+                };
+
+            for (int i = 0; i < 10; i++)
+            {
+                _queueStorage.Put(QueueName, testStruct);
+            }
+
+            var outStruct1 = _queueStorage.Get<MyStruct>(QueueName, 1).First();
+            var outStruct2 = _queueStorage.Get<MyStruct>(QueueName, 1).First();
+            Assert.IsTrue(_queueStorage.Delete(outStruct1), "1st Delete failed");
+            Assert.IsTrue(_queueStorage.Delete(outStruct2), "2nd Delete failed");
+            Assert.IsFalse(_queueStorage.Delete(outStruct2), "3nd Delete succeeded");
+
+            var outAllStructs = _queueStorage.Get<MyStruct>(QueueName, 20);
+            Assert.AreEqual(8, outAllStructs.Count(), "Wrong queue item count");
+            foreach (var str in outAllStructs)
+            {
+                Assert.AreEqual(testStruct.IntegerValue, str.IntegerValue, "Wrong integer value");
+                Assert.AreEqual(testStruct.StringValue, str.StringValue, "Wrong string value");
+                Assert.IsTrue(_queueStorage.Delete(str), "Delete failed");
+            }
+
+            const double testDouble = 3.6D;
+
+            for (int i = 0; i < 10; i++)
+            {
+                _queueStorage.Put(QueueName, testDouble);
+            }
+
+            var outDouble1 = _queueStorage.Get<double>(QueueName, 1).First();
+            var outDouble2 = _queueStorage.Get<double>(QueueName, 1).First();
+            var outDouble3 = _queueStorage.Get<double>(QueueName, 1).First();
+            Assert.IsTrue(_queueStorage.Delete(outDouble1), "1st Delete failed");
+            Assert.IsTrue(_queueStorage.Delete(outDouble2), "2nd Delete failed");
+            Assert.IsTrue(_queueStorage.Delete(outDouble3), "3nd Delete failed");
+            Assert.IsFalse(_queueStorage.Delete(outDouble2), "3nd Delete succeeded");
+
+            var outAllDoubles = _queueStorage.Get<double>(QueueName, 20);
+            Assert.AreEqual(7, outAllDoubles.Count(), "Wrong queue item count");
+            foreach (var dbl in outAllDoubles)
+            {
+                Assert.AreEqual(testDouble, dbl, "Wrong double value");
+                Assert.IsTrue(_queueStorage.Delete(dbl), "Delete failed");
+            }
 
-		private static Random _rand = new Random();
+            const string testString = "hi there!";
 
-		[SetUp]
-		public void Setup()
-		{
-			QueueName = BaseQueueName + Guid.NewGuid().ToString("N");
-		}
-
-		[TearDown]
-		public void TearDown()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-			provider.DeleteQueue(QueueName);
-		}
-
-		[Test]
-		public void PutGetDelete()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-
-			Assert.IsNotNull(provider, "#A00");
-
-			var message = new MyMessage();
-
-			provider.DeleteQueue(QueueName); // deleting queue on purpose 
-			// (it's slow but necessary to really validate the retry policy)
-
-			provider.Put(QueueName, message);
-			var retrieved = provider.Get<MyMessage>(QueueName, 1).First();
-
-			Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
-
-			provider.Delete(retrieved);
-		}
-
-		[Test]
-		public void PutGetDeleteOverflowing()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-
-			Assert.IsNotNull(provider, "#A00");
-
-			// 20k chosen so that it doesn't fit into the queue.
-			var message = new MyMessage { MyBuffer = new byte[20000] };
-
-			// fill buffer with random content
-			_rand.NextBytes(message.MyBuffer);
-
-			provider.Clear(QueueName);
-
-			provider.Put(QueueName, message);
-			var retrieved = provider.Get<MyMessage>(QueueName, 1).First();
-
-			Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
-			CollectionAssert.AreEquivalent(message.MyBuffer, retrieved.MyBuffer, "#A02");
-
-			for (int i = 0; i < message.MyBuffer.Length; i++)
-			{
-				Assert.AreEqual(message.MyBuffer[i], retrieved.MyBuffer[i], "#A02-" + i);
-			}
-
-			provider.Delete(retrieved);
-		}
-
-		[Test]
-		public void PutGetDeleteIdenticalStructOrNative()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-
-			Assert.IsNotNull(provider, "GlobalSetup should resolve the provider");
-
-			var testStruct = new MyStruct()
-			{
-				IntegerValue = 12,
-				StringValue = "hello"
-			};
-
-			for (int i = 0; i < 10; i++)
-			{
-				provider.Put(QueueName, testStruct);
-			}
-
-			var outStruct1 = provider.Get<MyStruct>(QueueName, 1).First();
-			var outStruct2 = provider.Get<MyStruct>(QueueName, 1).First();
-			Assert.IsTrue(provider.Delete(outStruct1), "1st Delete failed");
-			Assert.IsTrue(provider.Delete(outStruct2), "2nd Delete failed");
-			Assert.IsFalse(provider.Delete(outStruct2), "3nd Delete succeeded");
-
-			var outAllStructs = provider.Get<MyStruct>(QueueName, 20);
-			Assert.AreEqual(8, outAllStructs.Count(), "Wrong queue item count");
-			foreach (var str in outAllStructs)
-			{
-				Assert.AreEqual(testStruct.IntegerValue, str.IntegerValue, "Wrong integer value");
-				Assert.AreEqual(testStruct.StringValue, str.StringValue, "Wrong string value");
-				Assert.IsTrue(provider.Delete(str), "Delete failed");
-			}
-
-			var testDouble = 3.6D;
-
-			for (int i = 0; i < 10; i++)
-			{
-				provider.Put(QueueName, testDouble);
-			}
-
-			var outDouble1 = provider.Get<double>(QueueName, 1).First();
-			var outDouble2 = provider.Get<double>(QueueName, 1).First();
-			var outDouble3 = provider.Get<double>(QueueName, 1).First();
-			Assert.IsTrue(provider.Delete(outDouble1), "1st Delete failed");
-			Assert.IsTrue(provider.Delete(outDouble2), "2nd Delete failed");
-			Assert.IsTrue(provider.Delete(outDouble3), "3nd Delete failed");
-			Assert.IsFalse(provider.Delete(outDouble2), "3nd Delete succeeded");
-
-			var outAllDoubles = provider.Get<double>(QueueName, 20);
-			Assert.AreEqual(7, outAllDoubles.Count(), "Wrong queue item count");
-			foreach (var dbl in outAllDoubles)
-			{
-				Assert.AreEqual(testDouble, dbl, "Wrong double value");
-				Assert.IsTrue(provider.Delete(dbl), "Delete failed");
-			}
+            for (int i = 0; i < 10; i++)
+            {
+                _queueStorage.Put(QueueName, testString);
+            }
 
-			var testString = "hi there!";
+            var outString1 = _queueStorage.Get<string>(QueueName, 1).First();
+            var outString2 = _queueStorage.Get<string>(QueueName, 1).First();
+            Assert.IsTrue(_queueStorage.Delete(outString1), "1st Delete failed");
+            Assert.IsTrue(_queueStorage.Delete(outString2), "2nd Delete failed");
+            Assert.IsFalse(_queueStorage.Delete(outString2), "3nd Delete succeeded");
 
-			for (int i = 0; i < 10; i++)
-			{
-				provider.Put(QueueName, testString);
-			}
+            var outAllStrings = _queueStorage.Get<string>(QueueName, 20);
+            Assert.AreEqual(8, outAllStrings.Count(), "Wrong queue item count");
+            foreach (var str in outAllStrings)
+            {
+                Assert.AreEqual(testString, str, "Wrong string value");
+                Assert.IsTrue(_queueStorage.Delete(str), "Delete failed");
+            }
 
-			var outString1 = provider.Get<string>(QueueName, 1).First();
-			var outString2 = provider.Get<string>(QueueName, 1).First();
-			Assert.IsTrue(provider.Delete(outString1), "1st Delete failed");
-			Assert.IsTrue(provider.Delete(outString2), "2nd Delete failed");
-			Assert.IsFalse(provider.Delete(outString2), "3nd Delete succeeded");
+            var testClass = new StringBuilder("text");
 
-			var outAllStrings = provider.Get<string>(QueueName, 20);
-			Assert.AreEqual(8, outAllStrings.Count(), "Wrong queue item count");
-			foreach (var str in outAllStrings)
-			{
-				Assert.AreEqual(testString, str, "Wrong string value");
-				Assert.IsTrue(provider.Delete(str), "Delete failed");
-			}
+            for (int i = 0; i < 10; i++)
+            {
+                _queueStorage.Put(QueueName, testClass);
+            }
 
-			var testClass = new StringBuilder("text");
+            var outClass1 = _queueStorage.Get<StringBuilder>(QueueName, 1).First();
+            var outClass2 = _queueStorage.Get<StringBuilder>(QueueName, 1).First();
+            Assert.IsTrue(_queueStorage.Delete(outClass1), "1st Delete failed");
+            Assert.IsTrue(_queueStorage.Delete(outClass2), "2nd Delete failed");
+            Assert.IsFalse(_queueStorage.Delete(outClass2), "3nd Delete succeeded");
 
-			for (int i = 0; i < 10; i++)
-			{
-				provider.Put(QueueName, testClass);
-			}
+            var outAllClasses = _queueStorage.Get<StringBuilder>(QueueName, 20);
+            Assert.AreEqual(8, outAllClasses.Count(), "Wrong queue item count");
+            foreach (var cls in outAllClasses)
+            {
+                Assert.AreEqual(testClass.ToString(), cls.ToString(), "Wrong deserialized class value");
+                Assert.IsTrue(_queueStorage.Delete(cls), "Delete failed");
+            }
+        }
 
-			var outClass1 = provider.Get<StringBuilder>(QueueName, 1).First();
-			var outClass2 = provider.Get<StringBuilder>(QueueName, 1).First();
-			Assert.IsTrue(provider.Delete(outClass1), "1st Delete failed");
-			Assert.IsTrue(provider.Delete(outClass2), "2nd Delete failed");
-			Assert.IsFalse(provider.Delete(outClass2), "3nd Delete succeeded");
+        // TODO: create same unit test for Clear()
 
-			var outAllClasses = provider.Get<StringBuilder>(QueueName, 20);
-			Assert.AreEqual(8, outAllClasses.Count(), "Wrong queue item count");
-			foreach (var cls in outAllClasses)
-			{
-				Assert.AreEqual(testClass.ToString(), cls.ToString(), "Wrong deserialized class value");
-				Assert.IsTrue(provider.Delete(cls), "Delete failed");
-			}
-		}
+        [Test]
+        public virtual void DeleteRemovesOverflowingBlobs()
+        {
+            var queueName = "test1-" + Guid.NewGuid().ToString("N");
+
+            // CAUTION: we are now compressing serialization output.
+            // hence, we can't just pass an empty array, as it would be compressed at near 100%.
 
-		// TODO: create same unit test for Clear()
+            var data = new byte[20000];
+            _rand.NextBytes(data);
 
-		[Test]
-		public void DeleteRemovesOverflowingBlobs()
-		{
-			var queueProvider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-			var blobProvider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
+            _queueStorage.Put(queueName, data);
+
+            // HACK: implicit pattern for listing overflowing messages
+            var overflowingCount = _blobStorage.ListBlobNames(
+                QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
+
+            Assert.AreEqual(1, overflowingCount, "#A00");
 
-			var queueName = "test1-" + Guid.NewGuid().ToString("N");
+            _queueStorage.DeleteQueue(queueName);
+
+            overflowingCount = _blobStorage.ListBlobNames(
+                QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
 
-			// CAUTION: we are now compressing serialization output.
-			// hence, we can't just pass an empty array, as it would be compressed at near 100%.
+            Assert.AreEqual(0, overflowingCount, "#A01");
+        }
 
-			var data = new byte[20000];
-			_rand.NextBytes(data);
+        [Test]
+        public virtual void ClearRemovesOverflowingBlobs()
+        {
+            var queueName = "test1-" + Guid.NewGuid().ToString("N");
 
-			queueProvider.Put(queueName, data);
+            // CAUTION: we are now compressing serialization output.
+            // hence, we can't just pass an empty array, as it would be compressed at near 100%.
 
-			// HACK: implicit pattern for listing overflowing messages
-			var overflowingCount = blobProvider.ListBlobNames(
-				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
+            var data = new byte[20000];
+            _rand.NextBytes(data);
+
+            _queueStorage.Put(queueName, data);
 
-			Assert.AreEqual(1, overflowingCount, "#A00");
+            // HACK: implicit pattern for listing overflowing messages
+            var overflowingCount = _blobStorage.ListBlobNames(
+                QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
 
-			queueProvider.DeleteQueue(queueName);
+            Assert.AreEqual(1, overflowingCount, "#A00");
 
-			overflowingCount = blobProvider.ListBlobNames(
-				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
+            _queueStorage.Clear(queueName);
 
-			Assert.AreEqual(0, overflowingCount, "#A01");
-		}
+            overflowingCount = _blobStorage.ListBlobNames(
+                QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
 
-		[Test]
-		public void ClearRemovesOverflowingBlobs()
-		{
-			var queueProvider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-			var blobProvider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
+            Assert.AreEqual(0, overflowingCount, "#A01");
 
-			var queueName = "test1-" + Guid.NewGuid().ToString("N");
+            _queueStorage.DeleteQueue(queueName);
+        }
 
-			// CAUTION: we are now compressing serialization output.
-			// hence, we can't just pass an empty array, as it would be compressed at near 100%.
+        [Test]
+        public void PutGetAbandonDelete()
+        {
+            var message = new MyMessage();
 
-			var data = new byte[20000];
-			_rand.NextBytes(data);
+            _queueStorage.DeleteQueue(QueueName); // deleting queue on purpose 
+            // (it's slow but necessary to really validate the retry policy)
 
-			queueProvider.Put(queueName, data);
+            // put
+            _queueStorage.Put(QueueName, message);
 
-			// HACK: implicit pattern for listing overflowing messages
-			var overflowingCount = blobProvider.ListBlobNames(
-				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
+            // get
+            var retrieved = _queueStorage.Get<MyMessage>(QueueName, 1).First();
+            Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
 
-			Assert.AreEqual(1, overflowingCount, "#A00");
+            // abandon
+            var abandoned = _queueStorage.Abandon(retrieved);
+            Assert.IsTrue(abandoned, "#A02");
 
-			queueProvider.Clear(queueName);
+            // abandon II should fail (since not invisible)
+            var abandoned2 = _queueStorage.Abandon(retrieved);
+            Assert.IsFalse(abandoned2, "#A03");
 
-			overflowingCount = blobProvider.ListBlobNames(
-				QueueStorageProvider.OverflowingMessagesContainerName, queueName).Count();
+            // get again
+            var retrieved2 = _queueStorage.Get<MyMessage>(QueueName, 1).First();
+            Assert.AreEqual(message.MyGuid, retrieved2.MyGuid, "#A04");
 
-			Assert.AreEqual(0, overflowingCount, "#A01");
+            // delete
+            var deleted = _queueStorage.Delete(retrieved2);
+            Assert.IsTrue(deleted, "#A05");
 
-			queueProvider.DeleteQueue(queueName);
-		}
+            // get now should fail
+            var retrieved3 = _queueStorage.Get<MyMessage>(QueueName, 1).FirstOrEmpty();
+            Assert.IsFalse(retrieved3.HasValue, "#A06");
 
-		[Test]
-		public void PutGetAbandonDelete()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
+            // abandon does not put it to the queue again
+            var abandoned3 = _queueStorage.Abandon(retrieved2);
+            Assert.IsFalse(abandoned3, "#A07");
 
-			Assert.IsNotNull(provider, "#A00");
+            // get now should still fail
+            var retrieved4 = _queueStorage.Get<MyMessage>(QueueName, 1).FirstOrEmpty();
+            Assert.IsFalse(retrieved4.HasValue, "#A07");
+        }
 
-			var message = new MyMessage();
+        [Test]
+        public void PersistRestore()
+        {
+            const string storeName = "TestStore";
 
-			provider.DeleteQueue(QueueName); // deleting queue on purpose 
-			// (it's slow but necessary to really validate the retry policy)
+            var message = new MyMessage();
 
-			// put
-			provider.Put(QueueName, message);
+            // clean up
+            _queueStorage.DeleteQueue(QueueName);
+            foreach (var skey in _queueStorage.ListPersisted(storeName))
+            {
+                _queueStorage.DeletePersisted(storeName, skey);
+            }
 
-			// get
-			var retrieved = provider.Get<MyMessage>(QueueName, 1).First();
-			Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
+            // put
+            _queueStorage.Put(QueueName, message);
 
-			// abandon
-			var abandoned = provider.Abandon(retrieved);
-			Assert.IsTrue(abandoned, "#A02");
+            // get
+            var retrieved = _queueStorage.Get<MyMessage>(QueueName, 1).First();
+            Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
 
-			// abandon II should fail (since not invisible)
-			var abandoned2 = provider.Abandon(retrieved);
-			Assert.IsFalse(abandoned2, "#A03");
+            // persist
+            _queueStorage.Persist(retrieved, storeName, "manual test");
 
-			// get again
-			var retrieved2 = provider.Get<MyMessage>(QueueName, 1).First();
-			Assert.AreEqual(message.MyGuid, retrieved2.MyGuid, "#A04");
+            // abandon should fail (since not invisible anymore)
+            Assert.IsFalse(_queueStorage.Abandon(retrieved), "#A02");
 
-			// delete
-			var deleted = provider.Delete(retrieved2);
-			Assert.IsTrue(deleted, "#A05");
+            // list persisted message
+            var key = _queueStorage.ListPersisted(storeName).Single();
 
-			// get now should fail
-			var retrieved3 = provider.Get<MyMessage>(QueueName, 1).FirstOrEmpty();
-			Assert.IsFalse(retrieved3.HasValue, "#A06");
+            // get persisted message
+            var persisted = _queueStorage.GetPersisted(storeName, key);
+            Assert.IsTrue(persisted.HasValue, "#A03");
+            Assert.IsTrue(persisted.Value.DataXml.HasValue, "#A04");
+            var xml = persisted.Value.DataXml.Value;
+            var property = xml.Elements().Single(x => x.Name.LocalName == "MyGuid");
+            Assert.AreEqual(message.MyGuid, new Guid(property.Value), "#A05");
 
-			// abandon does not put it to the queue again
-			var abandoned3 = provider.Abandon(retrieved2);
-			Assert.IsFalse(abandoned3, "#A07");
+            // restore persisted message
+            _queueStorage.RestorePersisted(storeName, key);
 
-			// get now should still fail
-			var retrieved4 = provider.Get<MyMessage>(QueueName, 1).FirstOrEmpty();
-			Assert.IsFalse(retrieved4.HasValue, "#A07");
-		}
+            // list no longer contains key
+            Assert.IsFalse(_queueStorage.ListPersisted(storeName).Any(), "#A06");
 
-		[Test]
-		public void PersistRestore()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-			const string storeName = "TestStore";
+            // get
+            var retrieved2 = _queueStorage.Get<MyMessage>(QueueName, 1).First();
+            Assert.AreEqual(message.MyGuid, retrieved2.MyGuid, "#A07");
 
-			Assert.IsNotNull(provider, "#A00");
+            // delete
+            Assert.IsTrue(_queueStorage.Delete(retrieved2), "#A08");
+        }
 
-			var message = new MyMessage();
+        [Test]
+        public virtual void PersistRestoreOverflowing()
+        {
+            const string storeName = "TestStore";
 
-			// clean up
-			provider.DeleteQueue(QueueName);
-			foreach (var skey in provider.ListPersisted(storeName))
-			{
-				provider.DeletePersisted(storeName, skey);
-			}
+            // CAUTION: we are now compressing serialization output.
+            // hence, we can't just pass an empty array, as it would be compressed at near 100%.
 
-			// put
-			provider.Put(QueueName, message);
+            var data = new byte[20000];
+            _rand.NextBytes(data);
 
-			// get
-			var retrieved = provider.Get<MyMessage>(QueueName, 1).First();
-			Assert.AreEqual(message.MyGuid, retrieved.MyGuid, "#A01");
+            // clean up
+            _queueStorage.DeleteQueue(QueueName);
+            foreach (var skey in _queueStorage.ListPersisted(storeName))
+            {
+                _queueStorage.DeletePersisted(storeName, skey);
+            }
 
-			// persist
-			provider.Persist(retrieved, storeName, "manual test");
+            // put
+            _queueStorage.Put(QueueName, data);
 
-			// abandon should fail (since not invisible anymore)
-			Assert.IsFalse(provider.Abandon(retrieved), "#A02");
+            Assert.AreEqual(1, _blobStorage.ListBlobNames(
+                QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A01");
 
-			// list persisted message
-			var key = provider.ListPersisted(storeName).Single();
+            // get
+            var retrieved = _queueStorage.Get<byte[]>(QueueName, 1).First();
 
-			// get persisted message
-			var persisted = provider.GetPersisted(storeName, key);
-			Assert.IsTrue(persisted.HasValue, "#A03");
-			Assert.IsTrue(persisted.Value.DataXml.HasValue, "#A04");
-			var xml = persisted.Value.DataXml.Value;
-			var property = xml.Elements().Single(x => x.Name.LocalName == "MyGuid");
-			Assert.AreEqual(message.MyGuid, new Guid(property.Value), "#A05");
+            // persist
+            _queueStorage.Persist(retrieved, storeName, "manual test");
 
-			// restore persisted message
-			provider.RestorePersisted(storeName, key);
+            Assert.AreEqual(1, _blobStorage.ListBlobNames(
+                QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A02");
 
-			// list no longer contains key
-			Assert.IsFalse(provider.ListPersisted(storeName).Any(), "#A06");
+            // abandon should fail (since not invisible anymore)
+            Assert.IsFalse(_queueStorage.Abandon(retrieved), "#A03");
 
-			// get
-			var retrieved2 = provider.Get<MyMessage>(QueueName, 1).First();
-			Assert.AreEqual(message.MyGuid, retrieved2.MyGuid, "#A07");
+            // list persisted message
+            var key = _queueStorage.ListPersisted(storeName).Single();
 
-			// delete
-			Assert.IsTrue(provider.Delete(retrieved2), "#A08");
-		}
+            // get persisted message
+            var persisted = _queueStorage.GetPersisted(storeName, key);
+            Assert.IsTrue(persisted.HasValue, "#A04");
+            Assert.IsTrue(persisted.Value.DataXml.HasValue, "#A05");
 
-		[Test]
-		public void PersistRestoreOverflowing()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-			var blobProvider = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
-			const string storeName = "TestStore";
+            // delete persisted message
+            _queueStorage.DeletePersisted(storeName, key);
 
-			Assert.IsNotNull(provider, "#A00");
+            Assert.AreEqual(0, _blobStorage.ListBlobNames(
+                QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A06");
 
-			// CAUTION: we are now compressing serialization output.
-			// hence, we can't just pass an empty array, as it would be compressed at near 100%.
+            // list no longer contains key
+            Assert.IsFalse(_queueStorage.ListPersisted(storeName).Any(), "#A07");
+        }
 
-			var data = new byte[20000];
-			_rand.NextBytes(data);
+        [Test]
+        public virtual void QueueLatency()
+        {
+            Assert.IsFalse(_queueStorage.GetApproximateLatency(QueueName).HasValue);
 
-			// clean up
-			provider.DeleteQueue(QueueName);
-			foreach (var skey in provider.ListPersisted(storeName))
-			{
-				provider.DeletePersisted(storeName, skey);
-			}
+            _queueStorage.Put(QueueName, 100);
 
-			// put
-			provider.Put(QueueName, data);
+            var latency = _queueStorage.GetApproximateLatency(QueueName);
+            Assert.IsTrue(latency.HasValue);
+            Assert.IsTrue(latency.Value >= TimeSpan.Zero && latency.Value < TimeSpan.FromMinutes(10));
 
-			Assert.AreEqual(1, blobProvider.ListBlobNames(
-				QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A01");
+            _queueStorage.Delete(100);
+        }
+    }
 
-			// get
-			var retrieved = provider.Get<byte[]>(QueueName, 1).First();
+    [Serializable]
+    public struct MyStruct
+    {
+        public int IntegerValue;
+        public string StringValue;
+    }
 
-			// persist
-			provider.Persist(retrieved, storeName, "manual test");
+    [DataContract]
+    public class MyMessage
+    {
+        [DataMember(IsRequired = false)]
+        public Guid MyGuid { get; private set; }
 
-			Assert.AreEqual(1, blobProvider.ListBlobNames(
-				QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A02");
+        [DataMember]
+        public byte[] MyBuffer { get; set; }
 
-			// abandon should fail (since not invisible anymore)
-			Assert.IsFalse(provider.Abandon(retrieved), "#A03");
-
-			// list persisted message
-			var key = provider.ListPersisted(storeName).Single();
-
-			// get persisted message
-			var persisted = provider.GetPersisted(storeName, key);
-			Assert.IsTrue(persisted.HasValue, "#A04");
-			Assert.IsTrue(persisted.Value.DataXml.HasValue, "#A05");
-
-			// delete persisted message
-			provider.DeletePersisted(storeName, key);
-
-			Assert.AreEqual(0, blobProvider.ListBlobNames(
-				QueueStorageProvider.OverflowingMessagesContainerName, QueueName).Count(), "#A06");
-
-			// list no longer contains key
-			Assert.IsFalse(provider.ListPersisted(storeName).Any(), "#A07");
-		}
-
-		[Test]
-		public void QueueLatency()
-		{
-			var provider = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
-			Assert.IsNotNull(provider, "#A00");
-			Assert.IsFalse(provider.GetApproximateLatency(QueueName).HasValue);
-
-			provider.Put(QueueName, 100);
-			var latency = provider.GetApproximateLatency(QueueName);
-			Assert.IsTrue(latency.HasValue);
-			Assert.IsTrue(latency.Value >= TimeSpan.Zero && latency.Value < TimeSpan.FromMinutes(10));
-
-			provider.Delete(100);
-		}
-	}
-
-	[Serializable]
-	public struct MyStruct
-	{
-		public int IntegerValue;
-		public string StringValue;
-	}
-
-	[DataContract]
-	public class MyMessage
-	{
-		[DataMember(IsRequired = false)]
-		public Guid MyGuid { get; private set; }
-
-		[DataMember]
-		public byte[] MyBuffer { get; set; }
-
-		public MyMessage()
-		{
-			MyGuid = Guid.NewGuid();
-		}
-	}
+        public MyMessage()
+        {
+            MyGuid = Guid.NewGuid();
+        }
+    }
 }

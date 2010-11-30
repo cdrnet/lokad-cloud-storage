@@ -5,41 +5,41 @@
 
 using System;
 using System.Linq;
-using Lokad.Cloud.Test;
+using Lokad.Cloud.Storage;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test
+namespace Lokad.Cloud.Test.Storage
 {
-	[TestFixture]
-	public class DelayedQueueTests
-	{
-		string _testQueueName;
+    [TestFixture]
+    public class DelayedQueueTests
+    {
+        string _testQueueName;
 
-		[SetUp]
-		public void SetUp()
-		{
-			_testQueueName = "q-" + Guid.NewGuid().ToString("N");
-		}
+        [SetUp]
+        public void SetUp()
+        {
+            _testQueueName = "q-" + Guid.NewGuid().ToString("N");
+        }
 
-		[Test]
-		public void PutWithDelay()
-		{
-			// This test cannot run without the scheduler, so we have to check the
-			// output container directly (thus this is not a black-box test)
+        [Test]
+        public void PutWithDelay()
+        {
+            // This test cannot run without the scheduler, so we have to check the
+            // output container directly (thus this is not a black-box test)
 
-			var blobStorage = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
-			var delayer = new DelayedQueue(blobStorage);
+            var blobStorage = GlobalSetup.Container.Resolve<IBlobStorageProvider>();
+            var delayer = new DelayedQueue(blobStorage);
 
-			var trigger = DateTimeOffset.UtcNow.AddMinutes(5);
+            var trigger = DateTimeOffset.UtcNow.AddMinutes(5);
 
-			delayer.PutWithDelay(21, trigger, _testQueueName);
+            delayer.PutWithDelay(21, trigger, _testQueueName);
 
-			var prefix = new DelayedMessageName(trigger, Guid.Empty);
+            var prefix = new DelayedMessageName(trigger, Guid.Empty);
 
-			var blobReferences = blobStorage.ListBlobNames(prefix);
+            var blobReferences = blobStorage.ListBlobNames(prefix);
 
-			Assert.AreEqual(1, blobReferences.Count(), "Wrong blob count");
-		}
-	}
+            Assert.AreEqual(1, blobReferences.Count(), "Wrong blob count");
+        }
+    }
 
 }

@@ -7,15 +7,15 @@ using NUnit.Framework;
 
 namespace Lokad.Cloud.Test
 {
-	[TestFixture]
-	public class TypeMapperProviderTests
-	{
-		[Test]
-		public void GetStorageName()
-		{
-			Assert.AreEqual(
-				"lokad-cloud-test-typemapperprovidertests", 
-				TypeMapper.GetStorageName(typeof(TypeMapperProviderTests)));
-		}
-	}
+    [TestFixture]
+    public class TypeMapperProviderTests
+    {
+        [Test]
+        public void GetStorageName()
+        {
+            Assert.AreEqual(
+                "lokad-cloud-test-typemapperprovidertests",
+                TypeMapper.GetStorageName(typeof (TypeMapperProviderTests)));
+        }
+    }
 }

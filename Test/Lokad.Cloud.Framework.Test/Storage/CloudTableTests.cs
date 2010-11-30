@@ -4,35 +4,36 @@
 #endregion
 
 using System;
+using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test
+namespace Lokad.Cloud.Test.Storage
 {
-	[TestFixture]
-	public class CloudTableTests
-	{
-		[Test]
-		public void TableNameValidation()
-		{
-			var mockProvider = new MemoryTableStorageProvider();
+    [TestFixture]
+    public class CloudTableTests
+    {
+        [Test]
+        public void TableNameValidation()
+        {
+            var mockProvider = new MemoryTableStorageProvider();
 
-			new CloudTable<int>(mockProvider, "abc"); // name is OK
+            new CloudTable<int>(mockProvider, "abc"); // name is OK
 
-			try
-			{
-				new CloudTable<int>(mockProvider, "ab"); // name too short
-				Assert.Fail("#A00");
-			}
-			catch(ArgumentException) {}
+            try
+            {
+                new CloudTable<int>(mockProvider, "ab"); // name too short
+                Assert.Fail("#A00");
+            }
+            catch (ArgumentException) { }
 
-			try
-			{
-				new CloudTable<int>(mockProvider, "ab-sl"); // hyphen not permitted
-				Assert.Fail("#A01");
-			}
-			catch (ArgumentException) { }
-		}
+            try
+            {
+                new CloudTable<int>(mockProvider, "ab-sl"); // hyphen not permitted
+                Assert.Fail("#A01");
+            }
+            catch (ArgumentException) { }
+        }
 
-	}
+    }
 }

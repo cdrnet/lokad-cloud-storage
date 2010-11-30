@@ -9,31 +9,23 @@ using Autofac.Configuration;
 
 namespace Lokad.Cloud.Test
 {
-	public sealed class GlobalSetup
-	{
-		static IContainer _container;
+    public sealed class GlobalSetup
+    {
+        static IContainer _container;
 
-		static IContainer Setup()
-		{
-			var builder = new ContainerBuilder();
-			builder.RegisterModule(new CloudModule());
-			builder.RegisterModule(new ConfigurationSettingsReader("autofac"));
+        static IContainer Setup()
+        {
+            var builder = new ContainerBuilder();
+            builder.RegisterModule(new CloudModule());
+            builder.RegisterModule(new ConfigurationSettingsReader("autofac"));
 
-			return builder.Build();
-		}
+            return builder.Build();
+        }
 
-		/// <summary>Gets the IoC container as initialized by the setup.</summary>
-		public static IContainer Container 
-		{ 
-			get
-			{
-				if(null == _container)
-				{
-					_container = Setup();
-				}
-
-				return _container;
-			}
-		}
-	}
+        /// <summary>Gets the IoC container as initialized by the setup.</summary>
+        public static IContainer Container 
+        { 
+            get { return _container ?? (_container = Setup()); }
+        }
+    }
 }
