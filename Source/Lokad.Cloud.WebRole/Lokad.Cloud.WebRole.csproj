@@ -71,10 +71,10 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.IdentityModel"/>
-    <Reference Include="System.Runtime.Serialization"/>
-    <Reference Include="System.ServiceModel"/>
-    <Reference Include="System.ServiceModel.Web"/>
+    <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Web" />
     <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
@@ -93,7 +93,7 @@
     <Content Include="Default.aspx" />
     <Content Include="Logs.aspx" />
     <Content Include="ReadMe.txt" />
-    <Content Include="Web.config" />
+    <None Include="Web.template.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\GlobalAssemblyInfo.cs">
