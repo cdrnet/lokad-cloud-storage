@@ -41,7 +41,7 @@ namespace Lokad.Cloud.Services
 				}
 
 				QueueStorage.Put(dm.Value.QueueName, dm.Value.InnerMessage);
-				BlobStorage.DeleteBlobIfExists(parsedName);
+				BlobStorage.DeleteBlobIfExist(parsedName);
 			}
 		}
 	}

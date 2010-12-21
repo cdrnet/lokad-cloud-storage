@@ -313,13 +313,13 @@ namespace Lokad.Cloud.Samples.MapReduce
 		/// <remarks>Messages enqueued cannot be deleted but they cause no harm.</remarks>
 		public void DeleteJobData(string jobName)
 		{
-			_blobStorage.DeleteBlobIfExists(MapReduceConfigurationName.Create(jobName));
+			_blobStorage.DeleteBlobIfExist(MapReduceConfigurationName.Create(jobName));
 
 			_blobStorage.DeleteAllBlobs(InputBlobName.GetPrefix(jobName));
 			_blobStorage.DeleteAllBlobs(ReducedBlobName.GetPrefix(jobName));
 
-			_blobStorage.DeleteBlobIfExists(AggregatedBlobName.Create(jobName));
-			_blobStorage.DeleteBlobIfExists(BlobCounterName.Create(jobName));
+			_blobStorage.DeleteBlobIfExist(AggregatedBlobName.Create(jobName));
+			_blobStorage.DeleteBlobIfExist(BlobCounterName.Create(jobName));
 		}
 
 		/// <summary>Gets the existing jobs.</summary>

@@ -46,7 +46,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks>
         /// <para>This method is idempotent.</para>
         /// </remarks>
-        public static bool DeleteBlobIfExists<T>(this IBlobStorageProvider provider, BlobName<T> fullName)
+        public static bool DeleteBlobIfExist<T>(this IBlobStorageProvider provider, BlobName<T> fullName)
         {
             return provider.DeleteBlobIfExist(fullName.ContainerName, fullName.ToString());
         }

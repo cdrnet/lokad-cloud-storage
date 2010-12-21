@@ -125,7 +125,7 @@ namespace Lokad.Cloud.Management
 		/// </summary>
 		public void ResetServiceState(string serviceName)
 		{
-			_blobProvider.DeleteBlobIfExists(new CloudServiceStateName(serviceName));
+			_blobProvider.DeleteBlobIfExist(new CloudServiceStateName(serviceName));
 		}
 	}
 }

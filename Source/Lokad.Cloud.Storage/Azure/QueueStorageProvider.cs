@@ -637,7 +637,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             // 3. DELETE PERSISTED MESSAGE
 
-            _blobStorage.DeleteBlobIfExists(blobReference);
+            _blobStorage.DeleteBlobIfExist(blobReference);
         }
 
         public void RestorePersisted(string storeName, string key)
@@ -661,7 +661,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             // 3. DELETE PERSISTED MESSAGE
 
-            _blobStorage.DeleteBlobIfExists(blobReference);
+            _blobStorage.DeleteBlobIfExist(blobReference);
         }
 
         void PersistRawMessage(CloudQueueMessage message, byte[] data, string queueName, string storeName, string reason)
