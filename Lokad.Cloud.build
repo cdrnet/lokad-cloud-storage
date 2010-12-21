@@ -78,13 +78,17 @@
 		<CreateItem Include="$(TestPath)\Lokad.Cloud*dll" Exclude="$(TestPath)\*.Test.dll">
 			<Output ItemName="coverageAssemblies" TaskParameter="Include"/>
 		</CreateItem>
-		
+
+    <Exec WorkingDirectory="Resource\Tool\NUnit" Command="nunit-console.exe @(testAssemblies->'&quot;%(FullPath)&quot;', ' ') /nologo /noshadow /xml=&quot;$(ArtifactDirectory)\$(ProjectName).Tests-result.xml&quot;" />
+    
 		<!--@(_testFiles->'&quot;%(FullPath)&quot;', ' ')-->
 		<!--
+    HACK: [vermorel] NCover not working under .NET 4.0.
+    
 		Important: if this code breaks down and you are running 64 bit machine,
 		then you have to force NUnit-console and NCover to 32 bit mode
 		with CorFlags.exe from .NET SDK 2.0 (included in NCover and NUnit folders)
-		-->
+		
 		<NCover ToolPath="Resource\Tool\NCover"
 			CommandLineExe="Resource/Tool/NUnit/nunit-console-x86.exe"
 			CommandLineArgs="@(testAssemblies->'&quot;%(FullPath)&quot;', ' ') /nologo /noshadow /xml=&quot;$(ArtifactDirectory)\$(ProjectName).Tests-result.xml&quot;"
@@ -107,7 +111,7 @@
 			Sort="FunctionCoverageAscending"
 			CoverageFiles="$(ArtifactDirectory)\$(ProjectName)-coverage.xml"
 			Exclusions="Namespace=Microsoft.Samples.ServiceHosting.*"
-		/>
+		/> -->
 	</Target>
 	
 	<Target Name="Report">
