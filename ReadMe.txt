@@ -9,16 +9,18 @@ Community Forums: http://ask.lokad.com/
 
 BIG PICTURE
 
-Lokad.Cloud comes basically as a single assembly named "Lokad.Cloud.Framework.dll".
+Lokad.Cloud comes with two .NET 4.0 assemblies:
+- Lokad.Cloud.Storage.dll, the O/C mapper which can be used alone.
+- Lokad.Cloud.Framework.dll the execution framework (depend on storage).
 
-This assembly is typically referenced in two places:
-- in the library containing your cloud services (back-end processing).
-- in the client app (eventually a web app) pushing and retrieving work.
+Those assemblies is typically referenced in two places:
+- in the client app (eventually a web app) pushing and retrieving work (storage only).
+- in the library containing your cloud services for back-end processing (both assemblies).
 
-Lokad.Cloud depends on
-- Lokad.Shared.dll
-- Lokad.Stack.dll
-which are also open source, see 
+Both assemblies depends on Lokad.Shared.dll
+The framework also depend on Lokad.Stack.dll.
+
+Those dependencies are also open source, see 
 http://code.google.com/p/lokad-shared-libraries/
 
 
