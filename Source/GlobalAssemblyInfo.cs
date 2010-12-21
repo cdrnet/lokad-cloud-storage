@@ -5,11 +5,15 @@
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 
 [assembly : AssemblyCompany("Lokad")]
 [assembly : AssemblyProduct("Lokad.Cloud")]
 [assembly : AssemblyCulture("")]
 [assembly : ComVisible(false)]
+
+// .NET 2.0 security model
+[assembly: SecurityRules(SecurityRuleSet.Level1)]
 
 ///<summary>
 /// Assembly information class that is shared between all projects
