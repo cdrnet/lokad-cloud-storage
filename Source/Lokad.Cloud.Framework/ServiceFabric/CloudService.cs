@@ -161,7 +161,7 @@ namespace Lokad.Cloud.ServiceFabric
 			{
 				var stateBlobName = new CloudServiceStateName(Name);
 
-				var state = BlobStorage.GetBlobOrDelete(stateBlobName);
+				var state = BlobStorage.GetBlob(stateBlobName);
 
 				// no state can be retrieved, update blob storage
 				if(!state.HasValue)
