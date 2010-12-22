@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Web
 	public class LokadCloudVersion
 	{
 		const string _downloadUrl = "http://build.lokad.com/distrib/Lokad.Cloud/";
-		const string _regexPattern = @"\<h2\>Download Version ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\<\/h2\>";
+		const string _regexPattern = @"\<h2\>Download Version ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ";
 
 		readonly object _sync = new object();
 		readonly Regex _regex = new Regex(_regexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
