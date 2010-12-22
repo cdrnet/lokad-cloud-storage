@@ -190,7 +190,7 @@ namespace Lokad.Cloud.Storage.Azure
                         if (messageAsT.IsSuccess)
                         {
                             messages.Add(messageAsT.Value);
-                            CheckOutMessage(messageAsT.Value, rawMessage, queueName, false, dequeueCount);
+                            CheckOutMessage(messageAsT.Value, rawMessage, data, queueName, false, dequeueCount);
 
                             continue;
                         }
@@ -202,7 +202,7 @@ namespace Lokad.Cloud.Storage.Azure
                         {
                             // we don't retrieve messages while holding the lock
                             wrappedMessages.Add(messageAsWrapper.Value);
-                            CheckOutMessage(messageAsWrapper.Value, rawMessage, queueName, true, dequeueCount);
+                            CheckOutMessage(messageAsWrapper.Value, rawMessage, data, queueName, true, dequeueCount);
 
                             continue;
                         }
@@ -376,6 +376,7 @@ namespace Lokad.Cloud.Storage.Azure
                 CloudQueueMessage rawMessage;
                 string queueName;
                 bool isOverflowing;
+                byte[] data;
 
                 lock (_sync)
                 {
@@ -389,6 +390,7 @@ namespace Lokad.Cloud.Storage.Azure
                     rawMessage = inProcMsg.RawMessages[0];
                     isOverflowing = inProcMsg.IsOverflowing;
                     queueName = inProcMsg.QueueName;
+                    data = inProcMsg.Data;
                 }
 
                 var queue = _queueStorage.GetQueueReference(queueName);
@@ -397,7 +399,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 if (isOverflowing)
                 {
-                    var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(rawMessage.AsBytes);
+                    var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(data);
                     if (messageWrapper.IsSuccess)
                     {
                         _blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
@@ -441,6 +443,7 @@ namespace Lokad.Cloud.Storage.Azure
                 CloudQueueMessage oldRawMessage;
                 string queueName;
                 int dequeueCount;
+                byte[] data;
 
                 lock (_sync)
                 {
@@ -454,6 +457,7 @@ namespace Lokad.Cloud.Storage.Azure
                     queueName = inProcMsg.QueueName;
                     dequeueCount = inProcMsg.DequeueCount;
                     oldRawMessage = inProcMsg.RawMessages[0];
+                    data = inProcMsg.Data;
                 }
 
                 var queue = _queueStorage.GetQueueReference(queueName);
@@ -466,7 +470,7 @@ namespace Lokad.Cloud.Storage.Azure
                 var envelope = new MessageEnvelope
                     {
                         DequeueCount = dequeueCount,
-                        RawMessage = oldRawMessage.AsBytes
+                        RawMessage = data
                     };
 
                 CloudQueueMessage newRawMessage = null;
@@ -524,6 +528,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 CloudQueueMessage rawMessage;
                 string queueName;
+                byte[] data;
 
                 lock (_sync)
                 {
@@ -536,11 +541,12 @@ namespace Lokad.Cloud.Storage.Azure
 
                     queueName = inProcessMessage.QueueName;
                     rawMessage = inProcessMessage.RawMessages[0];
+                    data = inProcessMessage.Data;
                 }
 
                 // 2. PERSIST MESSAGE AND DELETE FROM QUEUE
 
-                PersistRawMessage(rawMessage, rawMessage.AsBytes, queueName, storeName, reason);
+                PersistRawMessage(rawMessage, data, queueName, storeName, reason);
 
                 // 3. REMOVE MESSAGE FROM CHECK-OUT
 
@@ -738,7 +744,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        void CheckOutMessage(object message, CloudQueueMessage rawMessage, string queueName, bool isOverflowing, int dequeueCount)
+        void CheckOutMessage(object message, CloudQueueMessage rawMessage, byte[] data, string queueName, bool isOverflowing, int dequeueCount)
         {
             lock (_sync)
             {
@@ -751,6 +757,7 @@ namespace Lokad.Cloud.Storage.Azure
                         {
                             QueueName = queueName,
                             RawMessages = new List<CloudQueueMessage> {rawMessage},
+                            Data = data,
                             IsOverflowing = isOverflowing,
                             DequeueCount = dequeueCount
                         };
@@ -887,6 +894,11 @@ namespace Lokad.Cloud.Storage.Azure
         /// objects as returned from the queue storage.
         /// </summary>
         public List<CloudQueueMessage> RawMessages { get; set; }
+
+        /// <summary>
+        /// The unpacked message data. Can still be a message wrapper, but never an envelope.
+        /// </summary>
+        public byte[] Data { get; set; }
 
         /// <summary>
         /// A flag indicating whether the original message was bigger than the max 
