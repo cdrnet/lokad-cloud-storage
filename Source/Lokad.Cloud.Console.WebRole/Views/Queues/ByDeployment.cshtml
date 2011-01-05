@@ -1,0 +1,22 @@
+﻿@model Lokad.Cloud.Console.WebRole.Models.Queues.QueuesModel
+@{ ViewBag.Title = "Lokad.Cloud Administration Console - Queues"; }
+
+<h1>Queue Workload</h1>
+<p>This table reports the workload in the various queues of the account</p>
+
+<table class="table">
+	<tr>
+		<th>Queue</th>
+		<th>Messages</th>
+		<th>Latency</th>
+	</tr>
+
+	@foreach (var item in Model.Queues) {
+		<tr>
+			<td>@item.QueueName</td>
+			<td>@item.MessageCount</td>
+			<td>@item.Latency</td>
+		</tr>
+	}
+
+</table>

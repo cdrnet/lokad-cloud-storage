@@ -1,0 +1,47 @@
+﻿@model Lokad.Cloud.Console.WebRole.Models.Services.ServicesModel
+@{ ViewBag.Title = "Lokad.Cloud Administration Console - Services"; }
+
+<h1>Service Manager</h1>
+<p>All initialized cloud services are listed below. Enable or disable a service by clicking its status icon.</p>
+
+<table class="table">
+	<tr>
+		<th>Cloud Service</th>
+	</tr>
+
+	@foreach (var item in Model.Services) {
+		<tr>
+			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)@item.ServiceName</td>
+		</tr>
+	}
+
+</table>
+
+<script type="text/javascript">
+	function statusToClass(status) {
+		if (status) return '@IconMap.StartStopOf(true)';
+		else return '@IconMap.StartStopOf(false)';
+	}
+	$(document).ready(function () {
+		$('.icon-button').click(function () {
+			$('#AjaxLoading').show();
+			me = $(this);
+			enable = me.hasClass(statusToClass(false));
+			me.removeClass(statusToClass(!enable));
+			me.addClass('@IconMap.Loading');
+			$.ajax({
+				url: '/Services/@ViewBag.Navigation.CurrentDeploymentName/Status/' + me.attr('id'),
+				type: 'PUT',
+				dataType: 'json',
+				data: { isStarted: enable },
+				cache: false,
+				success: function (data) {
+					element = $('span[id=' + data.serviceName + ']');
+					element.removeClass('@IconMap.Loading');
+					element.addClass(statusToClass(data.isStarted));
+					$('#AjaxLoading').hide();
+				}
+			});
+		});
+	});
+</script>

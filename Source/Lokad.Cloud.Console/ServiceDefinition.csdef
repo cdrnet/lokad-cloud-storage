@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ServiceDefinition name="Lokad.Cloud.Console" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition">
+	<WebRole name="Lokad.Cloud.Console.WebRole">
+		<InputEndpoints>
+			<InputEndpoint name="HttpIn" protocol="http" port="80" />
+		</InputEndpoints>
+		<ConfigurationSettings>
+			<Setting name="Admins" />
+			<Setting name="ManagementCertificateThumbprint" />
+			<Setting name="SubscriptionId" />
+		</ConfigurationSettings>
+		<Certificates>
+			<Certificate name="ManagementCertificate" storeLocation="CurrentUser" storeName="My" />
+		</Certificates>
+	</WebRole>
+</ServiceDefinition>

@@ -1,0 +1,35 @@
+﻿@model Lokad.Cloud.Console.WebRole.Models.Assemblies.AssembliesModel
+@{ ViewBag.Title = "Lokad.Cloud Administration Console - Assemblies"; }
+
+<h1>Assembly Manager</h1>
+<p>Content of the assembly archive:</p>
+
+<table class="table">
+	<tr>
+		<th>Assembly</th>
+		<th>Version</th>
+		<th>Created</th>
+		<th>Size</th>
+		<th>Symbols</th>
+	</tr>
+
+	@foreach (var item in Model.Assemblies) {
+		<tr>
+			<td>@Html.OkCancelIcon(item.IsValid) @item.AssemblyName</td>
+			<td>@item.Version.ToString()</td>
+			<td>@String.Format("{0:g}", item.DateTime)</td>
+			<td>@String.Format("{0} KB", item.SizeBytes / 1024)</td>
+			<td>@Html.GoodBadIcon(item.HasSymbols) @(item.HasSymbols ? "Available" : "None")</td>
+		</tr>
+	}
+
+</table>
+
+<br />
+<h2>Replace assembly package</h2>
+<p>Upload a stand-alone .Net assembly (*.dll) or a Zip archive containing multiple assemblies. Matching symbol files (*.pdb) are supported but optional. The current assembly package will be deleted.</p>
+
+@using (Html.BeginForm("UploadPackage", "Assemblies", new { deploymentName = ViewBag.Navigation.CurrentDeploymentName }, FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+	<p><input type="file" name="package" accept="application/octet-stream, application/zip" /><br /><input type="submit" value="Upload" /></p>
+}

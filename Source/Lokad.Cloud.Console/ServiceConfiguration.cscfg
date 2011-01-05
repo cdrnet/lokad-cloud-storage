@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ServiceConfiguration serviceName="Lokad.Cloud.Console" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration">
+	<Role name="Lokad.Cloud.Console.WebRole">
+		<Instances count="1" />
+		<ConfigurationSettings>
+			<Setting name="Admins" value="" />
+			<Setting name="ManagementCertificateThumbprint" value="" />
+			<Setting name="SubscriptionId" value="" />
+		</ConfigurationSettings>
+		<Certificates>
+			<Certificate name="ManagementCertificate" thumbprint="" thumbprintAlgorithm="sha1" />
+		</Certificates>
+	</Role>
+</ServiceConfiguration>

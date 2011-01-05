@@ -1,0 +1,28 @@
+﻿@model Lokad.Cloud.Console.WebRole.Models.Overview.OverviewModel
+@{ ViewBag.Title = "Lokad.Cloud Administration Console - Overview"; }
+
+<h1>Lokad.Cloud Deployment Overview</h1>
+<p>The following Lokad.Cloud deployments have been discovered in your Windows Azure subscription.</p>
+
+@foreach (var item in Model.HostedServices) {
+	<table class="table">
+	<tr>
+		<th style="width: 180px;"><b>@item.Name</b></th>
+		<th style="width: 500px;"><b>@item.Label</b></th>
+	</tr>
+	@if (!String.IsNullOrEmpty(item.Description)) {
+		<tr>
+			<td colspan="2"><em>@item.Description</em></td>
+		</tr>
+	}
+	<tr>
+		<td style="text-align: right;">Storage Account:</td>
+		<td>@item.StorageAccount.Credentials.AccountName</td>
+	</tr>
+	<tr>
+		<td style="text-align: right;">Deployments:</td>
+		<td>@Html.Raw(item.Deployments.Select(d => String.Format("{0} (<b>{3}x {1}</b>): {2}", d.Slot, d.Status, Html.Encode(d.Label), d.InstanceCount)).Join("<br/>"))</td>
+	</tr>
+	</table>
+	<p>&nbsp;</p>
+}
