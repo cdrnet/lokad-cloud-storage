@@ -17,7 +17,7 @@ using System.Runtime.Serialization;
 namespace Lokad.Cloud.Management.Azure.InputParameters
 {
 	[DataContract(Name = "ChangeConfiguration", Namespace = ApiConstants.XmlNamespace)]
-	internal class ChangeConfigurationInput : IExtensibleDataObject
+	public class ChangeConfigurationInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public string Configuration { get; set; }

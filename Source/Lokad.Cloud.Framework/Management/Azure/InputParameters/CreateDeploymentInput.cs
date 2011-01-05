@@ -18,7 +18,7 @@ using System.Runtime.Serialization;
 namespace Lokad.Cloud.Management.Azure.InputParameters
 {
 	[DataContract(Name = "CreateDeployment", Namespace = ApiConstants.XmlNamespace)]
-	internal class CreateDeploymentInput : IExtensibleDataObject
+	public class CreateDeploymentInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public string Name { get; set; }

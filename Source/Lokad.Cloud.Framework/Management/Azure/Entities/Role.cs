@@ -12,16 +12,39 @@
 //---------------------------------------------------------------------------------
 #endregion
 
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Management.Azure.InputParameters
+namespace Lokad.Cloud.Management.Azure.Entities
 {
-	[DataContract(Name = "WalkUpgradeDomain", Namespace = ApiConstants.XmlNamespace)]
-	public class WalkUpgradeDomainInput : IExtensibleDataObject
+	/// <summary>
+	/// Role Instance
+	/// </summary>
+	[DataContract(Namespace = ApiConstants.XmlNamespace)]
+	public class Role
 	{
 		[DataMember(Order = 1)]
-		public int UpgradeDomain { get; set; }
+		public string RoleName { get; set; }
+
+		[DataMember(Order = 2)]
+		public string OperatingSystemVersion { get; set; }
 
 		public ExtensionDataObject ExtensionData { get; set; }
+	}
+
+	/// <summary>
+	/// List of role instances
+	/// </summary>
+	[CollectionDataContract(Name = "RoleList", ItemName = "Role", Namespace = ApiConstants.XmlNamespace)]
+	public class RoleList : List<Role>
+	{
+		public RoleList()
+		{
+		}
+
+		public RoleList(IEnumerable<Role> roles)
+			: base(roles)
+		{
+		}
 	}
 }

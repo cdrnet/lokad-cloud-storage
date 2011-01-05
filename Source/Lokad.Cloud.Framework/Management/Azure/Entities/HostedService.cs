@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Hosted Service
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class HostedService : IExtensibleDataObject
+	public class HostedService : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public Uri Url { get; set; }
@@ -43,7 +43,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Hosted Service Properties
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class HostedServiceProperties : IExtensibleDataObject
+	public class HostedServiceProperties : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public string Description { get; set; }
@@ -65,7 +65,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// List of host services
 	/// </summary>
 	[CollectionDataContract(Name = "HostedServices", ItemName = "HostedService", Namespace = ApiConstants.XmlNamespace)]
-	internal class HostedServiceList : List<HostedService>
+	public class HostedServiceList : List<HostedService>
 	{
 		public HostedServiceList()
 		{

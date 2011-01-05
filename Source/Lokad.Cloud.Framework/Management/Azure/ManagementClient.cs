@@ -15,7 +15,7 @@ using System.ServiceModel.Web;
 
 namespace Lokad.Cloud.Management.Azure
 {
-	internal class ManagementClient : IDisposable
+	public class ManagementClient : IDisposable
 	{
 		readonly X509Certificate2 _certificate;
 		readonly object _sync = new object();

@@ -26,7 +26,7 @@ namespace Lokad.Cloud.Management.Azure
 	/// Windows Azure Service Management API. 
 	/// </summary>
 	[ServiceContract(Namespace = ApiConstants.XmlNamespace)]
-	internal interface IAzureServiceManagement
+	public interface IAzureServiceManagement
 	{
 		/// <summary>
 		/// Gets the result of an asynchronous operation.

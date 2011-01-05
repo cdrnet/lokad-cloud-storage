@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Storage Service
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class StorageService : IExtensibleDataObject
+	public class StorageService : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public Uri Url { get; set; }
@@ -43,7 +43,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Storage Service Properties
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class StorageServiceProperties : IExtensibleDataObject
+	public class StorageServiceProperties : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public string Description { get; set; }
@@ -64,7 +64,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	///  Storage Service Keys
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class StorageServiceKeys : IExtensibleDataObject
+	public class StorageServiceKeys : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public string Primary { get; set; }
@@ -79,7 +79,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// List of storage services
 	/// </summary>
 	[CollectionDataContract(Name = "StorageServices", ItemName = "StorageService", Namespace = ApiConstants.XmlNamespace)]
-	internal class StorageServiceList : List<StorageService>
+	public class StorageServiceList : List<StorageService>
 	{
 		public StorageServiceList()
 		{

@@ -19,7 +19,7 @@ using Lokad.Cloud.Management.Azure.Entities;
 namespace Lokad.Cloud.Management.Azure.InputParameters
 {
 	[DataContract(Name = "UpgradeDeployment", Namespace = ApiConstants.XmlNamespace)]
-	internal class UpgradeDeploymentInput : IExtensibleDataObject
+	public class UpgradeDeploymentInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public UpgradeMode Mode { get; set; }

@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Deployment
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class Deployment : IExtensibleDataObject
+	public class Deployment : IExtensibleDataObject
 	{
 		[DataMember(Order = 1, EmitDefaultValue = false)]
 		public string Name { get; set; }
@@ -49,6 +49,9 @@ namespace Lokad.Cloud.Management.Azure.Entities
 
 		[DataMember(Order = 8, EmitDefaultValue = false)]
 		public RoleInstanceList RoleInstanceList { get; set; }
+
+		[DataMember(Order = 9, EmitDefaultValue = false)]
+		public RoleList RoleList { get; set; }
 
 		[DataMember(Order = 10, EmitDefaultValue = false)]
 		public UpgradeStatus UpgradeStatus { get; set; }
@@ -81,7 +84,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Deployment Upgrade Status
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class UpgradeStatus : IExtensibleDataObject
+	public class UpgradeStatus : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public UpgradeMode UpgradeType { get; set; }
@@ -111,7 +114,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// List of deployments
 	/// </summary>
 	[CollectionDataContract(Name = "Deployments", ItemName = "Deployment", Namespace = ApiConstants.XmlNamespace)]
-	internal class DeploymentList : List<Deployment>
+	public class DeploymentList : List<Deployment>
 	{
 		public DeploymentList()
 		{

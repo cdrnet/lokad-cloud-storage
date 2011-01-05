@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Certificate
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class Certificate : IExtensibleDataObject
+	public class Certificate : IExtensibleDataObject
 	{
 		[DataMember(Order = 1, EmitDefaultValue = false)]
 		public Uri CertificateUrl { get; set; }
@@ -44,7 +44,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// List of certificates
 	/// </summary>
 	[CollectionDataContract(Name = "Certificates", ItemName = "Certificate", Namespace = ApiConstants.XmlNamespace)]
-	internal class CertificateList : List<Certificate>
+	public class CertificateList : List<Certificate>
 	{
 		public CertificateList()
 		{

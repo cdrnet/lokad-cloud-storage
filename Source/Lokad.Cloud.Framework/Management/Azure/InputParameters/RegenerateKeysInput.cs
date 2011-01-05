@@ -17,7 +17,7 @@ using System.Runtime.Serialization;
 namespace Lokad.Cloud.Management.Azure.InputParameters
 {
 	[DataContract(Name = "RegenerateKeys", Namespace = ApiConstants.XmlNamespace)]
-	internal class RegenerateKeysInput : IExtensibleDataObject
+	public class RegenerateKeysInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public KeyType KeyType { get; set; }

@@ -17,7 +17,7 @@ using System.Runtime.Serialization;
 namespace Lokad.Cloud.Management.Azure.InputParameters
 {
 	[DataContract(Name = "CertificateFile", Namespace = ApiConstants.XmlNamespace)]
-	internal class CertificateFileInput : IExtensibleDataObject
+	public class CertificateFileInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public string Data { get; set; }

@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Management.Azure
 	/// <summary>
 	/// Synchronous wrappers around the asynchronous web service channel.
 	/// </summary>
-	internal static class SynchronousApiExtensionMethods
+	public static class SynchronousApiExtensionMethods
 	{
 		/// <summary>
 		/// Gets the result of an asynchronous operation.

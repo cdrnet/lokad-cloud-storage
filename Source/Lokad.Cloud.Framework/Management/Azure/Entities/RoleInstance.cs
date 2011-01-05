@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Role Instance
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class RoleInstance
+	public class RoleInstance
 	{
 		[DataMember(Order = 1)]
 		public string RoleName { get; set; }
@@ -49,7 +49,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// List of role instances
 	/// </summary>
 	[CollectionDataContract(Name = "RoleInstanceList", ItemName = "RoleInstance", Namespace = ApiConstants.XmlNamespace)]
-	internal class RoleInstanceList : List<RoleInstance>
+	public class RoleInstanceList : List<RoleInstance>
 	{
 		public RoleInstanceList()
 		{

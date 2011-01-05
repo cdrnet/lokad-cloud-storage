@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Affinity Group
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class AffinityGroup : IExtensibleDataObject
+	public class AffinityGroup : IExtensibleDataObject
 	{
 		[DataMember(Order = 1, EmitDefaultValue = false)]
 		public string Name { get; set; }
@@ -49,7 +49,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// List of affinity groups
 	/// </summary>
 	[CollectionDataContract(Name = "AffinityGroups", ItemName = "AffinityGroup", Namespace = ApiConstants.XmlNamespace)]
-	internal class AffinityGroupList : List<AffinityGroup>
+	public class AffinityGroupList : List<AffinityGroup>
 	{
 		public AffinityGroupList()
 		{

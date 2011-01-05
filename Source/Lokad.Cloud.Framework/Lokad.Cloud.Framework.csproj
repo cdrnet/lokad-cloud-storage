@@ -128,6 +128,7 @@
     <Compile Include="Management\Azure\Entities\Deployment.cs" />
     <Compile Include="Management\Azure\Entities\HostedService.cs" />
     <Compile Include="Management\Azure\Entities\Operation.cs" />
+    <Compile Include="Management\Azure\Entities\Role.cs" />
     <Compile Include="Management\Azure\Entities\RoleInstance.cs" />
     <Compile Include="Management\Azure\Entities\StorageService.cs" />
     <Compile Include="Management\Azure\ExtensionMethods.cs" />

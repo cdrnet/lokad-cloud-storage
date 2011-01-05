@@ -20,7 +20,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Asynchronous Operation
 	/// </summary>
 	[DataContract(Namespace = ApiConstants.XmlNamespace)]
-	internal class Operation : IExtensibleDataObject
+	public class Operation : IExtensibleDataObject
 	{
 		[DataMember(Name = "ID", Order = 1)]
 		public string OperationTrackingId { get; set; }
@@ -48,7 +48,7 @@ namespace Lokad.Cloud.Management.Azure.Entities
 	/// Asynchronous Operation Error
 	/// </summary>
 	[DataContract(Name = "Error", Namespace = ApiConstants.XmlNamespace)]
-	internal class OperationError : IExtensibleDataObject
+	public class OperationError : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public OperationErrorCode Code { get; set; }

@@ -18,7 +18,7 @@ using Lokad.Cloud.Management.Azure.Entities;
 namespace Lokad.Cloud.Management.Azure.InputParameters
 {
 	[DataContract(Name = "UpdateDeploymentStatus", Namespace = ApiConstants.XmlNamespace)]
-	internal class UpdateDeploymentStatusInput : IExtensibleDataObject
+	public class UpdateDeploymentStatusInput : IExtensibleDataObject
 	{
 		[DataMember(Order = 1)]
 		public DeploymentStatus Status { get; set; }
