@@ -3,12 +3,12 @@
 	<Role name="Lokad.Cloud.Console.WebRole">
 		<Instances count="1" />
 		<ConfigurationSettings>
-			<Setting name="Admins" value="" />
-			<Setting name="ManagementCertificateThumbprint" value="" />
-			<Setting name="SubscriptionId" value="" />
+			<Setting name="Admins" value="http://yourname.example.com" />
+			<Setting name="ManagementCertificateThumbprint" value="YOUR CERTIFICATE THUMBPRINT" />
+			<Setting name="SubscriptionId" value="YOUR SUBSCRIPTION ID" />
 		</ConfigurationSettings>
 		<Certificates>
-			<Certificate name="ManagementCertificate" thumbprint="" thumbprintAlgorithm="sha1" />
+			<Certificate name="ManagementCertificate" thumbprint="YOUR CERTIFICATE THUMBPRINT" thumbprintAlgorithm="sha1" />
 		</Certificates>
 	</Role>
 </ServiceConfiguration>
