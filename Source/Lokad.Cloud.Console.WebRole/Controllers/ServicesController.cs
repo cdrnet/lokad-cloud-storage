@@ -27,8 +27,8 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 });
         }
 
-        [HttpPut, ActionName("Status")]
-        public ActionResult StatusPut(string deploymentName, string id, bool isStarted)
+        [HttpPut]
+        public ActionResult Status(string deploymentName, string id, bool isStarted)
         {
             InitializeDeploymentTenant(deploymentName);
             var cloudServices = new CloudServices(Storage.BlobStorage);

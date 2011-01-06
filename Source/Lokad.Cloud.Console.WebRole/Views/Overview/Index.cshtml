@@ -17,11 +17,15 @@
 	}
 	<tr>
 		<td style="text-align: right;">Storage Account:</td>
-		<td>@item.StorageAccount.Credentials.AccountName</td>
+		<td>@item.StorageAccountName, with key @item.StorageAccountKeyPrefix..</td>
 	</tr>
 	<tr>
 		<td style="text-align: right;">Deployments:</td>
-		<td>@Html.Raw(item.Deployments.Select(d => String.Format("{0} (<b>{3}x {1}</b>): {2}", d.Slot, d.Status, Html.Encode(d.Label), d.InstanceCount)).Join("<br/>"))</td>
+		<td>
+		@foreach (var deployment in item.Deployments) {
+			@: @Html.OkCancelIcon(deployment.IsRunning) @deployment.Slot @if (deployment.IsTransitioning) { <b>UPDATING</b> } with <b>@deployment.InstanceCount Worker Instances</b>: <em>@deployment.Label</em><br/>
+		}
+		</td>
 	</tr>
 	</table>
 	<p>&nbsp;</p>

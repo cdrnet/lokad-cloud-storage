@@ -65,7 +65,11 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
             var xmlConfigSettings = xmlWorkerRole.Element(XName.Get("ConfigurationSettings", nn));
             var xmlDataConnectionString = xmlConfigSettings.Elements().Single(x => x.Attribute("name").Value == "DataConnectionString").Attribute("value").Value;
 
+            var storageAccount = CloudStorageAccount.Parse(xmlDataConnectionString);
+            var accountAndKey = storageAccount.Credentials as StorageCredentialsAccountAndKey;
+
             // TODO: Find out the correct matching DataSerializer in some way or another
+            var serializer = new CloudFormatter();
 
             return new LokadCloudHostedService
                 {
@@ -77,11 +81,15 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
                             Label = Encoding.UTF8.GetString(Convert.FromBase64String(d.Label)),
                             Status = d.Status.ToString(),
                             Slot = d.DeploymentSlot.ToString(),
-                            InstanceCount = d.RoleInstanceList.Count(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")
+                            InstanceCount = d.RoleInstanceList.Count(ri => ri.RoleName == "Lokad.Cloud.WorkerRole"),
+                            IsRunning = d.Status == DeploymentStatus.Running,
+                            IsTransitioning = d.Status != DeploymentStatus.Running && d.Status != DeploymentStatus.Suspended,
                         }).ToList(),
                     Configuration = config,
-                    StorageAccount = CloudStorageAccount.Parse(xmlDataConnectionString),
-                    DataSerializer = new CloudFormatter()
+                    StorageAccount = storageAccount,
+                    StorageAccountName = storageAccount.Credentials.AccountName,
+                    StorageAccountKeyPrefix = accountAndKey != null ? accountAndKey.Credentials.ExportBase64EncodedKey().Substring(0,4) : null,
+                    DataSerializer = serializer
                 };
         }
     }
