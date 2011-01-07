@@ -22,10 +22,9 @@
 <table class="table" id="datatable">
 	<thead>
 		<tr>
-			<th>Date (UTC)</th>
+			<th>Date</th>
 			<th></th>
 			<th>Message</th>
-			<th>Error</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -33,8 +32,15 @@
 			<tr>
 				<td>@item.DateTimeUtc</td>
 				<td>@Html.LogLevelIcon(item.Level)</td>
-				<td>@item.Message</td>
-				<td>@item.Error</td>
+				<td>@item.Message
+				@if (!String.IsNullOrWhiteSpace(item.Error)) {
+					<text>
+					<br />
+					<b>Exception Details and Stack:</b> (<a href="#" class="toggleLink">Show/Hide</a>)<br />
+					<span class="toggle"><pre><small>@item.Error</small></pre></span>
+					</text>
+				}
+				</td>
 			</tr>
 		}
 	</tbody>
@@ -51,6 +57,14 @@
 	function UpdateMoreAvailable(moreAvailable) {
 		if(moreAvailable) $("#loadMoreButton").show();
 		else $("#loadMoreButton").hide();
+	}
+
+	function FormatLogEntryHtml(entry) {
+		var message = entry.message;
+		if(entry.error) {
+			message +=  '<br /><b>Exception Details and Stack:</b> (<a href="#" class="toggleLink">Show/Hide</a>)<br /><span class="toggle"><pre><small>' + entry.error + '</small></pre></span>';
+		}
+		return '<tr><td>' + entry.date + '</td><td>@Html.LogLevelIconClientScript("entry.level")</span></td><td>' + message + '</td></tr>';
 	}
 
 	// TODO: Refactor
@@ -72,7 +86,7 @@
 					oldestToken = data.oldestToken;
 					count = data.entries.length;
 					UpdateMoreAvailable(data.moreAvailable);
-					$.each(data.entries, function (index, entry) { tableBody.append('<tr><td>' + entry.date + '</td><td>@Html.LogLevelIconClientScript("entry.level")</span></td><td>' + entry.message + '</td><td>' + entry.error + '</td></tr>') });
+					$.each(data.entries, function (index, entry) { tableBody.append(FormatLogEntryHtml(entry)) });
 					$('#AjaxLoading').hide();
 				}
 			});
@@ -89,12 +103,17 @@
 					oldestToken = data.oldestToken;
 					count += data.entries.length;
 					UpdateMoreAvailable(data.moreAvailable);
-					$.each(data.entries, function (index, entry) { last.append('<tr><td>' + entry.date + '</td><td>@Html.LogLevelIconClientScript("entry.level")</td><td>' + entry.message + '</td><td>' + entry.error + '</td></tr>') });
+					$.each(data.entries, function (index, entry) { last.append(FormatLogEntryHtml(entry)) });
 					$('#AjaxLoading').hide();
 				}
 			});
+			return false;
 		});
 
+		$('.toggleLink').live('click', function() {
+			$(this).siblings('.toggle').toggle();
+			return false;
+		});
 	});
 </script>
 

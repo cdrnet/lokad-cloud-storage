@@ -225,6 +225,8 @@ div.warning { border: solid 1px #FFCF10; background-color: #FEF693; display: inl
     #Footer .admin a{	text-decoration: none; color:#666666;	}
 
 #AjaxLoading { display: none; margin-top: 5px; margin-right: -7px; }
+.toggle { display: none; }
+.toggle pre { overflow: auto; width: 600px; }
 
 /* Contains the link to the page editing form (Edit.aspx) and history */
 #EditHistoryLinkDiv { float: right; font-size: 11px; padding-top: 4px; padding-bottom: 4px; }
