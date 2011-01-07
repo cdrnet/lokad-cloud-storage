@@ -29,16 +29,17 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         {
             return Task.Factory.StartNew(() =>
                 {
-                    var now = DateTimeOffset.UtcNow;
+                    var started = DateTimeOffset.UtcNow;
                     var proxy = _client.CreateChannel();
                     try
                     {
                         return new AzureDiscoveryInfo
                             {
                                 LokadCloudDeployments = FetchLokadCloudHostedServices(proxy)
-                                    .Select(MapHostedService).ToList(),
+                                    .Select(MapHostedService).OrderBy(hs => hs.Name).ToList(),
                                 IsAvailable = true,
-                                Timestamp = now
+                                Timestamp = started,
+                                FinishedTimestamp = DateTimeOffset.UtcNow
                             };
                     }
                     finally
@@ -52,6 +53,7 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         {
             return proxy
                 .ListHostedServices(_subscriptionId)
+                .AsParallel()
                 .Select(service => proxy.GetHostedServiceWithDetails(_subscriptionId, service.ServiceName, true))
                 .Where(hs => hs.Deployments.Exists(d => d.RoleInstanceList.Exists(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")));
         }
