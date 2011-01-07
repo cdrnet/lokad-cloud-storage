@@ -81,24 +81,21 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			{
 				_providers.Log.Log(LogLevel.Warn, string.Format(
 					"Runtime: execution was interrupted on worker {0} in service {1}. The Runtime will be restarted.",
-					CloudEnvironment.PartitionKey,
-					GetNameOfServiceInExecution()));
+					CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
 			}
 			catch (ThreadAbortException)
 			{
 				Thread.ResetAbort();
 
-				_providers.Log.Log(LogLevel.Warn, string.Format(
-					"Runtime: execution was aborted on worker {0} in service {1}. The Runtime is stopping and may be restarted.",
-					CloudEnvironment.PartitionKey,
-					GetNameOfServiceInExecution()));
+				_providers.Log.Log(LogLevel.Info, string.Format(
+					"Runtime: execution was aborted on worker {0} in service {1}. The Runtime is stopping.",
+					CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
 			}
 			catch (TimeoutException)
 			{
 				_providers.Log.Log(LogLevel.Warn, string.Format(
 					"Runtime: execution timed out on worker {0} in service {1}. The Runtime will be restarted.",
-					CloudEnvironment.PartitionKey,
-					GetNameOfServiceInExecution()));
+					CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
 			}
 			catch (TriggerRestartException)
 			{
@@ -108,9 +105,8 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			catch (Exception ex)
 			{
 				_providers.Log.Log(LogLevel.Error, ex, string.Format(
-					"Runtime: An unhandled exception occurred on worker {0} in service {1}. The Runtime will be restarted.",
-					CloudEnvironment.PartitionKey,
-					GetNameOfServiceInExecution()));
+					"Runtime: An unhandled {0} exception occurred on worker {1} in service {2}. The Runtime will be restarted.",
+					ex.GetType().Name, CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
 			}
 			finally
 			{
@@ -226,7 +222,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 			// ReSharper disable EmptyGeneralCatchClause
 			catch(Exception e)
 			{
-				_providers.Log.ErrorFormat("Runtime: failed to acquire statistics on worker {0}: {1}", CloudEnvironment.PartitionKey, e.ToString());
+				_providers.Log.ErrorFormat(e, "Runtime: failed to acquire statistics on worker {0}: {1}", CloudEnvironment.PartitionKey, e.Message);
 				// might fail when shutting down on exception
 				// logging is likely to fail as well in this case
 				// Suppress exception, can't do anything (will be recycled anyway)
