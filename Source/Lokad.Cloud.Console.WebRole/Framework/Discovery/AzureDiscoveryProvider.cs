@@ -44,7 +44,7 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         public void StartAutomaticCacheUpdate(CancellationToken cancellationToken)
         {
             // Handler is reentrant. Doesn't make sense in practice but we don't prevent it technically.
-            var timer = new Timer(state => UpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(15));
+            var timer = new Timer(state => UpdateAsync(), null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
             cancellationToken.Register(timer.Dispose);
         }
     }
