@@ -26,8 +26,11 @@ namespace Lokad.Cloud.Console.WebRole
             routes.MapRoute("Account", "Account/{action}/{id}", new { controller = "Account", action = "Index", id = UrlParameter.Optional });
             routes.MapRoute("Discovery", "Discovery/{action}/{id}", new { controller = "Discovery", action = "Index", id = UrlParameter.Optional });
 
-            routes.MapRoute("ByDeployment", "{controller}/{deploymentName}/{action}/{id}", new { action = "ByDeployment", id = UrlParameter.Optional });
+            routes.MapRoute("ByDeployment", "{controller}/{hostedServiceName}/{action}/{id}", new { action = "ByDeployment", id = UrlParameter.Optional });
             routes.MapRoute("Default", "{controller}/{action}/{id}", new { controller = "Overview", action = "Index", id = UrlParameter.Optional });
+
+            routes.MapRoute("MenuIndex", "{controller}/{action}", new { controller = "Overview", action = "Index" });
+            routes.MapRoute("MenuByDeployment", "{controller}/{hostedServiceName}/{action}", new { controller = "Overview", action = "ByDeployment" });
         }
 
         protected override IKernel CreateKernel()

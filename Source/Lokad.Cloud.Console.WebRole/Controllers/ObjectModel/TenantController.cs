@@ -14,12 +14,12 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
         {
         }
 
-        protected void InitializeDeploymentTenant(string deploymentName)
+        protected void InitializeDeploymentTenant(string hostedServiceName)
         {
-            CurrentDeployment = deploymentName;
+            CurrentHostedService = hostedServiceName;
 
             var services = DiscoveryInfo.LokadCloudDeployments;
-            HostedService = services.Single(d => d.Name == deploymentName);
+            HostedService = services.Single(d => d.ServiceName == hostedServiceName);
 
             Storage = CloudStorage
                 .ForAzureAccount(HostedService.StorageAccount)
@@ -27,11 +27,11 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
                 .BuildStorageProviders();
         }
 
-        public abstract ActionResult ByDeployment(string deploymentName);
+        public abstract ActionResult ByDeployment(string hostedServiceName);
 
         public virtual ActionResult Index()
         {
-            return RedirectToAction("ByDeployment", new { deploymentName = DiscoveryInfo.LokadCloudDeployments.First().Name });
+            return RedirectToAction("ByDeployment", new { hostedServiceName = DiscoveryInfo.LokadCloudDeployments.First().ServiceName });
         }
     }
 }

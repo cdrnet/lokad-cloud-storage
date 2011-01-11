@@ -9,6 +9,7 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         {
             Bind<AzureDiscoveryFetcher>().ToSelf().InSingletonScope();
             Bind<AzureDiscoveryProvider>().ToSelf();
+            Bind<AzureUpdater>().ToSelf();
             
             Bind<AzureDiscoveryInfo>()
                 .ToMethod(c => c.Kernel.Get<AzureDiscoveryProvider>().GetDiscoveryInfo())

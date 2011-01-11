@@ -1,14 +1,14 @@
 ﻿@model Lokad.Cloud.Console.WebRole.Models.Overview.OverviewModel
 @{ ViewBag.Title = "Lokad.Cloud Administration Console - Overview"; }
 
-<h1>Lokad.Cloud Deployment Overview</h1>
-<p>The following Lokad.Cloud deployments have been discovered in your Windows Azure subscription.</p>
+<h1>Lokad.Cloud Hosted Services Overview</h1>
+<p>The following Lokad.Cloud Hosted Services have been discovered in your Windows Azure subscription.</p>
 
 @foreach (var item in Model.HostedServices) {
 	<table class="table">
 	<tr>
-		<th style="width: 180px;"><b>@item.Name</b></th>
-		<th style="width: 500px;"><b>@item.Label</b></th>
+		<th style="width: 180px;"><b>@item.ServiceName</b></th>
+		<th style="width: 500px;"><b>@item.ServiceLabel</b></th>
 	</tr>
 	@if (!String.IsNullOrEmpty(item.Description)) {
 		<tr>
@@ -23,7 +23,7 @@
 		<td style="text-align: right;">Deployments:</td>
 		<td>
 		@foreach (var deployment in item.Deployments) {
-			@: @Html.OkCancelIcon(deployment.IsRunning) @deployment.Slot @if (deployment.IsTransitioning) { <b>UPDATING</b> } with <b>@deployment.InstanceCount Worker Instances</b>: <em>@deployment.Label</em><br/>
+			@: @Html.OkCancelIcon(deployment.IsRunning) @deployment.Slot @if (deployment.IsTransitioning) { <b>UPDATING</b> } with <b>@deployment.InstanceCount Worker Instances</b>: <em>@deployment.DeploymentLabel</em><br/>
 		}
 		</td>
 	</tr>

@@ -15,9 +15,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
-        public override ActionResult ByDeployment(string deploymentName)
+        public override ActionResult ByDeployment(string hostedServiceName)
         {
-            InitializeDeploymentTenant(deploymentName);
+            InitializeDeploymentTenant(hostedServiceName);
 
             var cloudServices = new CloudServices(Storage.BlobStorage);
 

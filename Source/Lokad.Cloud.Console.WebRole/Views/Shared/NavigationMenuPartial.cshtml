@@ -1,12 +1,12 @@
 ﻿@model Lokad.Cloud.Console.WebRole.Models.Shared.NavigationModel
 <ul id="menu">
-	@Html.MenuNavigationListEntry(Model, "Overview", "Overview", "Index")
-	@Html.MenuNavigationListEntry(Model, "Assemblies", "Assemblies")
-	@Html.MenuNavigationListEntry(Model, "Config", "Config")
-	@Html.MenuNavigationListEntry(Model, "Services", "Services")
-	@Html.MenuNavigationListEntry(Model, "Scheduler", "Scheduler")
-	@Html.MenuNavigationListEntry(Model, "Queues", "Queues")
-	@Html.MenuNavigationListEntry(Model, "Jobs", "Jobs")
-	@Html.MenuNavigationListEntry(Model, "Logs", "Logs")
-	@Html.MenuNavigationListEntry(Model, "Statistics", "Statistics")
+	@Html.NavigationMenuEntry(Model, "Overview", "Overview")
+	@Html.NavigationMenuEntry(Model, "Assemblies", "Assemblies")
+	@Html.NavigationMenuEntry(Model, "Config", "Config")
+	@Html.NavigationMenuEntry(Model, "Services", "Services")
+	@Html.NavigationMenuEntry(Model, "Scheduler", "Scheduler")
+	@Html.NavigationMenuEntry(Model, "Queues", "Queues")
+	@Html.NavigationMenuEntry(Model, "Jobs", "Jobs")
+	@Html.NavigationMenuEntry(Model, "Logs", "Logs")
+	@Html.NavigationMenuEntry(Model, "Statistics", "Statistics")
 </ul>

@@ -15,9 +15,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
-        public override ActionResult ByDeployment(string deploymentName)
+        public override ActionResult ByDeployment(string hostedServiceName)
         {
-            InitializeDeploymentTenant(deploymentName);
+            InitializeDeploymentTenant(hostedServiceName);
 
             var cloudServices = new CloudServices(Storage.BlobStorage);
 
@@ -28,9 +28,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         }
 
         [HttpPut]
-        public ActionResult Status(string deploymentName, string id, bool isStarted)
+        public ActionResult Status(string hostedServiceName, string id, bool isStarted)
         {
-            InitializeDeploymentTenant(deploymentName);
+            InitializeDeploymentTenant(hostedServiceName);
             var cloudServices = new CloudServices(Storage.BlobStorage);
 
             // TODO: Validate id (security)

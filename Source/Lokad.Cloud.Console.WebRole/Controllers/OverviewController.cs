@@ -7,20 +7,42 @@ using Lokad.Cloud.Console.WebRole.Models.Overview;
 namespace Lokad.Cloud.Console.WebRole.Controllers
 {
     [RequireAuthorization, RequireDiscovery]
-    public sealed class OverviewController : ApplicationController
+    public sealed class OverviewController : TenantController
     {
-        public OverviewController(AzureDiscoveryInfo discoveryInfo)
+        private readonly AzureUpdater _updater;
+
+        public OverviewController(AzureDiscoveryInfo discoveryInfo, AzureUpdater updater)
             : base(discoveryInfo)
         {
-            HideDiscovery(false);
+            _updater = updater;
         }
 
-        public ActionResult Index()
+        public override ActionResult Index()
         {
             return View(new OverviewModel
                 {
                     HostedServices = DiscoveryInfo.LokadCloudDeployments.ToArray()
                 });
+        }
+
+        public override ActionResult ByDeployment(string hostedServiceName)
+        {
+            InitializeDeploymentTenant(hostedServiceName);
+
+            return View(new DeploymentModel
+                {
+                    HostedService = HostedService
+                });
+        }
+
+        [HttpPost]
+        public ActionResult InstanceCount(string hostedServiceName, string slot, int instanceCount)
+        {
+            InitializeDeploymentTenant(hostedServiceName);
+
+            _updater.UpdateInstanceCountAsync(hostedServiceName, slot, instanceCount).Wait();
+
+            return RedirectToAction("ByDeployment");
         }
     }
 }

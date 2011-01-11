@@ -26,7 +26,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             }
 
             ShowWaitingForDiscoveryInsteadOfContent = true;
-            HideDiscovery(true);
+            HideDiscovery();
 
             return View();
         }

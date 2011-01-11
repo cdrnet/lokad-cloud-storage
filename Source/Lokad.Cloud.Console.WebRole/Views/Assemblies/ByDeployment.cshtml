@@ -29,7 +29,7 @@
 <h2>Replace assembly package</h2>
 <p>Upload a stand-alone .Net assembly (*.dll) or a Zip archive containing multiple assemblies. Matching symbol files (*.pdb) are supported but optional. The current assembly package will be deleted.</p>
 
-@using (Html.BeginForm("UploadPackage", "Assemblies", new { deploymentName = ViewBag.Navigation.CurrentDeploymentName }, FormMethod.Post, new { enctype = "multipart/form-data" }))
+@using (Html.BeginForm("UploadPackage", "Assemblies", new { hostedServiceName = ViewBag.Navigation.CurrentHostedServiceName }, FormMethod.Post, new { enctype = "multipart/form-data" }))
 {
 	<p><input type="file" name="package" accept="application/octet-stream, application/zip" /><br /><input type="submit" value="Upload" /></p>
 }

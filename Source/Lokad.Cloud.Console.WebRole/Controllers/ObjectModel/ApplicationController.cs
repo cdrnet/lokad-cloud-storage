@@ -22,14 +22,14 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
                 {
                     IsAvailable = discoveryInfo.IsAvailable,
                     ShowLastDiscoveryUpdate = discoveryInfo.IsAvailable,
-                    LastDiscoveryUpdate = (DateTimeOffset.UtcNow - discoveryInfo.Timestamp).PrettyFormat()
+                    LastDiscoveryUpdate = (DateTimeOffset.UtcNow - discoveryInfo.Timestamp).PrettyFormat() + " (" + (discoveryInfo.FinishedTimestamp - discoveryInfo.Timestamp).TotalSeconds.Round(1) + "s)"
                 };
 
             var controllerName = GetType().Name;
             ViewBag.Navigation = _navigation = new NavigationModel
                 {
                     ShowDeploymentSelector = discoveryInfo.IsAvailable,
-                    DeploymentNames = discoveryInfo.LokadCloudDeployments.Select(d => d.Name).ToArray(),
+                    HostedServiceNames = discoveryInfo.LokadCloudDeployments.Select(d => d.ServiceName).ToArray(),
                     CurrentController = controllerName.Substring(0, controllerName.Length - 10),
                     ControllerAction = discoveryInfo.IsAvailable ? "ByDeployment" : "Index"
                 };
@@ -41,21 +41,17 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
             set { _discovery.IsAvailable = !value; }
         }
 
-        protected string CurrentDeployment
+        protected string CurrentHostedService
         {
-            get { return _navigation.CurrentDeploymentName; }
-            set { _navigation.CurrentDeploymentName = value; }
+            get { return _navigation.CurrentHostedServiceName; }
+            set { _navigation.CurrentHostedServiceName = value; }
         }
 
-        protected void HideDiscovery(bool hideDiscoveryUpdate)
+        protected void HideDiscovery()
         {
             _navigation.ShowDeploymentSelector = false;
             _navigation.ControllerAction = "Index";
-
-            if (hideDiscoveryUpdate)
-            {
-                _discovery.ShowLastDiscoveryUpdate = false;
-            }
+            _discovery.ShowLastDiscoveryUpdate = false;
         }
     }
 }

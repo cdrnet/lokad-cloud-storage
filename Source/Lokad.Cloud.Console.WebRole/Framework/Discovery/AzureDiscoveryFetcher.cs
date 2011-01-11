@@ -36,7 +36,7 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
                         return new AzureDiscoveryInfo
                             {
                                 LokadCloudDeployments = FetchLokadCloudHostedServices(proxy)
-                                    .Select(MapHostedService).OrderBy(hs => hs.Name).ToList(),
+                                    .Select(MapHostedService).OrderBy(hs => hs.ServiceName).ToList(),
                                 IsAvailable = true,
                                 Timestamp = started,
                                 FinishedTimestamp = DateTimeOffset.UtcNow
@@ -60,39 +60,56 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
 
         private static LokadCloudHostedService MapHostedService(HostedService hostedService)
         {
-            var config = XElement.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(hostedService.Deployments.First().Configuration)));
-
-            var nn = config.Name.NamespaceName;
-            var xmlWorkerRole = config.Elements().Single(x => x.Attribute("name").Value == "Lokad.Cloud.WorkerRole");
-            var xmlConfigSettings = xmlWorkerRole.Element(XName.Get("ConfigurationSettings", nn));
-            var xmlDataConnectionString = xmlConfigSettings.Elements().Single(x => x.Attribute("name").Value == "DataConnectionString").Attribute("value").Value;
-
-            var storageAccount = CloudStorageAccount.Parse(xmlDataConnectionString);
-            var accountAndKey = storageAccount.Credentials as StorageCredentialsAccountAndKey;
-
             // TODO: Find out the correct matching DataSerializer in some way or another
             var serializer = new CloudFormatter();
 
-            return new LokadCloudHostedService
+            var lokadCloudDeployments = hostedService.Deployments.Select(d =>
                 {
-                    Name = hostedService.ServiceName,
-                    Label = Encoding.UTF8.GetString(Convert.FromBase64String(hostedService.HostedServiceProperties.Label)),
-                    Description = hostedService.HostedServiceProperties.Description,
-                    Deployments = hostedService.Deployments.Select(d => new LokadCloudDeployment
+                    var config = XElement.Parse(Base64Decode(hostedService.Deployments.First().Configuration));
+
+                    var nn = config.Name.NamespaceName;
+                    var xmlWorkerRole = config.Elements().Single(x => x.Attribute("name").Value == "Lokad.Cloud.WorkerRole");
+                    var xmlConfigSettings = xmlWorkerRole.Element(XName.Get("ConfigurationSettings", nn));
+                    var xmlDataConnectionString = xmlConfigSettings.Elements().Single(x => x.Attribute("name").Value == "DataConnectionString").Attribute("value").Value;
+
+                    var storageAccount = CloudStorageAccount.Parse(xmlDataConnectionString);
+                    var accountAndKey = storageAccount.Credentials as StorageCredentialsAccountAndKey;
+
+                    return new LokadCloudDeployment
                         {
-                            Label = Encoding.UTF8.GetString(Convert.FromBase64String(d.Label)),
+                            DeploymentName = d.Name,
+                            DeploymentLabel = Base64Decode(d.Label),
                             Status = d.Status.ToString(),
                             Slot = d.DeploymentSlot.ToString(),
                             InstanceCount = d.RoleInstanceList.Count(ri => ri.RoleName == "Lokad.Cloud.WorkerRole"),
                             IsRunning = d.Status == DeploymentStatus.Running,
-                            IsTransitioning = d.Status != DeploymentStatus.Running && d.Status != DeploymentStatus.Suspended,
-                        }).ToList(),
-                    Configuration = config,
-                    StorageAccount = storageAccount,
-                    StorageAccountName = storageAccount.Credentials.AccountName,
-                    StorageAccountKeyPrefix = accountAndKey != null ? accountAndKey.Credentials.ExportBase64EncodedKey().Substring(0,4) : null,
+                            IsTransitioning =
+                                d.Status != DeploymentStatus.Running && d.Status != DeploymentStatus.Suspended,
+                            Configuration = config,
+                            StorageAccount = storageAccount,
+                            StorageAccountName = storageAccount.Credentials.AccountName,
+                            StorageAccountKeyPrefix = accountAndKey != null ? accountAndKey.Credentials.ExportBase64EncodedKey().Substring(0, 4) : null,
+                        };
+                }).ToList();
+
+            return new LokadCloudHostedService
+                {
+                    ServiceName = hostedService.ServiceName,
+                    ServiceLabel = Base64Decode(hostedService.HostedServiceProperties.Label),
+                    Description = hostedService.HostedServiceProperties.Description,
+                    Deployments = lokadCloudDeployments,
+                    Configuration = lokadCloudDeployments[0].Configuration,
+                    StorageAccount = lokadCloudDeployments[0].StorageAccount,
+                    StorageAccountName = lokadCloudDeployments[0].StorageAccountName,
+                    StorageAccountKeyPrefix = lokadCloudDeployments[0].StorageAccountKeyPrefix,
                     DataSerializer = serializer
                 };
+        }
+
+        private static string Base64Decode(string value)
+        {
+            var bytes = Convert.FromBase64String(value);
+            return Encoding.UTF8.GetString(bytes);
         }
     }
 }

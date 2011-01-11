@@ -18,9 +18,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
-        public override ActionResult ByDeployment(string deploymentName)
+        public override ActionResult ByDeployment(string hostedServiceName)
         {
-            InitializeDeploymentTenant(deploymentName);
+            InitializeDeploymentTenant(hostedServiceName);
             var cloudAssemblies = new CloudAssemblies(Storage.BlobStorage, NullLog.Instance);
 
             return View(new AssembliesModel
@@ -30,9 +30,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         }
 
         [HttpPost]
-        public ActionResult UploadPackage(string deploymentName, HttpPostedFileBase package)
+        public ActionResult UploadPackage(string hostedServiceName, HttpPostedFileBase package)
         {
-            InitializeDeploymentTenant(deploymentName);
+            InitializeDeploymentTenant(hostedServiceName);
             var cloudAssemblies = new CloudAssemblies(Storage.BlobStorage, NullLog.Instance);
 
             byte[] bytes;
@@ -52,7 +52,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                     break;
             }
 
-            return RedirectToAction("ByDeployment", new { deploymentName });
+            return RedirectToAction("ByDeployment", new { hostedServiceName });
         }
     }
 }

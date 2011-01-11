@@ -1,24 +1,44 @@
 ﻿using System.Web.Mvc;
 using System.Web.Mvc.Html;
+
 using Lokad.Cloud.Console.WebRole.Models.Shared;
 
 namespace Lokad.Cloud.Console.WebRole.Helpers
 {
     public static class MenuHtmlExtensions
     {
-        public static MvcHtmlString MenuNavigationListEntry(this HtmlHelper htmlHelper, NavigationModel navigationModel, string text, string controller, string action = null)
+        public static MvcHtmlString NavigationMenuEntry(this HtmlHelper htmlHelper, NavigationModel navigationModel, string text, string controller)
         {
-            var actionName = action ?? navigationModel.ControllerAction;
-            return MvcHtmlString.Create(string.Format("<li{0}>{1}</li>",
-                navigationModel.CurrentController == controller ? @" class=""active""" : string.Empty,
-                htmlHelper.ActionLink(text, actionName, controller, actionName == "ByDeployment" ? new { deploymentName = navigationModel.CurrentDeploymentName } : null, null)));
+            if (controller == navigationModel.CurrentController || string.IsNullOrEmpty(navigationModel.CurrentHostedServiceName))
+            {
+                return BuildMenuEntry(
+                    controller == navigationModel.CurrentController,
+                    htmlHelper.MenuIndexLink(text, controller));
+            }
+
+            return BuildMenuEntry(false, htmlHelper.MenuDeploymentLink(text, controller, navigationModel.CurrentHostedServiceName));
         }
 
-        public static MvcHtmlString MenuDeploymentListEntry(this HtmlHelper htmlHelper, NavigationModel navigationModel, string text, string deploymentName)
+        public static MvcHtmlString DeploymentMenuEntry(this HtmlHelper htmlHelper, NavigationModel navigationModel, string text, string hostedServiceName)
         {
-            return MvcHtmlString.Create(string.Format("<li{0}>{1}</li>",
-                navigationModel.CurrentDeploymentName == deploymentName ? @" class=""active""" : string.Empty,
-                htmlHelper.ActionLink(text, "ByDeployment", navigationModel.CurrentController, new { deploymentName }, null)));
+            return BuildMenuEntry(
+                navigationModel.CurrentHostedServiceName == hostedServiceName,
+                htmlHelper.MenuDeploymentLink(text, navigationModel.CurrentController, hostedServiceName));
+        }
+
+        private static MvcHtmlString BuildMenuEntry(bool isActive, MvcHtmlString linkHtml)
+        {
+            return MvcHtmlString.Create(string.Format("<li{0}>{1}</li>", isActive ? @" class=""active""" : string.Empty, linkHtml));
+        }
+
+        public static MvcHtmlString MenuIndexLink(this HtmlHelper htmlHelper, string text, string controller)
+        {
+            return htmlHelper.RouteLink(text, "MenuIndex", new { controller, action = "Index" });
+        }
+
+        public static MvcHtmlString MenuDeploymentLink(this HtmlHelper htmlHelper, string text, string controller, string hostedServiceName)
+        {
+            return htmlHelper.RouteLink(text, "MenuByDeployment", new { controller, hostedServiceName, action = "ByDeployment" });
         }
     }
 }

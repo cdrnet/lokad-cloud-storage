@@ -20,9 +20,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
-        public override ActionResult ByDeployment(string deploymentName)
+        public override ActionResult ByDeployment(string hostedServiceName)
         {
-            InitializeDeploymentTenant(deploymentName);
+            InitializeDeploymentTenant(hostedServiceName);
 
             var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
             var entryList = cloudLogger.GetLogsOfLevelOrHigher(LogLevel.Info).Take(InitialEntriesCount).ToArray();
@@ -36,9 +36,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 });
         }
 
-        public ActionResult EntriesAfterJson(string deploymentName, int skip, string oldestToken, string threshold)
+        public ActionResult EntriesAfterJson(string hostedServiceName, int skip, string oldestToken, string threshold)
         {
-            InitializeDeploymentTenant(deploymentName);
+            InitializeDeploymentTenant(hostedServiceName);
 
             var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
             var entries = cloudLogger.GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true), skip);

@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             : base(discoveryInfo)
         {
             ShowWaitingForDiscoveryInsteadOfContent = false;
-            HideDiscovery(true);
+            HideDiscovery();
         }
 
         public ActionResult Login()

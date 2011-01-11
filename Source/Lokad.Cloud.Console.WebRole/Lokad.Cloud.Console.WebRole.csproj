@@ -119,6 +119,7 @@
     <Compile Include="Framework\Discovery\AzureDiscoveryProvider.cs" />
     <Compile Include="Framework\Discovery\AzureDiscoveryInfo.cs" />
     <Compile Include="Framework\Discovery\AzureDiscoveryFetcher.cs" />
+    <Compile Include="Framework\Discovery\AzureUpdater.cs" />
     <Compile Include="Framework\Discovery\LokadCloudHostedService.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AssembliesController.cs" />
@@ -144,6 +145,7 @@
     <Compile Include="Models\Assemblies\AssembliesModel.cs" />
     <Compile Include="Models\Config\ConfigModel.cs" />
     <Compile Include="Models\Logs\LogsModel.cs" />
+    <Compile Include="Models\Overview\DeploymentModel.cs" />
     <Compile Include="Models\Overview\OverviewModel.cs" />
     <Compile Include="Models\Queues\QueuesModel.cs" />
     <Compile Include="Models\Scheduler\SchedulerModel.cs" />
@@ -220,6 +222,7 @@
     <Content Include="Content\Lokad.css" />
     <Content Include="Content\ui.slider.extras.css" />
     <Content Include="Global.asax" />
+    <Content Include="Scripts\knockout-1.1.2.js" />
     <Content Include="Scripts\selectToUISlider.jQuery.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -281,6 +284,9 @@
     <Content Include="Views\Statistics\ByDeployment.cshtml" />
     <Content Include="Views\Logs\ByDeployment.cshtml" />
     <Content Include="Views\Jobs\ByDeployment.cshtml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Views\Overview\ByDeployment.cshtml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />

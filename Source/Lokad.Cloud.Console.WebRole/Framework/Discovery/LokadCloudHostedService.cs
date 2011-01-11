@@ -7,8 +7,8 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
 {
     public class LokadCloudHostedService
     {
-        public string Name { get; set; }
-        public string Label { get; set; }
+        public string ServiceName { get; set; }
+        public string ServiceLabel { get; set; }
         public string Description { get; set; }
         public List<LokadCloudDeployment> Deployments { get; set; }
         public XElement Configuration { get; set; }
@@ -22,11 +22,17 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
 
     public class LokadCloudDeployment
     {
-        public string Label { get; set; }
+        public string DeploymentName { get; set; }
+        public string DeploymentLabel { get; set; }
         public string Status { get; set; }
         public string Slot { get; set; }
         public int InstanceCount { get; set; }
         public bool IsRunning { get; set; }
         public bool IsTransitioning { get; set; }
+
+        public XElement Configuration { get; set; }
+        public CloudStorageAccount StorageAccount { get; set; }
+        public string StorageAccountName { get; set; }
+        public string StorageAccountKeyPrefix { get; set; }
     }
 }

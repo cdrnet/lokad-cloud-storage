@@ -6,7 +6,7 @@
         public string ControllerAction { get; set; }
 
         public bool ShowDeploymentSelector { get; set; }
-        public string CurrentDeploymentName { get; set; }
-        public string[] DeploymentNames { get; set; }
+        public string CurrentHostedServiceName { get; set; }
+        public string[] HostedServiceNames { get; set; }
     }
 }
