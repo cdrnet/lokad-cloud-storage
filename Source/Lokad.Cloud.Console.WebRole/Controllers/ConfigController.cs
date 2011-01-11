@@ -14,7 +14,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
-        public override ActionResult ByDeployment(string hostedServiceName)
+        public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
 
@@ -28,7 +28,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
 
         [HttpPost]
         [ValidateInput(false)] // we're expecting xml
-        public ActionResult ByDeployment(string hostedServiceName, ConfigModel model)
+        public ActionResult ByHostedService(string hostedServiceName, ConfigModel model)
         {
             InitializeDeploymentTenant(hostedServiceName);
             var cloudConfiguration = new Management.CloudConfiguration(Storage.BlobStorage);

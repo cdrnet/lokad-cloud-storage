@@ -27,11 +27,11 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
                 .BuildStorageProviders();
         }
 
-        public abstract ActionResult ByDeployment(string hostedServiceName);
+        public abstract ActionResult ByHostedService(string hostedServiceName);
 
         public virtual ActionResult Index()
         {
-            return RedirectToAction("ByDeployment", new { hostedServiceName = DiscoveryInfo.LokadCloudDeployments.First().ServiceName });
+            return RedirectToAction("ByHostedService", new { hostedServiceName = DiscoveryInfo.LokadCloudDeployments.First().ServiceName });
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
-        public override ActionResult ByDeployment(string hostedServiceName)
+        public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
             var cloudAssemblies = new CloudAssemblies(Storage.BlobStorage, NullLog.Instance);
@@ -52,7 +52,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                     break;
             }
 
-            return RedirectToAction("ByDeployment", new { hostedServiceName });
+            return RedirectToAction("ByHostedService", new { hostedServiceName });
         }
     }
 }

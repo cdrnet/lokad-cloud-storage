@@ -16,14 +16,14 @@ namespace Lokad.Cloud.Console.WebRole.Helpers
                     htmlHelper.MenuIndexLink(text, controller));
             }
 
-            return BuildMenuEntry(false, htmlHelper.MenuDeploymentLink(text, controller, navigationModel.CurrentHostedServiceName));
+            return BuildMenuEntry(false, htmlHelper.MenuByHostedServiceLink(text, controller, navigationModel.CurrentHostedServiceName));
         }
 
         public static MvcHtmlString DeploymentMenuEntry(this HtmlHelper htmlHelper, NavigationModel navigationModel, string text, string hostedServiceName)
         {
             return BuildMenuEntry(
                 navigationModel.CurrentHostedServiceName == hostedServiceName,
-                htmlHelper.MenuDeploymentLink(text, navigationModel.CurrentController, hostedServiceName));
+                htmlHelper.MenuByHostedServiceLink(text, navigationModel.CurrentController, hostedServiceName));
         }
 
         private static MvcHtmlString BuildMenuEntry(bool isActive, MvcHtmlString linkHtml)
@@ -36,9 +36,9 @@ namespace Lokad.Cloud.Console.WebRole.Helpers
             return htmlHelper.RouteLink(text, "MenuIndex", new { controller, action = "Index" });
         }
 
-        public static MvcHtmlString MenuDeploymentLink(this HtmlHelper htmlHelper, string text, string controller, string hostedServiceName)
+        public static MvcHtmlString MenuByHostedServiceLink(this HtmlHelper htmlHelper, string text, string controller, string hostedServiceName)
         {
-            return htmlHelper.RouteLink(text, "MenuByDeployment", new { controller, hostedServiceName, action = "ByDeployment" });
+            return htmlHelper.RouteLink(text, "MenuByHostedService", new { controller, hostedServiceName, action = "ByHostedService" });
         }
     }
 }

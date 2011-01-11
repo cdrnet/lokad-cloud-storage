@@ -31,7 +31,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
                     ShowDeploymentSelector = discoveryInfo.IsAvailable,
                     HostedServiceNames = discoveryInfo.LokadCloudDeployments.Select(d => d.ServiceName).ToArray(),
                     CurrentController = controllerName.Substring(0, controllerName.Length - 10),
-                    ControllerAction = discoveryInfo.IsAvailable ? "ByDeployment" : "Index"
+                    ControllerAction = discoveryInfo.IsAvailable ? "ByHostedService" : "Index"
                 };
         }
 

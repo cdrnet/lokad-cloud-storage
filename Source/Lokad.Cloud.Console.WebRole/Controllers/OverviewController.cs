@@ -25,7 +25,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 });
         }
 
-        public override ActionResult ByDeployment(string hostedServiceName)
+        public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
 
@@ -42,7 +42,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
 
             _updater.UpdateInstanceCountAsync(hostedServiceName, slot, instanceCount).Wait();
 
-            return RedirectToAction("ByDeployment");
+            return RedirectToAction("ByHostedService");
         }
     }
 }

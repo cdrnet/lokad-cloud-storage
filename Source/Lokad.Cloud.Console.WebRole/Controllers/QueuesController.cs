@@ -16,7 +16,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
-        public override ActionResult ByDeployment(string hostedServiceName)
+        public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
 
