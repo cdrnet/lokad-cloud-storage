@@ -4,7 +4,7 @@
 <h1>Dependency Injection Configuration</h1>
 <p>Optional XML application configuration to customize dependency injection for cloud services using an autofac configuration section.</p>
 
-@using (Html.BeginForm()) {
+@using (Html.BeginForm("Configuration", "Config")) {
 	@Html.TextAreaFor(m => m.Configuration, 20, 80, null)
 	<input type="submit" value="Save" />
 }

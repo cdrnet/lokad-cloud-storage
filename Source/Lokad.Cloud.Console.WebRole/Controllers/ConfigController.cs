@@ -28,7 +28,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
 
         [HttpPost]
         [ValidateInput(false)] // we're expecting xml
-        public ActionResult ByHostedService(string hostedServiceName, ConfigModel model)
+        public ActionResult Configuration(string hostedServiceName, ConfigModel model)
         {
             InitializeDeploymentTenant(hostedServiceName);
             var cloudConfiguration = new Management.CloudConfiguration(Storage.BlobStorage);
@@ -45,7 +45,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 }
             }
 
-            return View(model);
+            return RedirectToAction("ByHostedService");
         }
     }
 }

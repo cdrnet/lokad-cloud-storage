@@ -52,7 +52,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                     break;
             }
 
-            return RedirectToAction("ByHostedService", new { hostedServiceName });
+            return RedirectToAction("ByHostedService");
         }
     }
 }
