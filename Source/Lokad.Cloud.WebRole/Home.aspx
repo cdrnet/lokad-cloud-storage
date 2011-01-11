@@ -47,24 +47,24 @@
 	</div>
 	
 	<asp:Panel ID="DeploymentStatusPanel" Visible="false" runat="server" CssClass="warning">
-        <b>Azure Deployment update is in progress</b>
+		<b>Azure Deployment update is in progress</b>
 	</asp:Panel>
 	
 	<asp:Panel ID="WorkerInstancesPanel" Visible="false" runat="server" CssClass="warning">
-        Update to
-        <asp:TextBox ID="WorkerInstancesBox" runat="server" Width="25px" Text="4" />
-        <asp:RequiredFieldValidator ID="WorkerInstancesValidator1" runat="server" Display="Dynamic" ErrorMessage="*" CssClass="resulterror"
-            ControlToValidate="WorkerInstancesBox" ValidationGroup="set" />
-        <asp:RangeValidator ID="WorkerInstancesValidator2" runat="server" Display="Dynamic" ErrorMessage="*" CssClass="resulterror"
-            ControlToValidate="WorkerInstancesBox" Type="Integer" MinimumValue="1" MaximumValue="200" ValidationGroup="set" />
-        Worker Instances:
-        <asp:Button ID="SetWorkerInstancesButton" runat="server" Text="Request" ValidationGroup="set"
-            OnClick="SetWorkerInstancesButton_Click" />
+		Update to
+		<asp:TextBox ID="WorkerInstancesBox" runat="server" Width="25px" Text="4" />
+		<asp:RequiredFieldValidator ID="WorkerInstancesValidator1" runat="server" Display="Dynamic" ErrorMessage="*" CssClass="resulterror"
+			ControlToValidate="WorkerInstancesBox" ValidationGroup="set" />
+		<asp:RangeValidator ID="WorkerInstancesValidator2" runat="server" Display="Dynamic" ErrorMessage="*" CssClass="resulterror"
+			ControlToValidate="WorkerInstancesBox" Type="Integer" MinimumValue="1" MaximumValue="200" ValidationGroup="set" />
+		Worker Instances:
+		<asp:Button ID="SetWorkerInstancesButton" runat="server" Text="Request" ValidationGroup="set"
+			OnClick="SetWorkerInstancesButton_Click" />
 	</asp:Panel>
 	
 	<asp:Panel ID="_managementWarningPanel" Visible="false" runat="server" CssClass="warning">
-	    <b>Azure Service Management is disabled</b><br />
-	    Communicating with the Azure Management API failed:
+		<b>Azure Service Management is disabled</b><br />
+		Communicating with the Azure Management API failed:
 		<asp:Label ID="_managementConfigurationMissing" Visible="false" runat="server"
 			Text="The subscription id or certificate thumbprint configuration is missing, please verify the deployment configuration." />
 		<asp:Label ID="_managementCertificateMissing" Visible="false" runat="server"
@@ -80,7 +80,7 @@
 	<h2 class="separator">Azure Deployment</h2>
 	<div class="box">
 		<ul>
-		    <li>Subscription: <b>
+			<li>Subscription: <b>
 				<asp:Label ID="SubscriptionLabel" runat="server" /></b>
 			</li>
 			<li>Deployment: <b>
@@ -99,10 +99,10 @@
 	<h2 class="separator">Azure Management</h2>
 	<div class="box">
 		<ul>
-		    <li>Certificate: <b>
+			<li>Certificate: <b>
 				<asp:Label ID="CertificatesLabel" runat="server" /></b>
 				<ul>
-				    <li>Thumbprint: <asp:Label ID="CertificateThumbprintLabel" runat="server" /></li>
+					<li>Thumbprint: <asp:Label ID="CertificateThumbprintLabel" runat="server" /></li>
 				</ul>
 			</li>
 		</ul>

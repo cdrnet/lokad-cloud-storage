@@ -5,7 +5,6 @@
 
 using System;
 using System.Web.UI;
-using Lokad.Cloud.Management;
 using Lokad.Cloud.Management.Api10;
 
 namespace Lokad.Cloud.Web
