@@ -590,12 +590,12 @@ namespace Lokad.Cloud.Storage.Azure
             }
             else
             {
-                var formatter = _serializer as IIntermediateDataSerializer;
-                if (formatter != null)
+                var intermediateSerializer = _serializer as IIntermediateDataSerializer;
+                if (intermediateSerializer != null)
                 {
                     using (var stream = new MemoryStream(data))
                     {
-                        dataXml = formatter.UnpackXml(stream);
+                        dataXml = intermediateSerializer.TryUnpackXml(stream).ToMaybe();
                     }
                 }
 
