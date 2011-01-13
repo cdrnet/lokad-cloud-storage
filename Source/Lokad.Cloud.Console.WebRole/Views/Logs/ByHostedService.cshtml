@@ -37,7 +37,7 @@
 					<text>
 					<br />
 					<b>Exception Details and Stack:</b> (<a href="#" class="toggleLink">Show/Hide</a>)<br />
-					<span class="toggle"><pre><small>@item.Error</small></pre></span>
+					<span class="toggle"><pre>@item.Error</pre></span>
 					</text>
 				}
 				</td>
@@ -62,7 +62,7 @@
 	function FormatLogEntryHtml(entry) {
 		var message = entry.message;
 		if(entry.error) {
-			message +=  '<br /><b>Exception Details and Stack:</b> (<a href="#" class="toggleLink">Show/Hide</a>)<br /><span class="toggle"><pre><small>' + entry.error + '</small></pre></span>';
+			message +=  '<br /><b>Exception Details and Stack:</b> (<a href="#" class="toggleLink">Show/Hide</a>)<br /><span class="toggle"><pre>' + entry.error + '</pre></span>';
 		}
 		return '<tr><td>' + entry.date + '</td><td>@Html.LogLevelIconClientScript("entry.level")</span></td><td>' + message + '</td></tr>';
 	}
@@ -76,8 +76,9 @@
 		$('select#loglevel').selectToUISlider({ labels: 5, sliderOptions: { change:function() {
 			$('#AjaxLoading').show();
 			$.ajax({
-				url: '/Logs/@ViewBag.Navigation.CurrentHostedServiceName/EntriesAfterJson?skip=0&threshold=' + $('select#loglevel').val(),
+				url: '/Logs/@ViewBag.Navigation.CurrentHostedServiceName/JsonEntriesAfter',
 				dataType: 'json',
+				data: { skip: 0, threshold: $('select#loglevel').val() },
 				cache: false,
 				success: function (data) {
 					tableBody = $("#datatable > tbody");
@@ -95,8 +96,9 @@
 		$('#loadMoreButton > a').click(function() {
 			$('#AjaxLoading').show();
 			$.ajax({
-				url: '/Logs/@ViewBag.Navigation.CurrentHostedServiceName/EntriesAfterJson?skip=' + count + '&oldestToken=' + oldestToken + '&threshold=' + $('select#loglevel').val(),
+				url: '/Logs/@ViewBag.Navigation.CurrentHostedServiceName/JsonEntriesAfter',
 				dataType: 'json',
+				data: { skip: count, oldestToken: oldestToken, threshold: $('select#loglevel').val() },
 				cache: false,
 				success: function (data) {
 					last = $("#datatable > tbody");

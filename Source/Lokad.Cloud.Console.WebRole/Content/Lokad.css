@@ -4,9 +4,9 @@ body {  padding: 0; margin: 0; font-family: "Trebuchet MS", Arial, Helvetica, sa
 table, img, div, form{ padding:0; margin:0; border:none; }
 p { font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; color: #555555; padding: 0; margin: 0; }
 h1, h2, h3, h4 { font-family: Arial, Helvetica, sans-serif; font-size: 24px; color: #686868; padding: 0; margin: 0 0 10px 0; font-weight: normal; }
-h2 { font-size: 16px; padding: 0px; margin: 0px; font-weight: bold; }
-h3 { font-size: 14px; padding: 0px; margin: 0px; font-weight: bold; }
-h4 { padding: 0px; margin: 0px; font-weight: normal; font-style: italic; }
+h2 { font-size: 16px; padding: 0px; margin: 0px; font-weight: bold; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1.5em; }
+h3 { font-size: 14px; padding: 0px; margin: 0px; font-weight: bold; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1.5em; }
+h4 { padding: 0px; margin: 0px; font-weight: normal; font-style: italic; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1.5em; }
 ul, ol { font-size:1em; margin: 0px; padding-top: 0px; padding-bottom: 0px; padding-left: 28px; padding-right: 8px; }
 li { margin: 2px 0px 0px 0px; padding: 0px; }
 a:active{outline: none;}
@@ -58,12 +58,8 @@ a.emaillink {}
 
 h1.pagetitle { font-size: 22px; margin-bottom: 2px; }
 
-/* Class for applying a separator under H elements (useful to avoid usage of HR) */
-h1.separator, h2.separator, h3.separator { padding-bottom: 2px; margin-bottom: 8px; }
-
 a.editsectionlink { float: right; font-size: 11px; margin: 4px 0px 0px 0px; }
-code, pre { font-family: Consolas, Courier New, Monospace; color: #000000; padding: 0px; margin: 0px; }
-pre { border: dashed 1px #999999; background-color: #FFFFF0; margin: 0px 10px 0px 10px; padding: 8px; }
+
 
 /* Class for general purpose images (contained in Wiki pages) */
 img.image { border: solid 1px #F5F5F5; }
@@ -85,7 +81,11 @@ table.imageauto { border: 1px solid #E0DAC8; background-color: #FFFFFF; padding:
 
 /* Div acting like a box */
 div.box { border: 1px solid #CCCCCC; background-color: #F9F9F9; display: block; padding: 7px; margin: 0em 0em 1em 0em; }
+div.groupbox { border: 1px solid #CCCCCC; padding: 7px; margin: 0em 0em 1em 0em; }
 div.warning { border: solid 1px #FFCF10; background-color: #FEF693; display: inline-block; padding: 7px; margin: 0em 0em 1em 0em; }
+
+code, pre { font-family: Consolas, Courier New, Monospace; color: #000000; padding: 0px; margin: 0px; }
+pre { border: dashed 1px #999999; background-color: #FFFFF0; margin: 0px 0px 10px 0px; padding: 7px; overflow: auto; font-size: small; }
 
 /* Contains the Header */
 #HeaderDiv { width:100%; float:left; background: #F2EDD9 url(Images/bg_body.gif) repeat-x; }
@@ -226,7 +226,7 @@ div.warning { border: solid 1px #FFCF10; background-color: #FEF693; display: inl
 
 #AjaxLoading { display: none; margin-top: 5px; margin-right: -7px; }
 .toggle { display: none; }
-.toggle pre { overflow: auto; width: 600px; }
+.toggle pre { width: 600px; }
 
 /* Contains the link to the page editing form (Edit.aspx) and history */
 #EditHistoryLinkDiv { float: right; font-size: 11px; padding-top: 4px; padding-bottom: 4px; }

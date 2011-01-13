@@ -36,7 +36,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 });
         }
 
-        public ActionResult EntriesAfterJson(string hostedServiceName, int skip, string oldestToken, string threshold)
+        public ActionResult JsonEntriesAfter(string hostedServiceName, int skip, string oldestToken, string threshold)
         {
             InitializeDeploymentTenant(hostedServiceName);
 
