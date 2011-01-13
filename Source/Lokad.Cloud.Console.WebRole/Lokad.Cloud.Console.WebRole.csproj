@@ -140,6 +140,7 @@
     </Compile>
     <Compile Include="Helpers\IconHtmlExtensions.cs" />
     <Compile Include="Helpers\IconMap.cs" />
+    <Compile Include="Helpers\JavascriptHtmlExtensions.cs" />
     <Compile Include="Helpers\MenuHtmlExtensions.cs" />
     <Compile Include="Helpers\PresentationHelpers.cs" />
     <Compile Include="Models\Assemblies\AssembliesModel.cs" />

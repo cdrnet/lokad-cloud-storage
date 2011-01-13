@@ -44,7 +44,11 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
         protected string CurrentHostedService
         {
             get { return _navigation.CurrentHostedServiceName; }
-            set { _navigation.CurrentHostedServiceName = value; }
+            set
+            {
+                _navigation.CurrentHostedServiceName = value;
+                ViewBag.TenantPath = String.Format("/{0}/{1}", _navigation.CurrentController, value);
+            }
         }
 
         protected void HideDiscovery()

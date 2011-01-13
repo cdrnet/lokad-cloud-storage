@@ -1,6 +1,11 @@
 ﻿@model Lokad.Cloud.Console.WebRole.Models.Queues.QueuesModel
 @{ ViewBag.Title = "Lokad.Cloud Administration Console - Queues"; }
 
+@section Header {
+	<script src="http://ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js" type="text/javascript"></script>
+	<script src="@Url.Content("~/Scripts/knockout-1.1.2.js")" type="text/javascript"></script>
+}
+
 <h1>Queue Workload</h1>
 <p>This table reports the workload in the various queues of the account</p>
 
@@ -20,3 +25,116 @@
 	}
 
 </table>
+
+<h2>Quarantine: Failing Messages</h2>
+<p>
+	Messages which fail repeatedly are persisted and removed from the queue in order to keep it healthy.
+</p>
+<div data-bind="visible: qQueues().length == 0">
+	No message has been considered as failing so far.
+</div>
+<div data-bind="visible: qQueues().length > 0">
+	The following messages have been considered as failing. Note that persisted messages may become unrestorable if their originating queue is deleted. No more than 50 messsages are shown at a time.
+</div>
+
+<div data-bind='template: "qQueuesTemplate"'></div>
+
+<script type="text/html" id="qQueuesTemplate">
+	{{each(i, queue) qQueues()}}
+		<h3>Queue: ${queueName} &nbsp;&nbsp;
+			<button data-bind="click: function() { viewModel.restoreQQueue(queue) }">Restore All</button>
+			<button data-bind="click: function() { viewModel.removeQQueue(queue) }">Delete All</button>
+		</h3>
+		{{each(i, message) qMessages}}
+			<div class="groupbox">
+				<p>Inserted ${ inserted } and removed ${removed} &nbsp;&nbsp;
+					<button data-bind="click: function() { viewModel.restoreQMessage(queue, message) }">Restore</button>
+					<button data-bind="click: function() { viewModel.removeQMessage(queue, message) }">Delete</button>
+				</p>
+				<div class="box">${content}</div>
+				Reason:
+				<pre>${reason}</pre>
+			</div>
+		{{/each}}
+	{{/each}}
+</script>
+
+<script type="text/javascript">
+	var viewModel = {
+		qQueues: ko.observableArray([
+			@for (int i = 0; i < Model.Quarantine.Length; i++) {
+				var queue = Model.Quarantine[i];
+			<text>
+				@if (i > 0) { <text>,</text> }
+				{ queueName: "@queue.QueueName", qMessages: [
+				@for (int j = 0; j < queue.Messages.Length; j++) {
+					var message = queue.Messages[j];
+					<text>
+					@if (j > 0) { <text>,</text> }
+					{ key: "@message.Key", inserted: "@message.Inserted", removed: "@message.Persisted", content: @Html.Enquote(message.Content), reason: @Html.Enquote(message.Reason) }
+					</text>
+				}]}
+			</text>
+			}]),
+		removeQQueue: function(queue) {
+			while(message = queue.qMessages.pop()) {
+				viewModel.ajaxDeleteQMessage(message);
+			}
+			viewModel.qQueues.remove(queue);
+		},
+		removeQMessage: function(queue, message) {
+			viewModel.ajaxDeleteQMessage(message);
+			ko.utils.arrayRemoveItem(queue.qMessages, message);
+			if (queue.qMessages.length == 0) {
+				viewModel.qQueues.remove(queue);
+			}
+			else {
+				viewModel.qQueues.valueHasMutated();
+			}
+		},
+		restoreQQueue: function(queue) {
+			while(message = queue.qMessages.pop()) {
+				viewModel.ajaxRestoreQMessage(message);
+			}
+			viewModel.qQueues.remove(queue);
+		},
+		restoreQMessage: function(queue, message) {
+			viewModel.ajaxRestoreQMessage(message);
+			ko.utils.arrayRemoveItem(queue.qMessages, message);
+			if (queue.qMessages.length == 0) {
+				viewModel.qQueues.remove(queue);
+			}
+			else {
+				viewModel.qQueues.valueHasMutated();
+			}
+		},
+		ajaxDeleteQMessage: function(message) {
+			$('#AjaxLoading').show();
+			$.ajax({
+				url: '@ViewBag.TenantPath/JsonQuarantinedMessage/' + message.key,
+				type: 'DELETE',
+				dataType: 'json',
+				cache: false,
+				success: function (data) {
+					$('#AjaxLoading').hide();
+				}
+			});
+		},
+		ajaxRestoreQMessage: function(message) {
+			$('#AjaxLoading').show();
+			$.ajax({
+				url: '@ViewBag.TenantPath/JsonRestoreQuarantinedMessage/' + message.key,
+				type: 'POST',
+				dataType: 'json',
+				cache: false,
+				success: function (data) {
+					$('#AjaxLoading').hide();
+				}
+			});
+		}
+	};
+
+	$(document).ready(function () {
+		ko.applyBindings(viewModel);
+	});
+</script>

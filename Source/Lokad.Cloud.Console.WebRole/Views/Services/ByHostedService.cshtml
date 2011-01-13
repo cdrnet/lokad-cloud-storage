@@ -30,7 +30,7 @@
 			me.removeClass(statusToClass(!enable));
 			me.addClass('@IconMap.Loading');
 			$.ajax({
-				url: '/Services/@ViewBag.Navigation.CurrentHostedServiceName/JsonStatus/' + me.attr('id'),
+				url: '@ViewBag.TenantPath/JsonStatus/' + me.attr('id'),
 				type: 'PUT',
 				dataType: 'json',
 				data: { isStarted: enable },
