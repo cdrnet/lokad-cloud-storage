@@ -224,6 +224,7 @@
     <Content Include="Content\ui.slider.extras.css" />
     <Content Include="Global.asax" />
     <Content Include="Scripts\knockout-1.1.2.js" />
+    <Content Include="Scripts\knockout.mapping.js" />
     <Content Include="Scripts\selectToUISlider.jQuery.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">

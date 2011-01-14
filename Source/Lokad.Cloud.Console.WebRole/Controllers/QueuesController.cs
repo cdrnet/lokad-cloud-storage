@@ -113,8 +113,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 writer.Flush();
             }
 
-            var encoded = HttpUtility.HtmlEncode(sb.ToString());
-            return encoded.Replace(Environment.NewLine, "<br />").Replace("  ", "&nbsp;&nbsp;");
+            return HttpUtility.HtmlEncode(sb.ToString());
         }
 
         static string FormatReason(PersistedMessage message)
@@ -124,7 +123,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 return "Reason unknown";
             }
 
-            return message.Reason;
+            return HttpUtility.HtmlEncode(message.Reason);
         }
     }
 }

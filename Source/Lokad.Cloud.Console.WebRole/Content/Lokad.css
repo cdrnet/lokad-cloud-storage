@@ -81,7 +81,7 @@ table.imageauto { border: 1px solid #E0DAC8; background-color: #FFFFFF; padding:
 
 /* Div acting like a box */
 div.box { border: 1px solid #CCCCCC; background-color: #F9F9F9; display: block; padding: 7px; margin: 0em 0em 1em 0em; }
-div.groupbox { border: 1px solid #CCCCCC; padding: 7px; margin: 0em 0em 1em 0em; }
+div.groupbox { border: 1px solid #CCCCCC; background-color: #FCF9F0; padding: 7px; margin: 0em 0em 1em 0em; }
 div.warning { border: solid 1px #FFCF10; background-color: #FEF693; display: inline-block; padding: 7px; margin: 0em 0em 1em 0em; }
 
 code, pre { font-family: Consolas, Courier New, Monospace; color: #000000; padding: 0px; margin: 0px; }
