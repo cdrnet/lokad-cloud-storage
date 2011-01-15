@@ -19,7 +19,7 @@
 			<td>@item.Version.ToString()</td>
 			<td>@String.Format("{0:g}", item.DateTime)</td>
 			<td>@String.Format("{0} KB", item.SizeBytes / 1024)</td>
-			<td>@Html.GoodBadIcon(item.HasSymbols) @(item.HasSymbols ? "Available" : "None")</td>
+			<td>@Html.OkCancelIcon(item.HasSymbols) @(item.HasSymbols ? "Available" : "None")</td>
 		</tr>
 	}
 

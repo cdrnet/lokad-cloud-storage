@@ -125,7 +125,6 @@
     <Compile Include="Controllers\AssembliesController.cs" />
     <Compile Include="Controllers\ConfigController.cs" />
     <Compile Include="Controllers\DiscoveryController.cs" />
-    <Compile Include="Controllers\JobsController.cs" />
     <Compile Include="Controllers\LogsController.cs" />
     <Compile Include="Controllers\ObjectModel\ApplicationController.cs" />
     <Compile Include="Controllers\ObjectModel\TenantController.cs" />
@@ -133,7 +132,6 @@
     <Compile Include="Controllers\QueuesController.cs" />
     <Compile Include="Controllers\SchedulerController.cs" />
     <Compile Include="Controllers\ServicesController.cs" />
-    <Compile Include="Controllers\StatisticsController.cs" />
     <Compile Include="Framework\Discovery\DiscoveryNinjectModule.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -153,7 +151,6 @@
     <Compile Include="Models\Services\ServicesModel.cs" />
     <Compile Include="Models\Shared\DiscoveryModel.cs" />
     <Compile Include="Models\Shared\NavigationModel.cs" />
-    <Compile Include="Models\Statistics\StatisticsModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -286,9 +283,6 @@
     <Content Include="Views\Config\ByHostedService.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\Jobs\ByHostedService.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="Views\Logs\ByHostedService.cshtml" />
   </ItemGroup>
   <ItemGroup>
@@ -302,9 +296,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Services\ByHostedService.cshtml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Views\Statistics\ByHostedService.cshtml" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
