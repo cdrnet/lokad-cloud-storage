@@ -31,96 +31,79 @@
 <p>
 	Messages which fail repeatedly are persisted and removed from the queue in order to keep it healthy.
 </p>
-<div data-bind="visible: qQueues().length == 0">
+<div data-bind="visible: Quarantine().length == 0">
 	No message has been considered as failing so far.
 </div>
-<div data-bind="visible: qQueues().length > 0">
+<div data-bind="visible: Quarantine().length > 0">
 	The following messages have been considered as failing. Note that persisted messages may become unrestorable if their originating queue is deleted. No more than 50 messsages are shown at a time.
 </div>
 
-<div data-bind='template: { name: "qQueueTemplate", foreach: qQueues, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
+<div data-bind='template: { name: "qQueueTemplate", foreach: Quarantine, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
 
 <script type="text/html" id="qQueueTemplate">
-	<h3>Queue: ${queueName} &nbsp;&nbsp;
+	<h3>Queue: ${QueueName} &nbsp;&nbsp;
 		<button data-bind="click: function() { restoreQQueue($data) }">Restore All</button>
 		<button data-bind="click: function() { removeQQueue($data) }">Delete All</button>
 	</h3>
-	<div data-bind='template: { name: "qMessageTemplate", foreach: qMessages, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
+	<div data-bind='template: { name: "qMessageTemplate", foreach: Messages, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
 </script>
 
 <script type="text/html" id="qMessageTemplate">
 	<div class="groupbox">
-		<p>Inserted ${ inserted } and removed ${removed} &nbsp;&nbsp;
+		<p>Inserted ${Inserted} but quarantined ${Persisted} &nbsp;&nbsp;
 			<button data-bind="click: function() { restoreQMessage($data) }">Restore</button>
 			<button data-bind="click: function() { removeQMessage($data) }">Delete</button>
 		</p>
-		<pre>${content}</pre>
+		<pre>${Content}</pre>
 		Reason:
-		<pre>${reason}</pre>
+		<pre>${Reason}</pre>
 	</div>
 </script>
 
 <script type="text/javascript">
 
-	var model = { qQueues: [
-		@for (int i = 0; i < Model.Quarantine.Length; i++) {
-				var queue = Model.Quarantine[i];
-			<text>
-				@if (i > 0) { <text>,</text> }
-				{ queueName: "@queue.QueueName", qMessages: [
-				@for (int j = 0; j < queue.Messages.Length; j++) {
-					var message = queue.Messages[j];
-					<text>
-					@if (j > 0) { <text>,</text> }
-					{ key: "@message.Key", inserted: "@message.Inserted", removed: "@message.Persisted", content: @Html.Enquote(message.Content), reason: @Html.Enquote(message.Reason) }
-					</text>
-				}]}
-			</text>
-		}
-	]};
-
-	var viewModel = ko.mapping.fromJS(model);
+	var viewModel = ko.mapping.fromJSON(@Html.Enquote(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(Model)));
 
 	removeQQueue = function(queue) {
-		while(message = queue.qMessages.pop()) {
+		while(message = queue.Messages.pop()) {
 			ajaxDeleteQMessage(message);
 		}
-		viewModel.qQueues.remove(queue);
+		viewModel.Quarantine.remove(queue);
 	};
 	removeQMessage = function(message) {
 		ajaxDeleteQMessage(message);
 		var queue = queueOfMessage(message);
-		queue.qMessages.remove(message);
-		if (queue.qMessages().length == 0) {
-			viewModel.qQueues.remove(queue);
+		queue.Messages.remove(message);
+		if (queue.Messages().length == 0) {
+			viewModel.Quarantine.remove(queue);
 		}
 	};
 
 	restoreQQueue = function(queue) {
-		while(message = queue.qMessages.pop()) {
+		while(message = queue.Messages.pop()) {
 			ajaxRestoreQMessage(message);
 		}
-		viewModel.qQueues.remove(queue);
+		viewModel.Quarantine.remove(queue);
 	};
 	restoreQMessage = function(message) {
 		ajaxRestoreQMessage(message);
 		var queue = queueOfMessage(message);
-		queue.qMessages.remove(message);
-		if (queue.qMessages().length == 0) {
-			viewModel.qQueues.remove(queue);
+		queue.Messages.remove(message);
+		if (queue.Messages().length == 0) {
+			viewModel.Quarantine.remove(queue);
 		}
 	};
 
 	queueOfMessage = function(message) {
 		var queue;
-		$.each(viewModel.qQueues(), function(i,q) { if (q.qMessages.indexOf(message) >= 0) { queue = q; } });
+		$.each(viewModel.Quarantine(), function(i,q) { if (q.Messages.indexOf(message) >= 0) { queue = q; } });
 		return queue;
 	};
 
 	ajaxDeleteQMessage = function(message) {
 		$('#AjaxLoading').show();
 		$.ajax({
-			url: '@ViewBag.TenantPath/JsonQuarantinedMessage/' + message.key(),
+			url: '@ViewBag.TenantPath/JsonQuarantinedMessage/' + message.Key(),
 			type: 'DELETE',
 			dataType: 'json',
 			cache: false,
@@ -132,7 +115,7 @@
 	ajaxRestoreQMessage = function(message) {
 		$('#AjaxLoading').show();
 		$.ajax({
-			url: '@ViewBag.TenantPath/JsonRestoreQuarantinedMessage/' + message.key(),
+			url: '@ViewBag.TenantPath/JsonRestoreQuarantinedMessage/' + message.Key(),
 			type: 'POST',
 			dataType: 'json',
 			cache: false,
