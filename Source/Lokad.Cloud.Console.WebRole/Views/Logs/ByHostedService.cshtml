@@ -2,8 +2,11 @@
 @{ ViewBag.Title = "Lokad.Cloud Administration Console - Logs"; }
 
 @section Header {
+	<script src="http://ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js" type="text/javascript"></script>
 	<link href="@Url.Content("~/Content/ui.slider.extras.css")" rel="stylesheet" type="text/css" />
 	<script src="@Url.Content("~/Scripts/selectToUISlider.jQuery.js")" type="text/javascript"></script>
+	<script src="@Url.Content("~/Scripts/knockout-1.1.2.js")" type="text/javascript"></script>
+	<script src="@Url.Content("~/Scripts/knockout.mapping.js")" type="text/javascript"></script>
 }
 
 <h1>Logs</h1>
@@ -19,7 +22,7 @@
 	</select>
 </fieldset>
 
-<table class="table" id="datatable">
+<table class="table" id="datatable" data-bind="visible: Entries().length > 0">
 	<thead>
 		<tr>
 			<th>Date</th>
@@ -27,51 +30,39 @@
 			<th>Message</th>
 		</tr>
 	</thead>
-	<tbody>
-		@foreach (var item in Model.Entries) {
-			<tr>
-				<td>@item.DateTimeUtc</td>
-				<td>@Html.LogLevelIcon(item.Level)</td>
-				<td>@item.Message
-				@if (!String.IsNullOrWhiteSpace(item.Error)) {
-					<text>
-					<br />
-					<b>Exception Details and Stack:</b> (<a href="#" class="toggleLink">Show/Hide</a>)<br />
-					<span class="toggle"><pre>@item.Error</pre></span>
-					</text>
-				}
-				</td>
-			</tr>
-		}
-	</tbody>
+	<tbody data-bind='template: {name: "logEntryTemplate", foreach: Entries}'></tbody>
 </table>
 
-<p id="loadMoreButton" style="margin-top: 1.5em;"><a href="#">Load More</a></p>
+<br />
+
+<p data-bind="visible: Entries().length == 0">No log entries satisfy the chosen log level threshold. Use the level selector above to choose a different level.</p>
+<p id="loadMoreButton" data-bind="visible: MoreAvailable"><a href="#">Load More</a></p>
+
+<script type="text/html" id="logEntryTemplate">
+	<tr>
+		<td>${Time}</td>
+		<td><span class="icon-LogLevels icon-LogLevels-${Level}"></span></td>
+		<td>
+			${Message}<br />
+			<div data-bind="visible: Error">
+			<b>Exception Details and Stack:</b> (<a href="#" data-bind="click: function() { toggleShowDetails($data) }">Show/Hide</a>)<br />
+			<pre data-bind="visible: ShowDetails">${Error}</pre>
+			</div>
+		</td>
+	</tr>
+</script>
 
 <script type="text/javascript">
 
-	newestToken = '@Model.NewestToken';
-	oldestToken = '@Model.OldestToken';
-	count = @Model.Entries.Length;
+	var viewModel = ko.mapping.fromJSON(@Html.Enquote(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(Model)));
 
-	function UpdateMoreAvailable(moreAvailable) {
-		if(moreAvailable) $("#loadMoreButton").show();
-		else $("#loadMoreButton").hide();
-	}
-
-	function FormatLogEntryHtml(entry) {
-		var message = entry.message;
-		if(entry.error) {
-			message +=  '<br /><b>Exception Details and Stack:</b> (<a href="#" class="toggleLink">Show/Hide</a>)<br /><span class="toggle"><pre>' + entry.error + '</pre></span>';
-		}
-		return '<tr><td>' + entry.date + '</td><td>@Html.LogLevelIconClientScript("entry.level")</span></td><td>' + message + '</td></tr>';
-	}
-
-	// TODO: Refactor
+	toggleShowDetails = function(entry) {
+		entry.ShowDetails(!entry.ShowDetails());
+	};
 
 	$(document).ready(function() {
 
-		UpdateMoreAvailable(@Model.MoreAvailable.ToString().ToLower());
+		ko.applyBindings(viewModel);
 
 		$('select#loglevel').selectToUISlider({ labels: 5, sliderOptions: { change:function() {
 			$('#AjaxLoading').show();
@@ -81,13 +72,7 @@
 				data: { skip: 0, threshold: $('select#loglevel').val() },
 				cache: false,
 				success: function (data) {
-					tableBody = $("#datatable > tbody");
-					tableBody.empty();
-					newestToken = data.newestToken;
-					oldestToken = data.oldestToken;
-					count = data.entries.length;
-					UpdateMoreAvailable(data.moreAvailable);
-					$.each(data.entries, function (index, entry) { tableBody.append(FormatLogEntryHtml(entry)) });
+					ko.mapping.updateFromJS(viewModel, data);
 					$('#AjaxLoading').hide();
 				}
 			});
@@ -98,22 +83,16 @@
 			$.ajax({
 				url: '@ViewBag.TenantPath/JsonEntriesAfter',
 				dataType: 'json',
-				data: { skip: count, oldestToken: oldestToken, threshold: $('select#loglevel').val() },
+				data: { skip: viewModel.Entries().length, oldestToken: viewModel.OldestToken(), threshold: $('select#loglevel').val() },
 				cache: false,
 				success: function (data) {
-					last = $("#datatable > tbody");
-					oldestToken = data.oldestToken;
-					count += data.entries.length;
-					UpdateMoreAvailable(data.moreAvailable);
-					$.each(data.entries, function (index, entry) { last.append(FormatLogEntryHtml(entry)) });
+					var model = ko.mapping.fromJS(data);
+					$.each(model.Entries(), function (index, entry) { viewModel.Entries.push(entry); });
+					viewModel.OldestToken(model.OldestToken());
+					viewModel.MoreAvailable(model.MoreAvailable());
 					$('#AjaxLoading').hide();
 				}
 			});
-			return false;
-		});
-
-		$('.toggleLink').live('click', function() {
-			$(this).siblings('.toggle').toggle();
 			return false;
 		});
 	});

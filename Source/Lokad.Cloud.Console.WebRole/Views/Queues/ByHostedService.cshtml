@@ -12,19 +12,12 @@
 
 <table class="table">
 	<tr>
+		<th></th>
 		<th>Queue</th>
 		<th>Messages</th>
 		<th>Latency</th>
 	</tr>
-
-	@foreach (var item in Model.Queues) {
-		<tr>
-			<td>@item.QueueName</td>
-			<td>@item.MessageCount</td>
-			<td>@item.Latency</td>
-		</tr>
-	}
-
+	<tbody data-bind='template: {name: "queueRowTemplate", foreach: Queues, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></tbody>
 </table>
 
 <h2>Quarantine: Failing Messages</h2>
@@ -38,21 +31,30 @@
 	The following messages have been considered as failing. Note that persisted messages may become unrestorable if their originating queue is deleted. No more than 50 messsages are shown at a time.
 </div>
 
-<div data-bind='template: { name: "qQueueTemplate", foreach: Quarantine, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
+<div data-bind='template: { name: "quarantineTemplate", foreach: Quarantine, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
 
-<script type="text/html" id="qQueueTemplate">
-	<h3>Queue: ${QueueName} &nbsp;&nbsp;
-		<button data-bind="click: function() { restoreQQueue($data) }">Restore All</button>
-		<button data-bind="click: function() { removeQQueue($data) }">Delete All</button>
-	</h3>
-	<div data-bind='template: { name: "qMessageTemplate", foreach: Messages, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
+<script type="text/html" id="queueRowTemplate">
+	<tr>
+		<td><button data-bind="click: function() { removeQueue($data) }">Delete</button></td>
+		<td>${QueueName}</td>
+		<td>${MessageCount}</td>
+		<td>${Latency}</td>
+	</tr>
 </script>
 
-<script type="text/html" id="qMessageTemplate">
+<script type="text/html" id="quarantineTemplate">
+	<h3>Queue: ${QueueName} &nbsp;&nbsp;
+		<button data-bind="click: function() { restoreQuarantineQueue($data) }">Restore All</button>
+		<button data-bind="click: function() { removeQuarantineQueue($data) }">Delete All</button>
+	</h3>
+	<div data-bind='template: { name: "messageTemplate", foreach: Messages, beforeRemove: function(e) { $(e).slideUp() }, afterAdd: function(e) { $(e).hide().slideDown() } }'></div>
+</script>
+
+<script type="text/html" id="messageTemplate">
 	<div class="groupbox">
 		<p>Inserted ${Inserted} but quarantined ${Persisted} &nbsp;&nbsp;
-			<button data-bind="click: function() { restoreQMessage($data) }">Restore</button>
-			<button data-bind="click: function() { removeQMessage($data) }">Delete</button>
+			<button data-bind="click: function() { restoreQuarantineMessage($data) }">Restore</button>
+			<button data-bind="click: function() { removeQuarantineMessage($data) }">Delete</button>
 		</p>
 		<pre>${Content}</pre>
 		Reason:
@@ -64,43 +66,60 @@
 
 	var viewModel = ko.mapping.fromJSON(@Html.Enquote(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(Model)));
 
-	removeQQueue = function(queue) {
+	removeQueue = function(queue) {
+		ajaxDeleteQueue(queue);
+		viewModel.Queues.remove(queue);
+	};
+
+	removeQuarantineQueue = function(queue) {
 		while(message = queue.Messages.pop()) {
-			ajaxDeleteQMessage(message);
+			ajaxDeleteQuarantineMessage(message);
 		}
 		viewModel.Quarantine.remove(queue);
 	};
-	removeQMessage = function(message) {
-		ajaxDeleteQMessage(message);
-		var queue = queueOfMessage(message);
+	removeQuarantineMessage = function(message) {
+		ajaxDeleteQuarantineMessage(message);
+		var queue = quarantineQueueOfMessage(message);
 		queue.Messages.remove(message);
 		if (queue.Messages().length == 0) {
 			viewModel.Quarantine.remove(queue);
 		}
 	};
 
-	restoreQQueue = function(queue) {
+	restoreQuarantineQueue = function(queue) {
 		while(message = queue.Messages.pop()) {
-			ajaxRestoreQMessage(message);
+			ajaxRestoreQuarantineMessage(message);
 		}
 		viewModel.Quarantine.remove(queue);
 	};
-	restoreQMessage = function(message) {
-		ajaxRestoreQMessage(message);
-		var queue = queueOfMessage(message);
+	restoreQuarantineMessage = function(message) {
+		ajaxRestoreQuarantineMessage(message);
+		var queue = quarantineQueueOfMessage(message);
 		queue.Messages.remove(message);
 		if (queue.Messages().length == 0) {
 			viewModel.Quarantine.remove(queue);
 		}
 	};
 
-	queueOfMessage = function(message) {
+	quarantineQueueOfMessage = function(message) {
 		var queue;
 		$.each(viewModel.Quarantine(), function(i,q) { if (q.Messages.indexOf(message) >= 0) { queue = q; } });
 		return queue;
 	};
 
-	ajaxDeleteQMessage = function(message) {
+	ajaxDeleteQueue = function(queue) {
+		$('#AjaxLoading').show();
+		$.ajax({
+			url: '@ViewBag.TenantPath/JsonQueue/' + queue.QueueName(),
+			type: 'DELETE',
+			dataType: 'json',
+			cache: false,
+			success: function (data) {
+				$('#AjaxLoading').hide();
+			}
+		});
+	};
+	ajaxDeleteQuarantineMessage = function(message) {
 		$('#AjaxLoading').show();
 		$.ajax({
 			url: '@ViewBag.TenantPath/JsonQuarantinedMessage/' + message.Key(),
@@ -112,7 +131,7 @@
 			}
 		});
 	};
-	ajaxRestoreQMessage = function(message) {
+	ajaxRestoreQuarantineMessage = function(message) {
 		$('#AjaxLoading').show();
 		$.ajax({
 			url: '@ViewBag.TenantPath/JsonRestoreQuarantinedMessage/' + message.Key(),

@@ -1,6 +1,4 @@
-﻿using Lokad.Cloud.Storage;
-
-namespace Lokad.Cloud.Console.WebRole.Models.Queues
+﻿namespace Lokad.Cloud.Console.WebRole.Models.Queues
 {
     public class QueuesModel
     {

@@ -17,6 +17,7 @@ a:active{outline: none;}
 .resultok, .resultok * { color: #009900; }
 
 input, label { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; padding: 2px; margin: 4px; }
+button { color: #000000; padding: 1px; margin: 0px; }
 select { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; margin: 0px; }
 input.tab { background-color: #DDDDDD; border: solid 3px #DDDDDD; color: #000000; font-size: 11px; width: auto; overflow: visible; padding: 0px; }
 input.tabselected { background-color: #214C9A; border: solid 3px #214C9A; color: #FFFFFF; font-size: 11px; width: auto; overflow: visible; font-weight: bold; padding: 0px; }
@@ -225,8 +226,6 @@ pre { border: dashed 1px #999999; background-color: #FFFFF0; margin: 0px 0px 10p
     #Footer .admin a{	text-decoration: none; color:#666666;	}
 
 #AjaxLoading { display: none; margin-top: 5px; margin-right: -7px; }
-.toggle { display: none; }
-.toggle pre { width: 600px; }
 
 /* Contains the link to the page editing form (Edit.aspx) and history */
 #EditHistoryLinkDiv { float: right; font-size: 11px; padding-top: 4px; padding-bottom: 4px; }
@@ -402,7 +401,6 @@ img.thumb { border: solid 1px #CCCCCC; }
 #ImageDescriptionSpan { font-size: 11px; font-style: italic; }
 /* JsImageBrowser control end */
 
-
 .table
 {
     border: 1px solid #FCD396;
@@ -412,6 +410,7 @@ img.thumb { border: solid 1px #CCCCCC; }
 }
 .table th{ border-style: solid; border-width: 0 0 1px 1px; border-color: #FCE7C5; padding: 4px 10px 4px 4px; margin: 0; background-color: #FCF0DA; text-align: left; vertical-align: top; }
 .table td{ border-style: solid; border-width: 0 0 1px 1px; border-color: #FCE7C5; padding: 4px 10px 4px 4px; margin: 0; background-color: #FCF9F0; text-align: left; vertical-align: top; }
+.table pre { width: 600px; }
 .tableseparator td{ background-color: #FFFFFF; border-width: 0 0 1px 0; }
 
 .updatedText{ text-align: right; font-style: italic; font-size: 0.8em; padding: 2em 0 0 0; }

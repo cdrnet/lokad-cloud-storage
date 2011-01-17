@@ -9,6 +9,8 @@ using Lokad.Cloud.Diagnostics;
 
 namespace Lokad.Cloud.Console.WebRole.Controllers
 {
+    using System.Collections.Generic;
+
     [RequireAuthorization, RequireDiscovery]
     public sealed class LogsController : TenantController
     {
@@ -27,13 +29,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
             var entryList = cloudLogger.GetLogsOfLevelOrHigher(LogLevel.Info).Take(InitialEntriesCount).ToArray();
 
-            return View(new LogsModel
-                {
-                    NewestToken = entryList.Length > 0 ? EntryToToken(entryList[0]) : string.Empty,
-                    OldestToken = entryList.Length > 0 ?  EntryToToken(entryList[entryList.Length-1]) : string.Empty,
-                    MoreAvailable = entryList.Length == InitialEntriesCount,
-                    Entries = entryList
-                });
+            return View(this.LogEntriesToModel(entryList, InitialEntriesCount));
         }
 
         public ActionResult JsonEntriesAfter(string hostedServiceName, int skip, string oldestToken, string threshold)
@@ -50,19 +46,25 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             }
             var entryList = entries.Take(requestedCount).ToArray();
 
-            return Json(new
+            return Json(this.LogEntriesToModel(entryList, requestedCount), JsonRequestBehavior.AllowGet);
+        }
+
+        private LogsModel LogEntriesToModel(IList<LogEntry> entryList, int requestedCount)
+        {
+            return new LogsModel
+            {
+                NewestToken = entryList.Count > 0 ? EntryToToken(entryList[0]) : string.Empty,
+                OldestToken = entryList.Count > 0 ? EntryToToken(entryList[entryList.Count - 1]) : string.Empty,
+                MoreAvailable = entryList.Count == requestedCount,
+                Entries = entryList.Select(entry => new LogItem
                 {
-                    newestToken = entryList.Length > 0 ? EntryToToken(entryList[0]) : string.Empty,
-                    oldestToken = entryList.Length > 0 ? EntryToToken(entryList[entryList.Length - 1]) : string.Empty,
-                    moreAvailable = entryList.Length == requestedCount,
-                    entries = (entryList.Select(entry => new
-                        {
-                            date = HttpUtility.HtmlEncode(entry.DateTimeUtc),
-                            level = HttpUtility.HtmlEncode(entry.Level),
-                            message = HttpUtility.HtmlEncode(entry.Message),
-                            error = HttpUtility.HtmlEncode(entry.Error ?? string.Empty)
-                        })).ToArray()
-                }, JsonRequestBehavior.AllowGet);
+                    Token = this.EntryToToken(entry),
+                    Time = HttpUtility.HtmlEncode(entry.DateTimeUtc),
+                    Level = HttpUtility.HtmlEncode(entry.Level),
+                    Message = HttpUtility.HtmlEncode(entry.Message),
+                    Error = HttpUtility.HtmlEncode(entry.Error ?? string.Empty)
+                }).ToArray()
+            };
         }
 
         string EntryToToken(LogEntry entry)

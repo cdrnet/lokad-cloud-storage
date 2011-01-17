@@ -70,6 +70,14 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         }
 
         [HttpDelete]
+        public EmptyResult JsonQueue(string hostedServiceName, string id)
+        {
+            InitializeDeploymentTenant(hostedServiceName);
+            Storage.QueueStorage.DeleteQueue(id);
+            return null;
+        }
+
+        [HttpDelete]
         public EmptyResult JsonQuarantinedMessage(string hostedServiceName, string id)
         {
             InitializeDeploymentTenant(hostedServiceName);
