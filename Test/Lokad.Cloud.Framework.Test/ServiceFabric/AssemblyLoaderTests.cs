@@ -9,7 +9,7 @@ using System.Linq;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.ServiceFabric.Runtime;
 using Lokad.Cloud.Storage;
-using Lokad.Diagnostics;
+
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.ServiceFabric
@@ -49,7 +49,7 @@ namespace Lokad.Cloud.Test.ServiceFabric
             Assert.That(assemblies.Any(a => a.FullName.StartsWith("sample")));
 
             // validate using management class
-            var cloudAssemblies = new CloudAssemblies(provider, NullLog.Instance);
+            var cloudAssemblies = new CloudAssemblies(provider);
             Assert.That(cloudAssemblies.GetAssemblies().Any(a => a.AssemblyName.StartsWith("sample")));
 
             // no update, checking

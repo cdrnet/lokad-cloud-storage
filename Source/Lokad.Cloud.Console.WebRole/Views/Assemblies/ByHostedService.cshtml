@@ -4,6 +4,7 @@
 <h1>Assembly Manager</h1>
 <p>Content of the assembly archive:</p>
 
+@if (Model.ApplicationAssemblies.HasValue) {
 <table class="table">
 	<tr>
 		<th>Assembly</th>
@@ -12,8 +13,8 @@
 		<th>Size</th>
 		<th>Symbols</th>
 	</tr>
-
-	@foreach (var item in Model.Assemblies) {
+	@foreach (var item in Model.ApplicationAssemblies.Value)
+ {
 		<tr>
 			<td>@Html.OkCancelIcon(item.IsValid) @item.AssemblyName</td>
 			<td>@item.Version.ToString()</td>
@@ -22,8 +23,10 @@
 			<td>@Html.OkCancelIcon(item.HasSymbols) @(item.HasSymbols ? "Available" : "None")</td>
 		</tr>
 	}
-
 </table>
+} else {
+<div class="warning">No Cloud Application Package was found</div>
+}
 
 <h2>Replace assembly package</h2>
 <p>Upload a stand-alone .Net assembly (*.dll) or a Zip archive containing multiple assemblies. Matching symbol files (*.pdb) are supported but optional. The current assembly package will be deleted.</p>

@@ -4,6 +4,9 @@ namespace Lokad.Cloud.Console.WebRole.Models.Services
 {
     public class ServicesModel
     {
-        public CloudServiceInfo[] Services { get; set; }
+        public CloudServiceInfo[] QueueServices { get; set; }
+        public CloudServiceInfo[] ScheduledServices { get; set; }
+        public CloudServiceInfo[] CloudServices { get; set; }
+        public CloudServiceInfo[] UnavailableServices { get; set; }
     }
 }

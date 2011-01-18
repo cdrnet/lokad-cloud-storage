@@ -1,9 +1,9 @@
-﻿using Lokad.Cloud.Management.Api10;
+﻿using Lokad.Cloud.Application;
 
 namespace Lokad.Cloud.Console.WebRole.Models.Assemblies
 {
     public class AssembliesModel
     {
-        public CloudAssemblyInfo[] Assemblies { get; set; }
+        public Maybe<CloudApplicationAssemblyInfo[]> ApplicationAssemblies { get; set; }
     }
 }

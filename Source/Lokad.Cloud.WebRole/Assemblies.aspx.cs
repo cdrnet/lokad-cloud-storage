@@ -12,119 +12,121 @@ using Lokad.Cloud.Management.Api10;
 
 namespace Lokad.Cloud.Web
 {
-	public partial class Assemblies : System.Web.UI.Page
-	{
-		readonly ICloudAssembliesApi _cloudAssemblies = GlobalSetup.Container.Resolve<ICloudAssembliesApi>();
-		readonly ILog _log = GlobalSetup.Container.Resolve<ILog>();
+    using Lokad.Cloud.Application;
 
-		protected void Page_Load(object sender, EventArgs e)
-		{
-			AssembliesView.DataBind();
-		}
+    public partial class Assemblies : System.Web.UI.Page
+    {
+        readonly ICloudAssembliesApi _cloudAssemblies = GlobalSetup.Container.Resolve<ICloudAssembliesApi>();
+        readonly ILog _log = GlobalSetup.Container.Resolve<ILog>();
 
-		protected void AssembliesView_DataBinding(object sender, EventArgs e)
-		{
-			List<CloudAssemblyInfo> assemblyInfos;
-			try
-			{
-				assemblyInfos = _cloudAssemblies.GetAssemblies().ToList();
-			}
-			catch (Exception ex)
-			{
-				_log.Error(ex, "Assembly package failed to load in the management UI.");
-				_assemblyWarningPanel.Visible = true;
-				AssembliesView.DataSource = null;
-				return;
-			}
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            AssembliesView.DataBind();
+        }
 
-			_assemblyWarningPanel.Visible = assemblyInfos.Exists(a => !a.IsValid);
-			AssembliesView.DataSource = assemblyInfos
-				.Select(info => new
-					{
-						Name = info.AssemblyName,
-						info.DateTime,
-						Version = info.Version.ToString(),
-						Size = PrettyFormatMemory(info.SizeBytes),
-						Symbols = info.HasSymbols ? "Available" : "None",
-						Status = info.IsValid ? "OK" : "Corrupt",
-					});
-		}
+        protected void AssembliesView_DataBinding(object sender, EventArgs e)
+        {
+            List<CloudApplicationAssemblyInfo> assemblyInfos;
+            try
+            {
+                assemblyInfos = _cloudAssemblies.GetAssemblies().ToList();
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Assembly package failed to load in the management UI.");
+                _assemblyWarningPanel.Visible = true;
+                AssembliesView.DataSource = null;
+                return;
+            }
 
-		protected void UploadButton_Click(object sender, EventArgs e)
-		{
-			Page.Validate("Upload");
-			if(!Page.IsValid)
-			{
-				return;
-			}
+            _assemblyWarningPanel.Visible = assemblyInfos.Exists(a => !a.IsValid);
+            AssembliesView.DataSource = assemblyInfos
+                .Select(info => new
+                    {
+                        Name = info.AssemblyName,
+                        info.DateTime,
+                        Version = info.Version.ToString(),
+                        Size = PrettyFormatMemory(info.SizeBytes),
+                        Symbols = info.HasSymbols ? "Available" : "None",
+                        Status = info.IsValid ? "OK" : "Corrupt",
+                    });
+        }
 
-			// defensive design, the validator should prevent this
-			if(!AssemblyFileUpload.HasFile)
-			{
-				return;
-			}
+        protected void UploadButton_Click(object sender, EventArgs e)
+        {
+            Page.Validate("Upload");
+            if(!Page.IsValid)
+            {
+                return;
+            }
 
-			string extension = GetLowercaseExtension(AssemblyFileUpload.FileName);
+            // defensive design, the validator should prevent this
+            if(!AssemblyFileUpload.HasFile)
+            {
+                return;
+            }
 
-			// If the file is a DLL, it must be compressed as ZIP
-			if(extension == ".dll")
-			{
-				_cloudAssemblies.UploadAssemblyDll(
-					AssemblyFileUpload.FileBytes,
-					AssemblyFileUpload.FileName);
-			}
-			else
-			{
-				_cloudAssemblies.UploadAssemblyZipContainer(
-					AssemblyFileUpload.FileBytes);
-			}
+            string extension = GetLowercaseExtension(AssemblyFileUpload.FileName);
 
-			AssembliesView.DataBind();
+            // If the file is a DLL, it must be compressed as ZIP
+            if(extension == ".dll")
+            {
+                _cloudAssemblies.UploadAssemblyDll(
+                    AssemblyFileUpload.FileBytes,
+                    AssemblyFileUpload.FileName);
+            }
+            else
+            {
+                _cloudAssemblies.UploadAssemblyZipContainer(
+                    AssemblyFileUpload.FileBytes);
+            }
 
-			UploadSucceededLabel.Visible = true;
-		}
+            AssembliesView.DataBind();
 
-		private static string GetLowercaseExtension(string fileName)
-		{
-			string extension = Path.GetExtension(fileName);
-			if (extension == null)
-			{
-				return "";
-			}
+            UploadSucceededLabel.Visible = true;
+        }
 
-			return extension.ToLowerInvariant();
-		}
+        private static string GetLowercaseExtension(string fileName)
+        {
+            string extension = Path.GetExtension(fileName);
+            if (extension == null)
+            {
+                return "";
+            }
 
-		protected void UploadValidator_Validate(object source, ServerValidateEventArgs args)
-		{
-			// file must exists
-			if (!AssemblyFileUpload.HasFile)
-			{
-				args.IsValid = false;
-				return;
-			}
+            return extension.ToLowerInvariant();
+        }
 
-			// Extension must be ".zip" or ".dll"
-			var extension = GetLowercaseExtension(AssemblyFileUpload.FileName);
-			if (extension != ".zip" && extension != ".dll")
-			{
-				args.IsValid = false;
-				return;
-			}
+        protected void UploadValidator_Validate(object source, ServerValidateEventArgs args)
+        {
+            // file must exists
+            if (!AssemblyFileUpload.HasFile)
+            {
+                args.IsValid = false;
+                return;
+            }
 
-			// In case of zip, checking that the archive can be decompressed correctly.
-			if (extension == ".zip" && !_cloudAssemblies.IsValidZipContainer(AssemblyFileUpload.FileBytes))
-			{
-				args.IsValid = false;
-				return;
-			}
+            // Extension must be ".zip" or ".dll"
+            var extension = GetLowercaseExtension(AssemblyFileUpload.FileName);
+            if (extension != ".zip" && extension != ".dll")
+            {
+                args.IsValid = false;
+                return;
+            }
 
-			args.IsValid = true;
-		}
+            // In case of zip, checking that the archive can be decompressed correctly.
+            if (extension == ".zip" && !_cloudAssemblies.IsValidZipContainer(AssemblyFileUpload.FileBytes))
+            {
+                args.IsValid = false;
+                return;
+            }
 
-		static string PrettyFormatMemory(long byteCount)
-		{
-			return String.Format("{0} KB", byteCount / 1024);
-		}
-	}
+            args.IsValid = true;
+        }
+
+        static string PrettyFormatMemory(long byteCount)
+        {
+            return String.Format("{0} KB", byteCount / 1024);
+        }
+    }
 }

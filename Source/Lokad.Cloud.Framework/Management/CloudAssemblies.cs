@@ -3,7 +3,6 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.SharpZipLib.Zip;
@@ -14,181 +13,94 @@ using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
-	/// <summary>
-	/// Management facade for cloud assemblies.
-	/// </summary>
-	[UsedImplicitly]
-	public class CloudAssemblies : ICloudAssembliesApi
-	{
-		readonly IBlobStorageProvider _blobProvider;
-		readonly ILog _log;
+    using System.Linq;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="CloudAssemblies"/> class.
-		/// </summary>
-		public CloudAssemblies(IBlobStorageProvider blobStorageProvider, ILog log)
-		{
-			_blobProvider = blobStorageProvider;
-			_log = log;
-		}
+    using Lokad.Cloud.Application;
 
-		/// <summary>
-		/// Enumerate infos of all configured cloud service assemblies.
-		/// </summary>
-		public List<CloudAssemblyInfo> GetAssemblies()
-		{
-			var buffer = _blobProvider.GetBlob<byte[]>(
-				AssemblyLoader.ContainerName,
-				AssemblyLoader.PackageBlobName);
+    /// <summary>
+    /// Management facade for cloud assemblies.
+    /// </summary>
+    [UsedImplicitly]
+    public class CloudAssemblies : ICloudAssembliesApi
+    {
+        readonly IBlobStorageProvider _blobProvider;
 
-			// do not return anything if no assembly is loaded
-			if (!buffer.HasValue)
-			{
-				return new List<CloudAssemblyInfo>();
-			}
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloudAssemblies"/> class.
+        /// </summary>
+        public CloudAssemblies(IBlobStorageProvider blobStorageProvider)
+        {
+            _blobProvider = blobStorageProvider;
+        }
 
-			var assemblies = new List<Pair<CloudAssemblyInfo, byte[]>>();
-			var symbols = new Dictionary<string, byte[]>();
+        public Maybe<CloudApplicationDefinition> GetApplicationDefinition()
+        {
+            var inspector = new CloudApplicationInspector(_blobProvider);
+            return inspector.Inspect();
+        }
 
-			using (var zipStream = new ZipInputStream(new MemoryStream(buffer.Value)))
-			{
-				ZipEntry entry;
-				while ((entry = zipStream.GetNextEntry()) != null)
-				{
-					var extension = Path.GetExtension(entry.Name).ToLowerInvariant();
-					if (extension != ".dll" && extension != ".pdb")
-					{
-						// skipping everything but assemblies and symbols
-						continue;
-					}
-					
-					var isValid = true;
-					var name = Path.GetFileNameWithoutExtension(entry.Name);
-					var data = new byte[entry.Size];
-					try
-					{
-						zipStream.Read(data, 0, data.Length);
-					}
-					catch (Exception ex)
-					{
-						_log.ErrorFormat(ex, "Assembly {0} failed to unpack.", name);
-						isValid = false;
-					}
+        /// <summary>
+        /// Enumerate infos of all configured cloud service assemblies.
+        /// </summary>
+        public List<CloudApplicationAssemblyInfo> GetAssemblies()
+        {
+            return GetApplicationDefinition().Convert(p => p.Assemblies.ToList(), new List<CloudApplicationAssemblyInfo>());
+        }
 
-					switch (extension)
-					{
-						case ".dll":
-							assemblies.Add(Tuple.From(
-								new CloudAssemblyInfo
-									{
-										AssemblyName = name,
-										DateTime = entry.DateTime,
-										SizeBytes = entry.Size,
-										IsValid = isValid,
-										Version = new Version()
-									},
-								data));
-							break;
-						case ".pdb":
-							symbols.Add(name.ToLowerInvariant(), data);
-							break;
-					}
-				}
-			}
+        /// <summary>
+        /// Configure a .dll assembly file as the new cloud service assembly.
+        /// </summary>
+        public void UploadAssemblyDll(byte[] data, string fileName)
+        {
+            using (var tempStream = new MemoryStream())
+            {
+                using (var zip = new ZipOutputStream(tempStream))
+                {
+                    zip.PutNextEntry(new ZipEntry(fileName));
+                    zip.Write(data, 0, data.Length);
+                    zip.CloseEntry();
+                }
 
-			var infos = new List<CloudAssemblyInfo>();
-			foreach(var assembly in assemblies)
-			{
-				var info = assembly.Key;
+                UploadAssemblyZipContainer(tempStream.ToArray());
+            }
+        }
 
-				byte[] symbolBytes;
-				if (symbols.TryGetValue(info.AssemblyName.ToLowerInvariant(), out symbolBytes)
-					&& symbolBytes != null
-					&& symbolBytes.Length > 0)
-				{
-					info.HasSymbols = true;
-				}
+        /// <summary>
+        /// Configure a zip container with one or more assemblies as the new cloud services.
+        /// </summary>
+        public void UploadAssemblyZipContainer(byte[] data)
+        {
+            _blobProvider.PutBlob(
+                AssemblyLoader.ContainerName,
+                AssemblyLoader.PackageBlobName,
+                data,
+                true);
+        }
 
-				var assemblyBytes = assembly.Value;
-				if (!info.IsValid || assemblyBytes == null)
-				{
-					infos.Add(info);
-					continue;
-				}
+        /// <summary>
+        /// Verify whether the provided zip container is valid.
+        /// </summary>
+        public bool IsValidZipContainer(byte[] data)
+        {
+            try
+            {
+                using (var dataStream = new MemoryStream(data))
+                using (var zipStream = new ZipInputStream(dataStream))
+                {
+                    ZipEntry entry;
+                    while ((entry = zipStream.GetNextEntry()) != null)
+                    {
+                        var buffer = new byte[entry.Size];
+                        zipStream.Read(buffer, 0, buffer.Length);
+                    }
+                }
 
-				try
-				{
-					using (var inspector = new AssemblyInspector(assemblyBytes, symbolBytes))
-					{
-						info.Version = inspector.AssemblyVersion;
-					}
-				}
-				catch (Exception ex)
-				{
-					_log.ErrorFormat(ex, "Assembly {0} failed to load.", info.AssemblyName);
-					info.IsValid = false;
-				}
-
-				infos.Add(info);
-			}
-
-			return infos;
-		}
-
-		/// <summary>
-		/// Configure a .dll assembly file as the new cloud service assembly.
-		/// </summary>
-		public void UploadAssemblyDll(byte[] data, string fileName)
-		{
-			using (var tempStream = new MemoryStream())
-			{
-				using (var zip = new ZipOutputStream(tempStream))
-				{
-					zip.PutNextEntry(new ZipEntry(fileName));
-					zip.Write(data, 0, data.Length);
-					zip.CloseEntry();
-				}
-
-				UploadAssemblyZipContainer(tempStream.ToArray());
-			}
-		}
-
-		/// <summary>
-		/// Configure a zip container with one or more assemblies as the new cloud services.
-		/// </summary>
-		public void UploadAssemblyZipContainer(byte[] data)
-		{
-			_blobProvider.PutBlob(
-				AssemblyLoader.ContainerName,
-				AssemblyLoader.PackageBlobName,
-				data,
-				true);
-		}
-
-		/// <summary>
-		/// Verify whether the provided zip container is valid.
-		/// </summary>
-		public bool IsValidZipContainer(byte[] data)
-		{
-			try
-			{
-				using (var dataStream = new MemoryStream(data))
-				using (var zipStream = new ZipInputStream(dataStream))
-				{
-					ZipEntry entry;
-					while ((entry = zipStream.GetNextEntry()) != null)
-					{
-						var buffer = new byte[entry.Size];
-						zipStream.Read(buffer, 0, buffer.Length);
-					}
-				}
-
-				return true;
-			}
-			catch
-			{
-				return false;
-			}
-		}
-	}
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
 }
