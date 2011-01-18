@@ -4,9 +4,9 @@ body {  padding: 0; margin: 0; font-family: "Trebuchet MS", Arial, Helvetica, sa
 table, img, div, form{ padding:0; margin:0; border:none; }
 p { font-family: "Trebuchet MS", Arial, Helvetica, sans-serif; color: #555555; padding: 0; margin: 0; }
 h1, h2, h3, h4 { font-family: Arial, Helvetica, sans-serif; font-size: 24px; color: #686868; padding: 0; margin: 0 0 10px 0; font-weight: normal; }
-h2 { font-size: 16px; padding: 0px; margin: 0px; font-weight: bold; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1.5em; }
-h3 { font-size: 14px; padding: 0px; margin: 0px; font-weight: bold; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1.5em; }
-h4 { padding: 0px; margin: 0px; font-weight: normal; font-style: italic; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1.5em; }
+h2 { font-size: 16px; padding: 0px; margin: 0px; font-weight: bold; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1em; }
+h3 { font-size: 14px; padding: 0px; margin: 0px; font-weight: bold; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1em; }
+h4 { padding: 0px; margin: 0px; font-weight: normal; font-style: italic; padding-bottom: 2px; margin-bottom: 0.3em; padding-top: 2px; margin-top: 1em; }
 ul, ol { font-size:1em; margin: 0px; padding-top: 0px; padding-bottom: 0px; padding-left: 28px; padding-right: 8px; }
 li { margin: 2px 0px 0px 0px; padding: 0px; }
 a:active{outline: none;}

@@ -1,9 +1,10 @@
-﻿namespace Lokad.Cloud.Console.WebRole.Models.Queues
+﻿using Lokad.Cloud.Application;
+
+namespace Lokad.Cloud.Console.WebRole.Models.Queues
 {
     public class QueuesModel
     {
         public AzureQueue[] Queues { get; set; }
-
         public AzureQuarantineQueue[] Quarantine { get; set; }
         public bool HasQuarantinedMessages { get; set; }
     }
@@ -13,6 +14,7 @@
         public string QueueName { get; set; }
         public int MessageCount { get; set; }
         public string Latency { get; set; }
+        public QueueServiceDefinition[] Services { get; set; }
     }
 
     public class AzureQuarantineQueue

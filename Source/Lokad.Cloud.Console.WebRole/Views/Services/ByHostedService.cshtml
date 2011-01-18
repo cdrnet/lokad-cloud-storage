@@ -9,7 +9,10 @@
 <table class="table">
 	@foreach (var item in Model.QueueServices) {
 		<tr>
-			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)@item.ServiceName</td>
+			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)</td>
+			<td><b>@item.ServiceName</b><br />
+			<small>Messages: @item.Definition.MessageTypeName</small><br />
+			<small>Queue: @item.Definition.QueueName</small></td>
 		</tr>
 	}
 </table>
@@ -20,7 +23,8 @@
 <table class="table">
 	@foreach (var item in Model.ScheduledServices) {
 		<tr>
-			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)@item.ServiceName</td>
+			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)</td>
+			<td>@item.ServiceName</td>
 		</tr>
 	}
 </table>
@@ -31,7 +35,8 @@
 <table class="table">
 	@foreach (var item in Model.CloudServices) {
 		<tr>
-			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)@item.ServiceName</td>
+			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)</td>
+			<td>@item.ServiceName</td>
 		</tr>
 	}
 </table>
@@ -42,7 +47,8 @@
 <table class="table">
 	@foreach (var item in Model.UnavailableServices) {
 		<tr>
-			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)@item.ServiceName</td>
+			<td>@Html.StartStopIconButton(item.IsStarted, item.ServiceName)</td>
+			<td>@item.ServiceName</td>
 		</tr>
 	}
 </table>

@@ -4,6 +4,7 @@ using System.Text;
 using System.Web;
 using System.Web.Mvc;
 using System.Xml;
+using Lokad.Cloud.Application;
 using Lokad.Cloud.Console.WebRole.Behavior;
 using Lokad.Cloud.Console.WebRole.Controllers.ObjectModel;
 using Lokad.Cloud.Console.WebRole.Framework.Discovery;
@@ -13,6 +14,7 @@ using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Console.WebRole.Controllers
 {
+
     [RequireAuthorization, RequireDiscovery]
     public sealed class QueuesController : TenantController
     {
@@ -30,6 +32,9 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             InitializeDeploymentTenant(hostedServiceName);
             var queueStorage = Storage.QueueStorage;
 
+            var inspector = new CloudApplicationInspector(Storage.BlobStorage);
+            var appDefinition = inspector.Inspect();
+
             var failingMessages = queueStorage.ListPersisted(FailingMessagesStoreName)
                 .Select(key => queueStorage.GetPersisted(FailingMessagesStoreName, key))
                 .Where(m => m.HasValue)
@@ -44,7 +49,8 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                         {
                             QueueName = queueName,
                             MessageCount = queueStorage.GetApproximateCount(queueName),
-                            Latency = queueStorage.GetApproximateLatency(queueName).Convert(ts => ts.PrettyFormat(), string.Empty)
+                            Latency = queueStorage.GetApproximateLatency(queueName).Convert(ts => ts.PrettyFormat(), string.Empty),
+                            Services = appDefinition.Convert(cd => cd.QueueServices.Where(d => d.QueueName == queueName).ToArray(), new QueueServiceDefinition[0])
                         }).ToArray(),
 
                     HasQuarantinedMessages = failingMessages.Count > 0,

@@ -1,17 +1,14 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
+﻿using System;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 using Lokad.Cloud.Management.Azure;
+using Lokad.Cloud.Management.Azure.InputParameters;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
 {
-    using System;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Xml.Linq;
-
-    using Lokad.Cloud.Management.Azure.InputParameters;
-
     public sealed class AzureUpdater
     {
         private readonly X509Certificate2 _certificate;
@@ -69,33 +66,5 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
             var bytes = Encoding.UTF8.GetBytes(value);
             return Convert.ToBase64String(bytes);
         }
-
-        //void ChangeDeploymentConfiguration(Action<XElement, bool> updater)
-        //{
-        //    PrepareRequest();
-
-        //    _deployment = _retryPolicy.Get(() => _channel.GetDeployment(
-        //        _subscriptionId.Value,
-        //        _service.Value.ServiceName,
-        //        _deployment.Value.Name));
-
-        //    var config = Base64Decode(_deployment.Value.Configuration);
-        //    var xml = XDocument.Parse(config, LoadOptions.SetBaseUri | LoadOptions.PreserveWhitespace);
-        //    var inProgress = _deployment.Value.Status != Azure.Entities.DeploymentStatus.Running;
-
-        //    updater(xml.Root, inProgress);
-
-        //    var newConfig = xml.ToString(SaveOptions.DisableFormatting);
-
-        //    _retryPolicy.Do(() => _channel.ChangeConfiguration(
-        //        _subscriptionId.Value,
-        //        _service.Value.ServiceName,
-        //        _deployment.Value.Name,
-        //        new ChangeConfigurationInput
-        //        {
-        //            Configuration = Base64Encode(newConfig)
-        //        }));
-        //}
-
     }
 }
