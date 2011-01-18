@@ -1,4 +1,9 @@
-﻿using System;
+﻿#region Copyright (c) Lokad 2009-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.SharpZipLib.Zip;
@@ -78,16 +83,11 @@ namespace Lokad.Cloud.Application
             {
                 foreach (var assemblyInfo in assemblyInfos)
                 {
-                    byte[] symbol;
-                    symbolBytes.TryGetValue(assemblyInfo.AssemblyName.ToLowerInvariant(), out symbol);
-                    byte[] assembly = assemblyBytes[assemblyInfo.AssemblyName.ToLowerInvariant()];
+                    byte[] bytes = assemblyBytes[assemblyInfo.AssemblyName.ToLowerInvariant()];
 
                     try
                     {
-                        using (var inspector = new AssemblyVersionInspector(assembly, symbol))
-                        {
-                            assemblyInfo.Version = inspector.AssemblyVersion;
-                        }
+                        assemblyInfo.Version = AssemblyVersionInspector.Inspect(bytes).Version;
                     }
                     catch (Exception)
                     {

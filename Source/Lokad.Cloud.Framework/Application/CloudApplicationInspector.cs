@@ -1,4 +1,9 @@
-﻿using System;
+﻿#region Copyright (c) Lokad 2009-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.ServiceFabric.Runtime;
 
@@ -49,17 +54,16 @@ namespace Lokad.Cloud.Application
         {
             var reader = new CloudApplicationPackageReader();
             var package = reader.ReadPackage(packageData, true);
-
-            var serviceInspector = new ServiceInspector(packageData);
+            var inspectionResult = ServiceInspector.Inspect(packageData);
 
             return new CloudApplicationDefinition
                 {
                     PackageETag = etag,
                     Timestamp = DateTimeOffset.UtcNow,
                     Assemblies = package.Assemblies.ToArray(),
-                    QueueServices = serviceInspector.QueueServices.ToArray(),
-                    ScheduledServices = serviceInspector.ScheduledServices.ToArray(),
-                    CloudServices = serviceInspector.CloudServices.ToArray()
+                    QueueServices = inspectionResult.QueueServices.ToArray(),
+                    ScheduledServices = inspectionResult.ScheduledServices.ToArray(),
+                    CloudServices = inspectionResult.CloudServices.ToArray()
                 };
         }
     }
