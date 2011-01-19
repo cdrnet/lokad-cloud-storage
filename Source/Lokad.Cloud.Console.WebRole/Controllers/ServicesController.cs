@@ -1,4 +1,9 @@
-﻿using System.Linq;
+﻿#region Copyright (c) Lokad 2009-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System.Linq;
 using System.Web.Mvc;
 using Lokad.Cloud.Console.WebRole.Behavior;
 using Lokad.Cloud.Console.WebRole.Controllers.ObjectModel;
@@ -18,6 +23,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
+        [HttpGet]
         public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
@@ -65,8 +71,6 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
             InitializeDeploymentTenant(hostedServiceName);
             var cloudServices = new CloudServices(Storage.BlobStorage);
-
-            // TODO: Validate id (security)
 
             if (isStarted)
             {

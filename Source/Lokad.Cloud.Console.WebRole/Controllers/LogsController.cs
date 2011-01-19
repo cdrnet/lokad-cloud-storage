@@ -1,4 +1,9 @@
-﻿using System.Linq;
+﻿#region Copyright (c) Lokad 2009-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using Lokad.Cloud.Console.WebRole.Behavior;
@@ -22,21 +27,23 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
+        [HttpGet]
         public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
-
             var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
+
             var entryList = cloudLogger.GetLogsOfLevelOrHigher(LogLevel.Info).Take(InitialEntriesCount).ToArray();
 
             return View(LogEntriesToModel(entryList, InitialEntriesCount));
         }
 
+        [HttpGet]
         public ActionResult EntriesAfter(string hostedServiceName, int skip, string oldestToken, string threshold)
         {
             InitializeDeploymentTenant(hostedServiceName);
-
             var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
+
             var entries = cloudLogger.GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true), skip);
             int requestedCount = InitialEntriesCount;
             if(!string.IsNullOrEmpty(oldestToken))
@@ -67,7 +74,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             };
         }
 
-        string EntryToToken(LogEntry entry)
+        static string EntryToToken(LogEntry entry)
         {
             return entry.DateTimeUtc.ToString("yyyyMMddHHmmssffff");
         }

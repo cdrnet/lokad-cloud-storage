@@ -1,4 +1,9 @@
-﻿using System;
+﻿#region Copyright (c) Lokad 2009-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using System.Linq;
 using System.Text;
 using System.Web;
@@ -14,7 +19,6 @@ using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Console.WebRole.Controllers
 {
-
     [RequireAuthorization, RequireDiscovery]
     public sealed class QueuesController : TenantController
     {
@@ -27,11 +31,11 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
+        [HttpGet]
         public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
             var queueStorage = Storage.QueueStorage;
-
             var inspector = new CloudApplicationInspector(Storage.BlobStorage);
             var appDefinition = inspector.Inspect();
 
@@ -76,7 +80,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         }
 
         [HttpDelete]
-        public EmptyResult JsonQueue(string hostedServiceName, string id)
+        public EmptyResult Queue(string hostedServiceName, string id)
         {
             InitializeDeploymentTenant(hostedServiceName);
             Storage.QueueStorage.DeleteQueue(id);
@@ -84,7 +88,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         }
 
         [HttpDelete]
-        public EmptyResult JsonQuarantinedMessage(string hostedServiceName, string id)
+        public EmptyResult QuarantinedMessage(string hostedServiceName, string id)
         {
             InitializeDeploymentTenant(hostedServiceName);
             Storage.QueueStorage.DeletePersisted(FailingMessagesStoreName, id);
@@ -92,7 +96,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         }
 
         [HttpPost]
-        public EmptyResult JsonRestoreQuarantinedMessage(string hostedServiceName, string id)
+        public EmptyResult RestoreQuarantinedMessage(string hostedServiceName, string id)
         {
             InitializeDeploymentTenant(hostedServiceName);
             Storage.QueueStorage.RestorePersisted(FailingMessagesStoreName, id);

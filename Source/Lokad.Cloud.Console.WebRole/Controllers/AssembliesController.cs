@@ -1,4 +1,9 @@
-﻿using System.IO;
+﻿#region Copyright (c) Lokad 2009-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System.IO;
 using System.Web;
 using System.Web.Mvc;
 using Lokad.Cloud.Console.WebRole.Behavior;
@@ -16,6 +21,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
         }
 
+        [HttpGet]
         public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);

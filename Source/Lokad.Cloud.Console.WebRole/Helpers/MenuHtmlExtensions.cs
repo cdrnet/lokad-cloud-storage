@@ -1,4 +1,9 @@
-﻿using System.Web.Mvc;
+﻿#region Copyright (c) Lokad 2009-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System.Web.Mvc;
 using System.Web.Mvc.Html;
 
 using Lokad.Cloud.Console.WebRole.Models.Shared;
