@@ -515,6 +515,31 @@ namespace Lokad.Cloud.Storage.Azure
             return abandonCount;
         }
 
+        public bool ResumeLater<T>(T message)
+        {
+            string queueName;
+
+            lock (_sync)
+            {
+                // ignoring message if already deleted
+                InProcessMessage inProcMsg;
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg))
+                {
+                    return false;
+                }
+
+                queueName = inProcMsg.QueueName;
+            }
+
+            Put(queueName, message);
+            return Delete(message);
+        }
+
+        public int ResumeLaterRange<T>(IEnumerable<T> messages)
+        {
+            return messages.Count(ResumeLater);
+        }
+
         public void Persist<T>(T message, string storeName, string reason)
         {
             PersistRange(new[] { message }, storeName, reason);

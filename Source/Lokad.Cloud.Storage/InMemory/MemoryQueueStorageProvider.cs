@@ -171,8 +171,20 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                return messages.Where(Abandon).Count();
+                return messages.Count(Abandon);
             }
+        }
+
+        public bool ResumeLater<T>(T message)
+        {
+            // same as abandon as the InMemory provider applies no poison detection
+            return Abandon(message);
+        }
+
+        public int ResumeLaterRange<T>(IEnumerable<T> messages)
+        {
+            // same as abandon as the InMemory provider applies no poison detection
+            return AbandonRange(messages);
         }
 
         public void Persist<T>(T message, string storeName, string reason)

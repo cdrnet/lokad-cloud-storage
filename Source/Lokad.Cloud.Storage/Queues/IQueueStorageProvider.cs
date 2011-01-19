@@ -81,6 +81,24 @@ namespace Lokad.Cloud.Storage
         int AbandonRange<T>(IEnumerable<T> messages);
 
         /// <summary>
+        /// Resume a message being processed later and put it visibly back on the queue, without decreasing the poison detection dequeue count.
+        /// </summary>
+        /// <typeparam name="T">Type of the message.</typeparam>
+        /// <param name="message">Message to be resumed later.</param>
+        /// <returns><c>True</c> if the original message has been deleted.</returns>
+        /// <remarks>Message must have first been retrieved through <see cref="Get{T}"/>.</remarks>
+        bool ResumeLater<T>(T message);
+
+        /// <summary>
+        /// Resume a set of messages being processed latern and put them visibly back on the queue, without decreasing the poison detection dequeue count.
+        /// </summary>
+        /// <typeparam name="T">Type of the messages.</typeparam>
+        /// <param name="messages">Messages to be resumed later.</param>
+        /// <returns>The number of original messages actually deleted.</returns>
+        /// <remarks>Messages must have first been retrieved through <see cref="Get{T}"/>.</remarks>
+        int ResumeLaterRange<T>(IEnumerable<T> messages);
+
+        /// <summary>
         /// Persist a message being processed to a store and remove it from the queue.
         /// </summary>
         /// <typeparam name="T">Type of the message.</typeparam>
