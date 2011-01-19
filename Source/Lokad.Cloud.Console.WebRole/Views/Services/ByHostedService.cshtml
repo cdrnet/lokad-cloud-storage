@@ -67,7 +67,7 @@
 			me.removeClass(statusToClass(!enable));
 			me.addClass('@IconMap.Loading');
 			$.ajax({
-				url: '@ViewBag.TenantPath/JsonStatus/' + me.attr('id'),
+				url: '@ViewBag.TenantPath/Status/' + me.attr('id'),
 				type: 'PUT',
 				dataType: 'json',
 				data: { isStarted: enable },

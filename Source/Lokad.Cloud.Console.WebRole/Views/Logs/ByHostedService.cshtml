@@ -67,7 +67,7 @@
 		$('select#loglevel').selectToUISlider({ labels: 5, sliderOptions: { change:function() {
 			$('#AjaxLoading').show();
 			$.ajax({
-				url: '@ViewBag.TenantPath/JsonEntriesAfter',
+				url: '@ViewBag.TenantPath/EntriesAfter',
 				dataType: 'json',
 				data: { skip: 0, threshold: $('select#loglevel').val() },
 				cache: false,
@@ -81,7 +81,7 @@
 		$('#loadMoreButton > a').click(function() {
 			$('#AjaxLoading').show();
 			$.ajax({
-				url: '@ViewBag.TenantPath/JsonEntriesAfter',
+				url: '@ViewBag.TenantPath/EntriesAfter',
 				dataType: 'json',
 				data: { skip: viewModel.Entries().length, oldestToken: viewModel.OldestToken(), threshold: $('select#loglevel').val() },
 				cache: false,

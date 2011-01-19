@@ -29,10 +29,10 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
             var entryList = cloudLogger.GetLogsOfLevelOrHigher(LogLevel.Info).Take(InitialEntriesCount).ToArray();
 
-            return View(this.LogEntriesToModel(entryList, InitialEntriesCount));
+            return View(LogEntriesToModel(entryList, InitialEntriesCount));
         }
 
-        public ActionResult JsonEntriesAfter(string hostedServiceName, int skip, string oldestToken, string threshold)
+        public ActionResult EntriesAfter(string hostedServiceName, int skip, string oldestToken, string threshold)
         {
             InitializeDeploymentTenant(hostedServiceName);
 
@@ -46,7 +46,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             }
             var entryList = entries.Take(requestedCount).ToArray();
 
-            return Json(this.LogEntriesToModel(entryList, requestedCount), JsonRequestBehavior.AllowGet);
+            return Json(LogEntriesToModel(entryList, requestedCount), JsonRequestBehavior.AllowGet);
         }
 
         private LogsModel LogEntriesToModel(IList<LogEntry> entryList, int requestedCount)
@@ -58,7 +58,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 MoreAvailable = entryList.Count == requestedCount,
                 Entries = entryList.Select(entry => new LogItem
                 {
-                    Token = this.EntryToToken(entry),
+                    Token = EntryToToken(entry),
                     Time = HttpUtility.HtmlEncode(entry.DateTimeUtc),
                     Level = HttpUtility.HtmlEncode(entry.Level),
                     Message = HttpUtility.HtmlEncode(entry.Message),
