@@ -22,9 +22,6 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Services
     public class AppDefinitionWithLiveDataProvider
     {
         const string FailingMessagesStoreName = "failing-messages";
-        const string DataNotAvailableMessage = "Raw data was lost, message not restoreable. Maybe the queue was deleted in the meantime.";
-        const string XmlNotAvailableMegssage = "XML representation not available, but message is restoreable.";
-
         private readonly CloudStorageProviders _cloudStorage;
 
         public AppDefinitionWithLiveDataProvider(CloudStorageProviders cloudStorage)
@@ -110,9 +107,11 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Services
                                 {
                                     Inserted = FormatUtil.TimeOffsetUtc(m.InsertionTime.UtcDateTime),
                                     Persisted = FormatUtil.TimeOffsetUtc(m.PersistenceTime.UtcDateTime),
-                                    Reason = FormatReason(m),
-                                    Content = FormatContent(m),
-                                    Key = m.Key
+                                    Reason = HttpUtility.HtmlEncode(m.Reason),
+                                    Content = FormatQuarantinedLogEntryXmlContent(m),
+                                    Key = m.Key,
+                                    HasData = m.IsDataAvailable,
+                                    HasXml = m.DataXml.HasValue
                                 })
                                 .ToArray()
                         })
@@ -120,16 +119,11 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Services
                 };
         }
 
-        static string FormatContent(PersistedMessage message)
+        static string FormatQuarantinedLogEntryXmlContent(PersistedMessage message)
         {
-            if (!message.IsDataAvailable)
+            if (!message.IsDataAvailable || !message.DataXml.HasValue)
             {
-                return DataNotAvailableMessage;
-            }
-
-            if (!message.DataXml.HasValue)
-            {
-                return XmlNotAvailableMegssage;
+                return string.Empty;
             }
 
             var sb = new StringBuilder();
@@ -149,16 +143,6 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Services
             }
 
             return HttpUtility.HtmlEncode(sb.ToString());
-        }
-
-        static string FormatReason(PersistedMessage message)
-        {
-            if (String.IsNullOrEmpty(message.Reason))
-            {
-                return "Reason unknown";
-            }
-
-            return HttpUtility.HtmlEncode(message.Reason);
         }
     }
 }

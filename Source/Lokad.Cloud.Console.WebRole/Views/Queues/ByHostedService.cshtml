@@ -60,9 +60,13 @@
 			<button data-bind="click: function() { restoreQuarantineMessage($data) }">Restore</button>
 			<button data-bind="click: function() { removeQuarantineMessage($data) }">Delete</button>
 		</p>
-		<pre>${Content}</pre>
+		<div class="warning" data-bind="visible: !HasData">The raw data was lost, the message is not restoreable. Maybe the queue has been deleted in the meantime.</div>
+		<div class="warning" data-bind="visible: HasData && !HasXml">The XML representation of this message is not available, but message is still restoreable in its raw representation.</div>
+		<pre data-bind="visible: HasXml">${Content}</pre>
+		<div data-bind="visible: Reason">
 		Reason:
 		<pre>${Reason}</pre>
+		</div>
 	</div>
 </script>
 

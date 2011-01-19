@@ -35,5 +35,7 @@ namespace Lokad.Cloud.Console.WebRole.Models.Queues
         public string Reason { get; set; }
         public string Content { get; set; }
         public string Key { get; set; }
+        public bool HasData { get; set; }
+        public bool HasXml { get; set; }
     }
 }
