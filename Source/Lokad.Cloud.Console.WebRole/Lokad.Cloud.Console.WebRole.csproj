@@ -133,6 +133,7 @@
     <Compile Include="Controllers\SchedulerController.cs" />
     <Compile Include="Controllers\ServicesController.cs" />
     <Compile Include="Framework\Discovery\DiscoveryNinjectModule.cs" />
+    <Compile Include="Framework\Services\AppDefinitionWithLiveDataProvider.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
