@@ -105,6 +105,18 @@ namespace Lokad.Cloud.Test.Storage
             [Rank(1)] public Guid ChunkID { get; set; }
         }
 
+        public class PatternG<T> : BlobName<int>
+        {
+            public override string ContainerName { get { return "foo"; } }
+
+            [Rank(0, true)]
+            public T Id { get; set; }
+
+            public PatternG(T id)
+            {
+                Id = id;
+            }
+        }
 
         [Test]
         public void Conversion_round_trip()
@@ -175,6 +187,35 @@ namespace Lokad.Cloud.Test.Storage
                 Assert.Fail("#A00");
             }
             catch (ArgumentException) {}
+        }
+
+        [Test]
+        public void TreatDefaultAsNull_supports_string()
+        {
+            var id = Guid.NewGuid().ToString();
+            Assert.AreEqual(id, new PatternG<string>(id).ToString());
+            Assert.AreEqual(string.Empty, new PatternG<string>(null).ToString());
+            Assert.AreEqual(string.Empty, new PatternG<string>(string.Empty).ToString());
+            Assert.AreNotEqual(string.Empty, new PatternG<string>("foo").ToString());
+        }
+
+        [Test]
+        public void TreatDefaultAsNull_supports_guid()
+        {
+            var id = Guid.NewGuid();
+            Assert.AreEqual(id.ToString("N"), new PatternG<Guid>(id).ToString());
+            Assert.AreEqual(string.Empty, new PatternG<Guid>(Guid.Empty).ToString());
+            Assert.AreEqual(string.Empty, new PatternG<Guid>(default(Guid)).ToString());
+            Assert.AreNotEqual(string.Empty, new PatternG<Guid>(Guid.NewGuid()).ToString());
+        }
+
+        [Test]
+        public void TreatDefaultAsNull_supports_datetime()
+        {
+            var id = DateTime.UtcNow.Date;
+            Assert.AreEqual(id.ToString("yyyy-MM-dd-HH-mm-ss-ffff"), new PatternG<DateTime>(id).ToString());
+            Assert.AreEqual(string.Empty, new PatternG<DateTime>(default(DateTime)).ToString());
+            Assert.AreNotEqual(string.Empty, new PatternG<DateTime>(DateTime.Now).ToString());
         }
 
         [Test]

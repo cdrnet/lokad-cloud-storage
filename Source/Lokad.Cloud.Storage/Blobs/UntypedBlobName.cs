@@ -138,8 +138,7 @@ namespace Lokad.Cloud.Storage
                     var memberType = (null != fieldInfo) ? fieldInfo.FieldType : propInfo.PropertyType;
                     var value = (null != fieldInfo) ? fieldInfo.GetValue(instance) : propInfo.GetValue(instance, new object[0]);
                     
-                    if(null == value
-                        || (TreatDefaultAsNull[i] && Activator.CreateInstance(memberType).Equals(value)))
+                    if(null == value || (TreatDefaultAsNull[i] && IsDefaultValue(value, memberType)))
                     {
                         // Delimiter has to be appended here to avoid enumerating
                         // too many blog (names being prefix of each other).
@@ -160,6 +159,21 @@ namespace Lokad.Cloud.Storage
                     sb.Append(s);
                 }
                 return sb.ToString();
+            }
+
+            private static bool IsDefaultValue(object value, Type type)
+            {
+                if (type == typeof(string))
+                {
+                    return String.IsNullOrEmpty((string)value);
+                }
+
+                if (type.IsValueType)
+                {
+                    return Activator.CreateInstance(type).Equals(value);
+                }
+
+                return value == null;
             }
 
             public static T Parse(string value)
