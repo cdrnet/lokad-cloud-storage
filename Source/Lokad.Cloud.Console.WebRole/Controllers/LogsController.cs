@@ -31,52 +31,125 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
-            var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
 
-            var entryList = cloudLogger.GetLogsOfLevelOrHigher(LogLevel.Info).Take(InitialEntriesCount).ToArray();
+            var entries = new CloudLogger(Storage.BlobStorage, string.Empty)
+                .GetLogsOfLevelOrHigher(LogLevel.Info)
+                .Take(InitialEntriesCount);
 
-            return View(LogEntriesToModel(entryList, InitialEntriesCount));
+            return View(LogEntriesToModel(entries.ToArray(), InitialEntriesCount));
+        }
+
+        // TODO: Merge all the entry actions
+
+        [HttpGet]
+        public ActionResult Entries(string hostedServiceName, string threshold)
+        {
+            InitializeDeploymentTenant(hostedServiceName);
+
+            var entries = new CloudLogger(Storage.BlobStorage, string.Empty)
+                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true))
+                .Take(InitialEntriesCount);
+
+            return Json(LogEntriesToModel(entries.ToArray(), InitialEntriesCount), JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
-        public ActionResult EntriesAfter(string hostedServiceName, int skip, string oldestToken, string threshold)
+        public ActionResult OlderEntries(string hostedServiceName, int skip, string olderThanToken, string newerThanToken, string threshold)
         {
             InitializeDeploymentTenant(hostedServiceName);
-            var cloudLogger = new CloudLogger(Storage.BlobStorage, string.Empty);
 
-            var entries = cloudLogger.GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true), skip);
-            int requestedCount = InitialEntriesCount;
-            if(!string.IsNullOrEmpty(oldestToken))
+            var entries = new CloudLogger(Storage.BlobStorage, string.Empty)
+                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true), skip);
+
+            if (!string.IsNullOrWhiteSpace(olderThanToken))
             {
-                requestedCount = MoreEntriesCount;
-                entries = entries.SkipWhile(entry => string.Compare(EntryToToken(entry), oldestToken) >= 0);
+                entries = entries.SkipWhile(entry => string.Compare(EntryToToken(entry), olderThanToken) >= 0);
             }
-            var entryList = entries.Take(requestedCount).ToArray();
 
-            return Json(LogEntriesToModel(entryList, requestedCount), JsonRequestBehavior.AllowGet);
+            if (!string.IsNullOrWhiteSpace(newerThanToken))
+            {
+                entries = entries.TakeWhile(entry => string.Compare(EntryToToken(entry), newerThanToken) > 0);
+            }
+
+            entries = entries.Take(MoreEntriesCount);
+
+            return Json(LogEntriesToModel(entries.ToArray(), MoreEntriesCount), JsonRequestBehavior.AllowGet);
         }
 
-        private LogsModel LogEntriesToModel(IList<LogEntry> entryList, int requestedCount)
+        [HttpGet]
+        public ActionResult NewerEntries(string hostedServiceName, string newerThanToken, string threshold)
         {
-            return new LogsModel
+            InitializeDeploymentTenant(hostedServiceName);
+
+            var entries = new CloudLogger(Storage.BlobStorage, string.Empty)
+                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true))
+                .TakeWhile(entry => string.Compare(EntryToToken(entry), newerThanToken) > 0)
+                .Take(MoreEntriesCount);
+
+            return Json(LogEntriesToModel(entries.ToArray(), MoreEntriesCount), JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public ActionResult HasNewerEntries(string hostedServiceName, string newerThanToken, string threshold)
+        {
+            InitializeDeploymentTenant(hostedServiceName);
+
+            var entry = new CloudLogger(Storage.BlobStorage, string.Empty)
+                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true))
+                .FirstOrEmpty();
+
+            if (entry.HasValue && string.Compare(EntryToToken(entry.Value), newerThanToken) > 0)
             {
-                NewestToken = entryList.Count > 0 ? EntryToToken(entryList[0]) : string.Empty,
-                OldestToken = entryList.Count > 0 ? EntryToToken(entryList[entryList.Count - 1]) : string.Empty,
-                MoreAvailable = entryList.Count == requestedCount,
-                Entries = entryList.Select(entry => new LogItem
+                return Json(new { HasMore = true, NewestToken = EntryToToken(entry.Value) }, JsonRequestBehavior.AllowGet);
+            }
+
+            return Json(new { HasMore = false }, JsonRequestBehavior.AllowGet);
+        }
+
+        private static LogsModel LogEntriesToModel(IList<LogEntry> entryList, int requestedCount)
+        {
+            if (entryList.Count == 0)
+            {
+                return new LogsModel { NewestToken = string.Empty, Groups = new LogGroup[0] };
+            }
+
+            var logsModel = new LogsModel
                 {
-                    Token = EntryToToken(entry),
-                    Time = HttpUtility.HtmlEncode(entry.DateTimeUtc),
-                    Level = HttpUtility.HtmlEncode(entry.Level),
-                    Message = HttpUtility.HtmlEncode(entry.Message),
-                    Error = HttpUtility.HtmlEncode(entry.Error ?? string.Empty)
-                }).ToArray()
-            };
+                    NewestToken = EntryToToken(entryList[0]),
+                    Groups = entryList.GroupBy(EntryToGroupKey).Select(group => new LogGroup
+                        {
+                            Key = group.Key,
+                            Title = group.First().DateTimeUtc.ToLongDateString(),
+                            NewestToken = EntryToToken(group.First()),
+                            OldestToken = EntryToToken(group.Last()),
+                            Entries = group.Select(entry => new LogItem
+                                {
+                                    Token = EntryToToken(entry),
+                                    Time = entry.DateTimeUtc.ToString("HH:mm:ss"),
+                                    Level = entry.Level,
+                                    Message = HttpUtility.HtmlEncode(entry.Message),
+                                    Error = HttpUtility.HtmlEncode(entry.Error ?? string.Empty)
+                                }).ToArray()
+                        }).ToArray()
+                };
+
+            if (entryList.Count == requestedCount)
+            {
+                logsModel.Groups.Last().OlderAvailable = true;
+            }
+
+            return logsModel;
         }
 
         static string EntryToToken(LogEntry entry)
         {
             return entry.DateTimeUtc.ToString("yyyyMMddHHmmssffff");
+        }
+
+        static int EntryToGroupKey(LogEntry entry)
+        {
+            var date = entry.DateTimeUtc.Date;
+            return (date.Year * 100 + date.Month) * 100 + date.Day;
         }
     }
 }

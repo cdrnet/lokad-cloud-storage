@@ -3,15 +3,22 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Diagnostics;
-
 namespace Lokad.Cloud.Console.WebRole.Models.Logs
 {
     public class LogsModel
     {
         public string NewestToken { get; set; }
+        public bool NewerAvailable { get; set; }
+        public LogGroup[] Groups { get; set; }
+    }
+
+    public class LogGroup
+    {
+        public int Key { get; set; }
+        public string Title { get; set; }
+        public string NewestToken { get; set; }
         public string OldestToken { get; set; }
-        public bool MoreAvailable { get; set; }
+        public bool OlderAvailable { get; set; }
         public LogItem[] Entries { get; set; }
     }
 
