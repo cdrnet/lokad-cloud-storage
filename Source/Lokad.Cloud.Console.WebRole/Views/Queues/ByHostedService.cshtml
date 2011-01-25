@@ -116,43 +116,37 @@
 	};
 
 	ajaxDeleteQueue = function(queue) {
-		$('#AjaxLoading').show();
 		$.ajax({
 			url: '@ViewBag.TenantPath/Queue/' + queue.QueueName(),
 			type: 'DELETE',
 			dataType: 'json',
 			cache: false,
-			success: function (data) {
-				$('#AjaxLoading').hide();
-			}
 		});
 	};
 	ajaxDeleteQuarantineMessage = function(message) {
-		$('#AjaxLoading').show();
 		$.ajax({
 			url: '@ViewBag.TenantPath/QuarantinedMessage/' + message.Key(),
 			type: 'DELETE',
 			dataType: 'json',
 			cache: false,
-			success: function (data) {
-				$('#AjaxLoading').hide();
-			}
 		});
 	};
 	ajaxRestoreQuarantineMessage = function(message) {
-		$('#AjaxLoading').show();
 		$.ajax({
 			url: '@ViewBag.TenantPath/RestoreQuarantinedMessage/' + message.Key(),
 			type: 'POST',
 			dataType: 'json',
 			cache: false,
-			success: function (data) {
-				$('#AjaxLoading').hide();
-			}
 		});
 	};
 
 	$(document).ready(function () {
+
 		ko.applyBindings(viewModel);
+
+		$('#AjaxLoading')
+			.bind("ajaxStart", function() { $(this).show() })
+			.bind("ajaxStop", function() { $(this).hide() });
+
 	});
 </script>
