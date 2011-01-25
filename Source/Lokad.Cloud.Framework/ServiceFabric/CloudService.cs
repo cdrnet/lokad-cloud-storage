@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using Lokad.Cloud.Jobs;
 using Lokad.Cloud.Storage;
 using Lokad.Quality;
 using Lokad.Threading;
@@ -110,6 +111,9 @@ namespace Lokad.Cloud.ServiceFabric
 
 		/// <summary>Short-hand for <c>Providers.Log</c>.</summary>
 		public ILog Log { get { return Providers.Log; } }
+
+		[UsedImplicitly]
+		public JobManager Jobs { get; set; }
 
 		/// <summary>
 		/// Default constructor

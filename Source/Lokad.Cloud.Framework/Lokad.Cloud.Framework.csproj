@@ -123,6 +123,8 @@
     <Compile Include="Diagnostics\Rsm\RsmReport.cs" />
     <Compile Include="Diagnostics\Rsm\RsmIndicatorReport.cs" />
     <Compile Include="Diagnostics\Rsm\RsmMessageReport.cs" />
+    <Compile Include="Jobs\Job.cs" />
+    <Compile Include="Jobs\JobManager.cs" />
     <Compile Include="Management\Api10\ICloudAssembliesApi.cs" />
     <Compile Include="Management\Api10\ICloudConfigurationApi.cs" />
     <Compile Include="Management\Api10\ICloudProvisioningApi.cs" />
