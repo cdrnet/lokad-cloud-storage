@@ -59,6 +59,7 @@
 
 <script type="text/javascript">
 
+    // inline to save a separate request
 	var viewModel = ko.mapping.fromJSON(@Html.Enquote(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(Model)));
 
 	var updateMask = false;
@@ -83,9 +84,9 @@
 		var groupIndex = viewModel.Groups.indexOf(group);
 		var newerThanToken = groupIndex == (viewModel.Groups().length - 1) ? undefined : viewModel.Groups()[groupIndex + 1].NewestToken();
 		$.ajaxQueue({
-			url: '@ViewBag.TenantPath/OlderEntries',
+			url: '@ViewBag.TenantPath/Entries',
 			dataType: 'json',
-			data: { skip: group.Entries().length, olderThanToken: group.OldestToken(), newerThanToken: newerThanToken, threshold: $('select#loglevel').val() },
+			data: { threshold: $('select#loglevel').val(), skip: group.Entries().length, count: 50, olderThanToken: group.OldestToken(), newerThanToken: newerThanToken },
 			cache: false,
 			success: function (data) {
 				$.each(data.Groups, function (i, g) { viewModel.Groups.push(ko.mapping.fromJS(g)); });
@@ -98,9 +99,9 @@
 	loadNewerEntries = function() {
 		viewModel.NewerAvailable(false);
 		$.ajaxQueue({
-			url: '@ViewBag.TenantPath/NewerEntries',
+			url: '@ViewBag.TenantPath/Entries',
 			dataType: 'json',
-			data: { newerThanToken: viewModel.NewestToken(), threshold: $('select#loglevel').val() },
+			data: { threshold: $('select#loglevel').val(), count: 50, newerThanToken: viewModel.NewestToken() },
 			cache: false,
 			success: function (data) {
 				viewModel.NewerAvailable(false);
@@ -137,12 +138,6 @@
 		}
 	}
 
-	groupOfKey = function(key) {
-		var group;
-		$.each(viewModel.Groups(), function(i,g) { if (g.Key() == key) { group = g; } });
-		return group;
-	};
-
 	$(document).ready(function() {
 
 		ko.applyBindings(viewModel);
@@ -151,7 +146,7 @@
 			.bind("ajaxStart", function() { $(this).show(); updateMask = true; })
 			.bind("ajaxStop", function() { $(this).hide(); updateMask = false; })
 
-		$('select#loglevel').selectToUISlider({ labels: 5, sliderOptions: { change:function() {
+		$('select#loglevel').selectToUISlider({ labels: 5, sliderOptions: { change: function() {
 			$.ajaxQueue({
 				url: '@ViewBag.TenantPath/Entries',
 				dataType: 'json',
@@ -168,7 +163,7 @@
 			$.ajaxQueue({
 				url: '@ViewBag.TenantPath/HasNewerEntries',
 				dataType: 'json',
-				data: { newerThanToken: viewModel.NewestToken(), threshold: $('select#loglevel').val() },
+				data: { threshold: $('select#loglevel').val(), newerThanToken: viewModel.NewestToken() },
 				cache: false,
 				success: function (data) {
 					viewModel.NewerAvailable(data.HasMore);

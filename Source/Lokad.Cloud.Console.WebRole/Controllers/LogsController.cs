@@ -20,7 +20,6 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
     public sealed class LogsController : TenantController
     {
         private const int InitialEntriesCount = 15;
-        private const int MoreEntriesCount = 50;
 
         public LogsController(AzureDiscoveryInfo discoveryInfo)
             : base(discoveryInfo)
@@ -39,23 +38,11 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             return View(LogEntriesToModel(entries.ToArray(), InitialEntriesCount));
         }
 
-        // TODO: Merge all the entry actions
-
         [HttpGet]
-        public ActionResult Entries(string hostedServiceName, string threshold)
+        public ActionResult Entries(string hostedServiceName, string threshold, int skip = 0, int count = InitialEntriesCount, string olderThanToken = null, string newerThanToken = null)
         {
-            InitializeDeploymentTenant(hostedServiceName);
+            Enforce.Argument(() => count, Rules.Is.Between(0, 101));
 
-            var entries = new CloudLogger(Storage.BlobStorage, string.Empty)
-                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true))
-                .Take(InitialEntriesCount);
-
-            return Json(LogEntriesToModel(entries.ToArray(), InitialEntriesCount), JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        public ActionResult OlderEntries(string hostedServiceName, int skip, string olderThanToken, string newerThanToken, string threshold)
-        {
             InitializeDeploymentTenant(hostedServiceName);
 
             var entries = new CloudLogger(Storage.BlobStorage, string.Empty)
@@ -71,26 +58,13 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
                 entries = entries.TakeWhile(entry => string.Compare(EntryToToken(entry), newerThanToken) > 0);
             }
 
-            entries = entries.Take(MoreEntriesCount);
+            entries = entries.Take(count);
 
-            return Json(LogEntriesToModel(entries.ToArray(), MoreEntriesCount), JsonRequestBehavior.AllowGet);
+            return Json(LogEntriesToModel(entries.ToArray(), count), JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
-        public ActionResult NewerEntries(string hostedServiceName, string newerThanToken, string threshold)
-        {
-            InitializeDeploymentTenant(hostedServiceName);
-
-            var entries = new CloudLogger(Storage.BlobStorage, string.Empty)
-                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true))
-                .TakeWhile(entry => string.Compare(EntryToToken(entry), newerThanToken) > 0)
-                .Take(MoreEntriesCount);
-
-            return Json(LogEntriesToModel(entries.ToArray(), MoreEntriesCount), JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        public ActionResult HasNewerEntries(string hostedServiceName, string newerThanToken, string threshold)
+        public ActionResult HasNewerEntries(string hostedServiceName, string threshold, string newerThanToken)
         {
             InitializeDeploymentTenant(hostedServiceName);
 
