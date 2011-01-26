@@ -32,7 +32,7 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Sortable pattern for date times.</summary>
         /// <remarks>Hyphens can be eventually used to refine further the iteration.</remarks>
-        public const string DateFormatInBlobName = "yyyy-MM-dd-HH-mm-ss-ffff";
+        public const string DateFormatInBlobName = "yyyy-MM-dd-HH-mm-ss";
 
         static readonly Dictionary<Type, Func<string, object>> Parsers = new Dictionary<Type, Func<string, object>>();
         static readonly Dictionary<Type, Func<object, string>> Printers = new Dictionary<Type, Func<object, string>>();

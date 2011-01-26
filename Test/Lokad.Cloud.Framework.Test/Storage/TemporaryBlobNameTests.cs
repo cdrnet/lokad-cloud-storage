@@ -27,8 +27,8 @@ namespace Lokad.Cloud.Test.Storage
         public void SpecializedTemporaryBlobNamesCanBeParsedAsBaseClass()
         {
             var now = DateTimeOffset.UtcNow;
-            // round to milliseconds, our time resolution in blob names
-            now = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, now.Millisecond, now.Offset);
+            // round to seconds, our time resolution in blob names
+            now = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, now.Offset);
 
             var testRef = new TestTemporaryBlobName(now, "test", Guid.NewGuid());
             var printed = UntypedBlobName.Print(testRef);

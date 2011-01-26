@@ -213,7 +213,7 @@ namespace Lokad.Cloud.Test.Storage
         public void TreatDefaultAsNull_supports_datetime()
         {
             var id = DateTime.UtcNow.Date;
-            Assert.AreEqual(id.ToString("yyyy-MM-dd-HH-mm-ss-ffff"), new PatternG<DateTime>(id).ToString());
+            Assert.AreEqual(id.ToString("yyyy-MM-dd-HH-mm-ss"), new PatternG<DateTime>(id).ToString());
             Assert.AreEqual(string.Empty, new PatternG<DateTime>(default(DateTime)).ToString());
             Assert.AreNotEqual(string.Empty, new PatternG<DateTime>(DateTime.Now).ToString());
         }
@@ -238,8 +238,8 @@ namespace Lokad.Cloud.Test.Storage
         {
             var localOffset = TimeSpan.FromHours(-2);
             var now = DateTimeOffset.Now;
-            // round to milliseconds, our time resolution in blob names
-            now = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, now.Millisecond, now.Offset);
+            // round to seconds, our time resolution in blob names
+            now = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, now.Offset);
             var unsafeNow = now.DateTime;
 
             var utcNow = now.ToUniversalTime();
