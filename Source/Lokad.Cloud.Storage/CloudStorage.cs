@@ -6,6 +6,7 @@
 using System;
 using System.ComponentModel;
 using System.Net;
+using Lokad.Quality;
 using Lokad.Serialization;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
@@ -14,12 +15,12 @@ namespace Lokad.Cloud.Storage
 {
     public static class CloudStorage
     {
-        public static CloudStorageBuilder ForAzureAccount(CloudStorageAccount storageAccount)
+        public static CloudStorageBuilder ForAzureAccount([NotNull] CloudStorageAccount storageAccount)
         {
             return new AzureCloudStorageBuilder(storageAccount);
         }
 
-        public static CloudStorageBuilder ForAzureConnectionString(string connectionString)
+        public static CloudStorageBuilder ForAzureConnectionString([NotNull] string connectionString)
         {
             CloudStorageAccount storageAccount;
             if (!CloudStorageAccount.TryParse(connectionString, out storageAccount))
@@ -47,6 +48,9 @@ namespace Lokad.Cloud.Storage
             protected IDataSerializer DataSerializer { get; private set; }
 
             /// <remarks>Can be null if not needed</remarks>
+            protected ILog Log { get; private set; }
+
+            /// <remarks>Can be null if not needed</remarks>
             protected IRuntimeFinalizer RuntimeFinalizer { get; private set; }
 
             protected CloudStorageBuilder()
@@ -55,12 +59,27 @@ namespace Lokad.Cloud.Storage
                 DataSerializer = new CloudFormatter();
             }
 
-            public CloudStorageBuilder WithDataSerializer(IDataSerializer dataSerializer)
+            /// <summary>
+            /// Replace the default data serializer with a custom implementation
+            /// </summary>
+            public CloudStorageBuilder WithDataSerializer([NotNull] IDataSerializer dataSerializer)
             {
                 DataSerializer = dataSerializer;
                 return this;
             }
 
+            /// <summary>
+            /// Optionally provide a log provider.
+            /// </summary>
+            public CloudStorageBuilder WithLog(ILog log)
+            {
+                Log = log;
+                return this;
+            }
+
+            /// <summary>
+            /// Optionally provide a runtime finalizer.
+            /// </summary>
             public CloudStorageBuilder WithRuntimeFinalizer(IRuntimeFinalizer runtimeFinalizer)
             {
                 RuntimeFinalizer = runtimeFinalizer;
@@ -77,7 +96,8 @@ namespace Lokad.Cloud.Storage
                     BuildBlobStorage(),
                     BuildQueueStorage(),
                     BuildTableStorage(),
-                    RuntimeFinalizer);
+                    RuntimeFinalizer,
+                    Log);
             }
         }
     }
@@ -113,7 +133,7 @@ namespace Lokad.Cloud.Storage
     {
         private readonly CloudStorageAccount _storageAccount;
 
-        internal AzureCloudStorageBuilder(CloudStorageAccount storageAccount)
+        internal AzureCloudStorageBuilder([NotNull] CloudStorageAccount storageAccount)
         {
             _storageAccount = storageAccount;
 
@@ -124,12 +144,17 @@ namespace Lokad.Cloud.Storage
 
         public override IBlobStorageProvider BuildBlobStorage()
         {
-            return new Azure.BlobStorageProvider(BlobClient(), DataSerializer);
+            return new Azure.BlobStorageProvider(
+                BlobClient(),
+                DataSerializer,
+                Log);
         }
 
         public override ITableStorageProvider BuildTableStorage()
         {
-            return new Azure.TableStorageProvider(TableClient(), DataSerializer);
+            return new Azure.TableStorageProvider(
+                TableClient(),
+                DataSerializer);
         }
 
         public override IQueueStorageProvider BuildQueueStorage()
@@ -138,7 +163,8 @@ namespace Lokad.Cloud.Storage
                 QueueClient(),
                 BuildBlobStorage(),
                 DataSerializer,
-                RuntimeFinalizer);
+                RuntimeFinalizer,
+                Log);
         }
 
         CloudBlobClient BlobClient()

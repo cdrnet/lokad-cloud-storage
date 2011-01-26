@@ -7,7 +7,9 @@ using System;
 using System.Net;
 using Autofac;
 using Autofac.Builder;
+using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Management;
+using Lokad.Cloud.Runtime;
 using Lokad.Serialization;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
@@ -15,142 +17,157 @@ using Module=Autofac.Builder.Module;
 
 namespace Lokad.Cloud.Storage.Azure
 {
-	/// <summary>IoC module that registers
-	/// <see cref="BlobStorageProvider"/>, <see cref="QueueStorageProvider"/> and
-	/// <see cref="TableStorageProvider"/> from the <see cref="ICloudConfigurationSettings"/>.</summary>
-	public sealed class StorageModule : Module
-	{
-		static StorageModule()
-		{
-			
-		}
+    /// <summary>IoC module that registers
+    /// <see cref="BlobStorageProvider"/>, <see cref="QueueStorageProvider"/> and
+    /// <see cref="TableStorageProvider"/> from the <see cref="ICloudConfigurationSettings"/>.</summary>
+    public sealed class StorageModule : Module
+    {
+        static StorageModule() { }
 
-		protected override void Load(ContainerBuilder builder)
-		{
-			builder.Register<CloudFormatter>().As<IDataSerializer>().DefaultOnly();
+        protected override void Load(ContainerBuilder builder)
+        {
+            builder.Register<CloudFormatter>().As<IDataSerializer>().DefaultOnly();
 
-			// .NET 3.5 compiler can't infer types properly here, hence the directive
-			// After moving to VS2010 (in .NET 3.5 mode), lambdas
-			// could be replaced with the method groups.
+            builder.Register(StorageAccountFromSettings);
+            builder.Register(QueueClient);
+            builder.Register(BlobClient);
+            builder.Register(TableClient);
 
-			// ReSharper disable ConvertClosureToMethodGroup
-			builder.Register(context => StorageAccountFromSettings(context));
-			builder.Register(context => QueueClient(context));
-			builder.Register(context => BlobClient(context));
-			builder.Register(context => TableClient(context));
+            builder.Register(BlobStorageProvider);
+            builder.Register(QueueStorageProvider);
+            builder.Register(TableStorageProvider);
 
-			builder.Register(context => BlobStorageProvider(context));
-			builder.Register(context => QueueStorageProvider(context));
-			builder.Register(context => TableStorageProvider(context));
+            builder.Register(RuntimeProviders);
+            builder.Register(CloudStorageProviders);
+            builder.Register(CloudInfrastructureProviders);
+        }
 
-			builder.Register(context => CloudStorageProviders(context));
-			builder.Register(context => CloudInfrastructureProviders(context));
-			// ReSharper restore ConvertClosureToMethodGroup
-		}
+        private static CloudStorageAccount StorageAccountFromSettings(IContext c)
+        {
+            var settings = c.Resolve<ICloudConfigurationSettings>();
+            CloudStorageAccount account;
+            if (CloudStorageAccount.TryParse(settings.DataConnectionString, out account))
+            {
+                // http://blogs.msdn.com/b/windowsazurestorage/archive/2010/06/25/nagle-s-algorithm-is-not-friendly-towards-small-requests.aspx
+                ServicePointManager.FindServicePoint(account.BlobEndpoint).UseNagleAlgorithm = false;
+                ServicePointManager.FindServicePoint(account.TableEndpoint).UseNagleAlgorithm = false;
+                ServicePointManager.FindServicePoint(account.QueueEndpoint).UseNagleAlgorithm = false;
 
-		private static CloudStorageAccount StorageAccountFromSettings(IContext c)
-		{
-			var settings = c.Resolve<ICloudConfigurationSettings>();
-			CloudStorageAccount account;
-			if (CloudStorageAccount.TryParse(settings.DataConnectionString, out account))
-			{
-				// http://blogs.msdn.com/b/windowsazurestorage/archive/2010/06/25/nagle-s-algorithm-is-not-friendly-towards-small-requests.aspx
-				ServicePointManager.FindServicePoint(account.BlobEndpoint).UseNagleAlgorithm = false;
-				ServicePointManager.FindServicePoint(account.TableEndpoint).UseNagleAlgorithm = false;
-				ServicePointManager.FindServicePoint(account.QueueEndpoint).UseNagleAlgorithm = false;
+                return account;
+            }
+            throw new InvalidOperationException("Failed to get valid connection string");
+        }
 
-				return account;
-			}
-			throw new InvalidOperationException("Failed to get valid connection string");
-		}
+        static RuntimeProviders RuntimeProviders(IContext c)
+        {
+            // NOTE: Explicit CloudLogger (not ILog) by design
+            var providers = CloudStorage
+                .ForAzureAccount(c.Resolve<CloudStorageAccount>())
+                .WithDataSerializer(new CloudFormatter())
+                .WithLog(c.Resolve<CloudLogger>())
+                .BuildStorageProviders();
 
-		static CloudInfrastructureProviders CloudInfrastructureProviders(IContext c)
-		{
-			return new CloudInfrastructureProviders(
-				c.Resolve<CloudStorageProviders>(),
-				c.ResolveOptional<ILog>(),
-				c.ResolveOptional<IProvisioningProvider>());
-		}
+            return new RuntimeProviders(
+                providers.BlobStorage,
+                providers.QueueStorage,
+                providers.TableStorage,
+                providers.RuntimeFinalizer,
+                providers.Log);
+        }
 
-		static CloudStorageProviders CloudStorageProviders(IContext c)
-		{
-			return new CloudStorageProviders(
-				c.Resolve<IBlobStorageProvider>(),
-				c.Resolve<IQueueStorageProvider>(),
-				c.Resolve<ITableStorageProvider>(),
-				c.ResolveOptional<IRuntimeFinalizer>());
-		}
+        static CloudInfrastructureProviders CloudInfrastructureProviders(IContext c)
+        {
+            return new CloudInfrastructureProviders(
+                c.Resolve<CloudStorageProviders>(),
+                c.ResolveOptional<IProvisioningProvider>());
+        }
 
-		static ITableStorageProvider TableStorageProvider(IContext c)
-		{
-			IDataSerializer formatter;
-			if (!c.TryResolve(out formatter))
-			{
-				formatter = new CloudFormatter();
-			}
+        static CloudStorageProviders CloudStorageProviders(IContext c)
+        {
+            return new CloudStorageProviders(
+                c.Resolve<IBlobStorageProvider>(),
+                c.Resolve<IQueueStorageProvider>(),
+                c.Resolve<ITableStorageProvider>(),
+                c.ResolveOptional<IRuntimeFinalizer>(),
+                c.ResolveOptional<ILog>());
+        }
 
-			return new TableStorageProvider(c.Resolve<CloudTableClient>(), formatter);
-		}
+        static ITableStorageProvider TableStorageProvider(IContext c)
+        {
+            IDataSerializer formatter;
+            if (!c.TryResolve(out formatter))
+            {
+                formatter = new CloudFormatter();
+            }
 
-		static IQueueStorageProvider QueueStorageProvider(IContext c)
-		{
-			IDataSerializer formatter;
-			if (!c.TryResolve(out formatter))
-			{
-				formatter = new CloudFormatter();
-			}
+            return new TableStorageProvider(
+                c.Resolve<CloudTableClient>(),
+                formatter);
+        }
 
-			return new QueueStorageProvider(
-				c.Resolve<CloudQueueClient>(),
-				c.Resolve<IBlobStorageProvider>(),
-				formatter,
-				// RuntimeFinalizer is a dependency (as the name suggest) on the worker runtime
-				// This dependency is typically not available in a pure O/C mapper scenario.
-				// In such case, we just pass a dummy finalizer (that won't be used any
-				c.ResolveOptional<IRuntimeFinalizer>());
-		}
+        static IQueueStorageProvider QueueStorageProvider(IContext c)
+        {
+            IDataSerializer formatter;
+            if (!c.TryResolve(out formatter))
+            {
+                formatter = new CloudFormatter();
+            }
 
-		static IBlobStorageProvider BlobStorageProvider(IContext c)
-		{
-			IDataSerializer formatter;
-			if (!c.TryResolve(out formatter))
-			{
-				formatter = new CloudFormatter();
-			}
+            return new QueueStorageProvider(
+                c.Resolve<CloudQueueClient>(),
+                c.Resolve<IBlobStorageProvider>(),
+                formatter,
+                // RuntimeFinalizer is a dependency (as the name suggest) on the worker runtime
+                // This dependency is typically not available in a pure O/C mapper scenario.
+                // In such case, we just pass a dummy finalizer (that won't be used any
+                c.ResolveOptional<IRuntimeFinalizer>(),
+                c.ResolveOptional<ILog>());
+        }
 
-			return new BlobStorageProvider(c.Resolve<CloudBlobClient>(), formatter);
-		}
+        static IBlobStorageProvider BlobStorageProvider(IContext c)
+        {
+            IDataSerializer formatter;
+            if (!c.TryResolve(out formatter))
+            {
+                formatter = new CloudFormatter();
+            }
 
-		static CloudTableClient TableClient(IContext c)
-		{
-			var account = c.Resolve<CloudStorageAccount>();
-			var storage = account.CreateCloudTableClient();
-			storage.RetryPolicy = BuildDefaultRetry();
-			return storage;
-		}
+            return new BlobStorageProvider(
+                c.Resolve<CloudBlobClient>(),
+                formatter,
+                c.ResolveOptional<ILog>());
+        }
 
-		static CloudBlobClient BlobClient(IContext c)
-		{
-			var account = c.Resolve<CloudStorageAccount>();
-			var storage = account.CreateCloudBlobClient();
-			storage.RetryPolicy = BuildDefaultRetry();
-			return storage;
-		}
+        static CloudTableClient TableClient(IContext c)
+        {
+            var account = c.Resolve<CloudStorageAccount>();
+            var storage = account.CreateCloudTableClient();
+            storage.RetryPolicy = BuildDefaultRetry();
+            return storage;
+        }
 
-		static CloudQueueClient QueueClient(IContext c)
-		{
-			var account = c.Resolve<CloudStorageAccount>();
-			var queueService = account.CreateCloudQueueClient();
-			queueService.RetryPolicy = BuildDefaultRetry();
-			return queueService;
-		}
+        static CloudBlobClient BlobClient(IContext c)
+        {
+            var account = c.Resolve<CloudStorageAccount>();
+            var storage = account.CreateCloudBlobClient();
+            storage.RetryPolicy = BuildDefaultRetry();
+            return storage;
+        }
 
-		static RetryPolicy BuildDefaultRetry()
-		{
-			// [abdullin]: in short this gives us MinBackOff + 2^(10)*Rand.(~0.5.Seconds())
-			// at the last retry. Reflect the method for more details
-			var deltaBackoff = 0.5.Seconds();
-			return RetryPolicies.RetryExponential(10, deltaBackoff);
-		}
-	}
+        static CloudQueueClient QueueClient(IContext c)
+        {
+            var account = c.Resolve<CloudStorageAccount>();
+            var queueService = account.CreateCloudQueueClient();
+            queueService.RetryPolicy = BuildDefaultRetry();
+            return queueService;
+        }
+
+        static RetryPolicy BuildDefaultRetry()
+        {
+            // [abdullin]: in short this gives us MinBackOff + 2^(10)*Rand.(~0.5.Seconds())
+            // at the last retry. Reflect the method for more details
+            var deltaBackoff = 0.5.Seconds();
+            return RetryPolicies.RetryExponential(10, deltaBackoff);
+        }
+    }
 }

@@ -27,7 +27,7 @@ namespace Lokad.Cloud
             builder.RegisterModule(new Management.ManagementModule());
             builder.RegisterModule(new Storage.Azure.StorageModule());
 
-            builder.Register<Jobs.JobManager>().ContainerScoped();
+            builder.Register<Jobs.JobManager>();
             builder.Register<ServiceFabric.RuntimeFinalizer>().As<IRuntimeFinalizer>().ContainerScoped();
         }
     }

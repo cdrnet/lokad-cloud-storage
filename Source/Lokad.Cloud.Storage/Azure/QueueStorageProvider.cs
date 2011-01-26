@@ -41,6 +41,8 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IRuntimeFinalizer _runtimeFinalizer;
         readonly ActionPolicy _azureServerPolicy;
 
+        readonly ILog _log;
+
         // Instrumentation
         readonly ExecutionCounter _countGetMessage;
         readonly ExecutionCounter _countPutMessage;
@@ -54,22 +56,34 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>Mapping object --> Queue Message Id. Use to delete messages afterward.</summary>
         readonly Dictionary<object, InProcessMessage> _inProcessMessages;
 
+        public QueueStorageProvider(
+            CloudQueueClient queueStorage,
+            IBlobStorageProvider blobStorage,
+            IDataSerializer serializer,
+            IRuntimeFinalizer runtimeFinalizer)
+            : this(queueStorage, blobStorage, serializer, runtimeFinalizer, null)
+        {
+        }
+
         /// <summary>IoC constructor.</summary>
         /// <param name="blobStorage">Not null.</param>
         /// <param name="queueStorage">Not null.</param>
         /// <param name="serializer">Not null.</param>
         /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper
         /// scenario).</param>
+        /// <param name="log">Optional log</param>
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
             IDataSerializer serializer,
-            IRuntimeFinalizer runtimeFinalizer)
+            IRuntimeFinalizer runtimeFinalizer,
+            ILog log = null)
         {
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
             _serializer = serializer;
             _runtimeFinalizer = runtimeFinalizer;
+            _log = log;
 
             // finalizer can be null in a strict O/C mapper scenario
             if(null != _runtimeFinalizer)
@@ -181,6 +195,11 @@ namespace Lokad.Cloud.Storage.Azure
                             PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
                                 String.Format("Message was dequeued {0} times but failed processing each time.", dequeueCount - 1));
 
+                            if (_log != null)
+                            {
+                                _log.WarnFormat("Cloud Storage: A message of type {0} failed to process repeatedly and has been quarantined.", typeof(T).Name);
+                            }
+
                             continue;
                         }
 
@@ -214,6 +233,11 @@ namespace Lokad.Cloud.Storage.Azure
                         PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
                             String.Format("Message failed to deserialize:\r\nAs {0}:\r\n{1}\r\n\r\nAs MessageEnvelope:\r\n{2}\r\n\r\nAs MessageWrapper:\r\n{3}",
                                 typeof (T).FullName, messageAsT.Error, messageAsEnvelope.IsSuccess ? "unwrapped" : messageAsEnvelope.Error.ToString(), messageAsWrapper.Error));
+
+                        if (_log != null)
+                        {
+                            _log.WarnFormat(messageAsT.Error, "Cloud Storage: A message failed to deserialize to type {0} and any wrappers repeatedly and has been quarantined.", typeof(T).Name);
+                        }
                     }
                     finally
                     {
@@ -403,6 +427,10 @@ namespace Lokad.Cloud.Storage.Azure
                     if (messageWrapper.IsSuccess)
                     {
                         _blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
+                    }
+                    else if (_log != null)
+                    {
+                        _log.WarnFormat(messageWrapper.Error, "Cloud Storage: The overflowing part of a corrupt message could not be identified and may have not been deleted while deleting the message itself.");
                     }
 
                     // TODO: else-case would mean that we won't delete the overflow blob, consider to report it

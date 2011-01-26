@@ -37,6 +37,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IDataSerializer _serializer;
         readonly ActionPolicy _azureServerPolicy;
         readonly ActionPolicy _networkPolicy;
+        readonly ILog _log;
 
         // Instrumentation
         readonly ExecutionCounter _countPutBlob;
@@ -47,9 +48,15 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDeleteBlob;
 
         public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer)
+            : this(blobStorage, serializer, null)
+        {
+        }
+
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log)
         {
             _blobStorage = blobStorage;
             _serializer = serializer;
+            _log = log;
             _azureServerPolicy = AzurePolicies.TransientServerErrorBackOff;
             _networkPolicy = AzurePolicies.NetworkCorruption;
 
@@ -291,6 +298,13 @@ namespace Lokad.Cloud.Storage.Azure
 
                 _countGetBlob.Close(timestamp);
 
+                if (!deserialized.IsSuccess && _log != null)
+                {
+                    _log.WarnFormat(deserialized.Error,
+                        "Cloud Storage: A blob was retrieved for GeBlob but failed to deserialize. Blob {0} in container {1}.",
+                        blobName, containerName);
+                }
+
                 return deserialized.ToMaybe();
             }
         }
@@ -397,6 +411,13 @@ namespace Lokad.Cloud.Storage.Azure
                     var deserialized = _serializer.TryDeserializeAs<T>(stream);
 
                     _countGetBlobIfModified.Close(timestamp);
+
+                    if (!deserialized.IsSuccess && _log != null)
+                    {
+                        _log.WarnFormat(deserialized.Error,
+                            "Cloud Storage: A blob was retrieved for GetBlobIfModified but failed to deserialize. Blob {0} in container {1}.",
+                            blobName, containerName);
+                    }
 
                     return deserialized.ToMaybe();
                 }
@@ -659,7 +680,16 @@ namespace Lokad.Cloud.Storage.Azure
                         inputBlobExists = !String.IsNullOrEmpty(inputETag);
 
                         readStream.Seek(0, SeekOrigin.Begin);
-                        input = _serializer.TryDeserializeAs<T>(readStream).ToMaybe();
+
+                        var deserialized = _serializer.TryDeserializeAs<T>(readStream);
+                        if (!deserialized.IsSuccess && _log != null)
+                        {
+                            _log.WarnFormat(deserialized.Error,
+                                "Cloud Storage: A blob was retrieved for Upsert but failed to deserialize. An Insert will be performed instead, overwriting the corrupt blob {0} in container {1}.",
+                                blobName, containerName);
+                        }
+
+                        input = deserialized.ToMaybe();
                     }
                 }
                 catch (StorageClientException ex)
@@ -955,7 +985,16 @@ namespace Lokad.Cloud.Storage.Azure
                     originalEtag = blob.Properties.ETag;
 
                     stream.Seek(0, SeekOrigin.Begin);
-                    input = _serializer.TryDeserializeAs<T>(stream).ToMaybe();
+
+                    var deserialized = _serializer.TryDeserializeAs<T>(stream);
+                    if (!deserialized.IsSuccess && _log != null)
+                    {
+                        _log.WarnFormat(deserialized.Error,
+                            "Cloud Storage: A blob was retrieved for UpdateIfNotModified but failed to deserialize. Blob {0} in container {1}.",
+                            blobName, containerName);
+                    }
+
+                    input = deserialized.ToMaybe();
                 }
             }
             catch (StorageClientException ex)
