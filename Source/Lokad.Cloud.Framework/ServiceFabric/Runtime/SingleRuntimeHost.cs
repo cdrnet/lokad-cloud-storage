@@ -114,43 +114,37 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
                     // runtime endlessly keeps pinging queues for pending work
                     _runtime.Execute();
 
-                    log.Log(LogLevel.Debug, string.Format(
-                        "Runtime Host: Runtime has stopped cleanly on worker {0}.",
-                        CloudEnvironment.PartitionKey));
+                    log.DebugFormat("Runtime Host: Runtime has stopped cleanly on worker {0}.",
+                        CloudEnvironment.PartitionKey);
                 }
                 catch (TypeLoadException typeLoadException)
                 {
-                    log.Log(LogLevel.Error, typeLoadException, string.Format(
-                        "Runtime Host: Type {0} could not be loaded. The Runtime Host will be restarted.",
-                        typeLoadException.TypeName));
+                    log.ErrorFormat(typeLoadException, "Runtime Host: Type {0} could not be loaded. The Runtime Host will be restarted.",
+                        typeLoadException.TypeName);
                 }
                 catch (FileLoadException fileLoadException)
                 {
                     // Tentatively: referenced assembly is missing
-                    log.Log(LogLevel.Error, fileLoadException, string.Format(
-                        "Runtime Host: Could not load assembly probably due to a missing reference assembly. The Runtime Host will be restarted."));
+                    log.Fatal(fileLoadException, "Runtime Host: Could not load assembly probably due to a missing reference assembly. The Runtime Host will be restarted.");
                 }
                 catch (SecurityException securityException)
                 {
                     // Tentatively: assembly cannot be loaded due to security config
-                    log.Log(LogLevel.Error, securityException, string.Format(
-                        "Runtime Host: Could not load assembly {0} probably due to security configuration. The Runtime Host will be restarted.",
-                        securityException.FailedAssemblyInfo));
+                    log.FatalFormat(securityException, "Runtime Host: Could not load assembly {0} probably due to security configuration. The Runtime Host will be restarted.",
+                        securityException.FailedAssemblyInfo);
                 }
                 catch (TriggerRestartException)
                 {
-                    log.Log(LogLevel.Debug, string.Format(
-                        "Runtime Host: Triggered to stop execution on worker {0}. The Role Instance will be recycled and the Runtime Host restarted.",
-                        CloudEnvironment.PartitionKey));
+                    log.DebugFormat("Runtime Host: Triggered to stop execution on worker {0}. The Role Instance will be recycled and the Runtime Host restarted.",
+                        CloudEnvironment.PartitionKey);
 
                     return true;
                 }
                 catch (Exception ex)
                 {
                     // Generic exception
-                    log.Log(LogLevel.Error, ex, string.Format(
-                        "Runtime Host: An unhandled {0} exception occurred on worker {1}. The Runtime Host will be restarted.",
-                        ex.GetType().Name, CloudEnvironment.PartitionKey));
+                    log.ErrorFormat(ex, "Runtime Host: An unhandled {0} exception occurred on worker {1}. The Runtime Host will be restarted.",
+                        ex.GetType().Name, CloudEnvironment.PartitionKey);
                 }
                 finally
                 {

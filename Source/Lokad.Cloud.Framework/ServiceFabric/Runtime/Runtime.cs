@@ -23,8 +23,6 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         readonly IRuntimeFinalizer _runtimeFinalizer;
         readonly ILog _log;
 
-        IRuntimeFinalizer _applicationFinalizer;
-
         readonly IServiceMonitor _monitoring;
         readonly DiagnosticsAcquisition _diagnostics;
 
@@ -35,18 +33,17 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 
         volatile bool _isStopRequested;
         Scheduler _scheduler;
+        IRuntimeFinalizer _applicationFinalizer;
 
         /// <summary>Container used to populate cloud service properties.</summary>
         public IContainer RuntimeContainer { get; set; }
 
         /// <summary>IoC constructor.</summary>
-        public Runtime(RuntimeProviders runtimeProviders, ICloudConfigurationSettings settings, CloudInfrastructureProviders applicationProviders, ICloudDiagnosticsRepository diagnosticsRepository)
+        public Runtime(RuntimeProviders runtimeProviders, ICloudConfigurationSettings settings, ICloudDiagnosticsRepository diagnosticsRepository)
         {
             _runtimeProviders = runtimeProviders;
             _runtimeFinalizer = runtimeProviders.RuntimeFinalizer;
             _log = runtimeProviders.Log;
-
-            _applicationFinalizer = applicationProviders.RuntimeFinalizer;
 
             _settings = settings;
             _monitoring = new ServiceMonitor(diagnosticsRepository);
@@ -57,7 +54,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         /// until stop is requested, or an uncaught exception is thrown.</summary>
         public void Execute()
         {
-            _log.Log(LogLevel.Debug, string.Format("Runtime: started on worker {0}.", CloudEnvironment.PartitionKey));
+            _log.DebugFormat("Runtime: started on worker {0}.", CloudEnvironment.PartitionKey);
 
             // hook on the current thread to force shut down
             _executeThread = Thread.CurrentThread;
@@ -78,23 +75,20 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             }
             catch (ThreadInterruptedException)
             {
-                _log.Log(LogLevel.Warn, string.Format(
-                    "Runtime: execution was interrupted on worker {0} in service {1}. The Runtime will be restarted.",
-                    CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
+                _log.WarnFormat("Runtime: execution was interrupted on worker {0} in service {1}. The Runtime will be restarted.",
+                    CloudEnvironment.PartitionKey, GetNameOfServiceInExecution());
             }
             catch (ThreadAbortException)
             {
                 Thread.ResetAbort();
 
-                _log.Log(LogLevel.Info, string.Format(
-                    "Runtime: execution was aborted on worker {0} in service {1}. The Runtime is stopping.",
-                    CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
+                _log.DebugFormat("Runtime: execution was aborted on worker {0} in service {1}. The Runtime is stopping.",
+                    CloudEnvironment.PartitionKey, GetNameOfServiceInExecution());
             }
             catch (TimeoutException)
             {
-                _log.Log(LogLevel.Warn, string.Format(
-                    "Runtime: execution timed out on worker {0} in service {1}. The Runtime will be restarted.",
-                    CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
+                _log.WarnFormat("Runtime: execution timed out on worker {0} in service {1}. The Runtime will be restarted.",
+                    CloudEnvironment.PartitionKey, GetNameOfServiceInExecution());
             }
             catch (TriggerRestartException)
             {
@@ -103,13 +97,12 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             }
             catch (Exception ex)
             {
-                _log.Log(LogLevel.Error, ex, string.Format(
-                    "Runtime: An unhandled {0} exception occurred on worker {1} in service {2}. The Runtime will be restarted.",
-                    ex.GetType().Name, CloudEnvironment.PartitionKey, GetNameOfServiceInExecution()));
+                _log.ErrorFormat(ex, "Runtime: An unhandled {0} exception occurred on worker {1} in service {2}. The Runtime will be restarted.",
+                    ex.GetType().Name, CloudEnvironment.PartitionKey, GetNameOfServiceInExecution());
             }
             finally
             {
-                _log.Log(LogLevel.Debug, string.Format("Runtime: stopping on worker {0}.", CloudEnvironment.PartitionKey));
+                _log.DebugFormat("Runtime: stopping on worker {0}.", CloudEnvironment.PartitionKey);
 
                 if (_runtimeFinalizer != null)
                 {
@@ -123,7 +116,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 
                 TryDumpDiagnostics();
 
-                _log.Log(LogLevel.Debug, string.Format("Runtime: stopped on worker {0}.", CloudEnvironment.PartitionKey));
+                _log.DebugFormat("Runtime: stopped on worker {0}.", CloudEnvironment.PartitionKey);
             }
         }
 
@@ -146,7 +139,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         public void Stop()
         {
             _isStopRequested = true;
-            _log.Log(LogLevel.Debug, string.Format("Runtime: Stop() on worker {0}.", CloudEnvironment.PartitionKey));
+            _log.DebugFormat("Runtime: Stop() on worker {0}.", CloudEnvironment.PartitionKey);
 
             if (_executeThread != null)
             {
@@ -209,6 +202,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             }
 
             var applicationContainer = applicationBuilder.Build();
+            _applicationFinalizer = applicationContainer.ResolveOptional<IRuntimeFinalizer>();
 
             // Give the application a chance to override external diagnostics sources
             applicationContainer.InjectProperties(_diagnostics);
