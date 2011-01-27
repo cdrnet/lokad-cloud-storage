@@ -56,15 +56,6 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>Mapping object --> Queue Message Id. Use to delete messages afterward.</summary>
         readonly Dictionary<object, InProcessMessage> _inProcessMessages;
 
-        public QueueStorageProvider(
-            CloudQueueClient queueStorage,
-            IBlobStorageProvider blobStorage,
-            IDataSerializer serializer,
-            IRuntimeFinalizer runtimeFinalizer)
-            : this(queueStorage, blobStorage, serializer, runtimeFinalizer, null)
-        {
-        }
-
         /// <summary>IoC constructor.</summary>
         /// <param name="blobStorage">Not null.</param>
         /// <param name="queueStorage">Not null.</param>

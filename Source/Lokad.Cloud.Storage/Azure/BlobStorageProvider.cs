@@ -47,12 +47,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countUpsertBlobOrSkip;
         readonly ExecutionCounter _countDeleteBlob;
 
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer)
-            : this(blobStorage, serializer, null)
-        {
-        }
-
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log)
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log = null)
         {
             _blobStorage = blobStorage;
             _serializer = serializer;
