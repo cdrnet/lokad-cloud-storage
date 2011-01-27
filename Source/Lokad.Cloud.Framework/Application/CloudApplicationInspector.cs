@@ -4,6 +4,7 @@
 #endregion
 
 using System;
+using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.ServiceFabric.Runtime;
 
@@ -16,9 +17,9 @@ namespace Lokad.Cloud.Application
 
         private readonly IBlobStorageProvider _blobs;
 
-        public CloudApplicationInspector(IBlobStorageProvider blobs)
+        public CloudApplicationInspector(RuntimeProviders runtimeProviders)
         {
-            _blobs = blobs;
+            _blobs = runtimeProviders.BlobStorage;
         }
 
         public Maybe<CloudApplicationDefinition> Inspect()

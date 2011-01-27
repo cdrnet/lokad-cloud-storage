@@ -6,6 +6,7 @@
 using System;
 
 using Lokad.Cloud.Application;
+using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
@@ -44,9 +45,9 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         DateTimeOffset _lastPackageCheck;
 
         /// <summary>Build a new package loader.</summary>
-        public AssemblyLoader(IBlobStorageProvider provider)
+        public AssemblyLoader(RuntimeProviders runtimeProviders)
         {
-            _provider = provider;
+            _provider = runtimeProviders.BlobStorage;
         }
 
         /// <summary>Loads the assembly package.</summary>

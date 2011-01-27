@@ -23,7 +23,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
-            var cloudConfiguration = new Management.CloudConfiguration(Storage.BlobStorage);
+            var cloudConfiguration = new Management.CloudConfiguration(Providers);
 
             return View(new ConfigModel
                 {
@@ -36,7 +36,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         public ActionResult Configuration(string hostedServiceName, ConfigModel model)
         {
             InitializeDeploymentTenant(hostedServiceName);
-            var cloudConfiguration = new Management.CloudConfiguration(Storage.BlobStorage);
+            var cloudConfiguration = new Management.CloudConfiguration(Providers);
 
             if (ModelState.IsValid)
             {

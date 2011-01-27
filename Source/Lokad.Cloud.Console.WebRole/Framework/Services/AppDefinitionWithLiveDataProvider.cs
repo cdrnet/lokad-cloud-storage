@@ -15,6 +15,7 @@ using Lokad.Cloud.Console.WebRole.Models.Queues;
 using Lokad.Cloud.Console.WebRole.Models.Services;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Management.Api10;
+using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Services
@@ -22,19 +23,19 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Services
     public class AppDefinitionWithLiveDataProvider
     {
         const string FailingMessagesStoreName = "failing-messages";
-        private readonly CloudStorageProviders _cloudStorage;
+        private readonly RuntimeProviders _runtimeProviders;
 
-        public AppDefinitionWithLiveDataProvider(CloudStorageProviders cloudStorage)
+        public AppDefinitionWithLiveDataProvider(RuntimeProviders runtimeProviders)
         {
-            _cloudStorage = cloudStorage;
+            _runtimeProviders = runtimeProviders;
         }
 
         public ServicesModel QueryServices()
         {
-            var serviceManager = new CloudServices(_cloudStorage.BlobStorage);
+            var serviceManager = new CloudServices(_runtimeProviders);
             var services = serviceManager.GetServices();
 
-            var inspector = new CloudApplicationInspector(_cloudStorage.BlobStorage);
+            var inspector = new CloudApplicationInspector(_runtimeProviders);
             var applicationDefinition = inspector.Inspect();
 
             if (!applicationDefinition.HasValue)
@@ -73,8 +74,8 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Services
 
         public QueuesModel QueryQueues()
         {
-            var queueStorage = _cloudStorage.QueueStorage;
-            var inspector = new CloudApplicationInspector(_cloudStorage.BlobStorage);
+            var queueStorage = _runtimeProviders.QueueStorage;
+            var inspector = new CloudApplicationInspector(_runtimeProviders);
             var applicationDefinition = inspector.Inspect();
 
             var failingMessages = queueStorage.ListPersisted(FailingMessagesStoreName)

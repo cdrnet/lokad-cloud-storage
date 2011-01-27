@@ -7,7 +7,6 @@ using System;
 using System.Net;
 using Autofac;
 using Autofac.Builder;
-using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
 using Lokad.Serialization;
@@ -60,19 +59,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         static RuntimeProviders RuntimeProviders(IContext c)
         {
-            // NOTE: Explicit CloudLogger (not ILog) by design
-            var providers = CloudStorage
+            return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
-                .WithDataSerializer(new CloudFormatter())
-                .WithLog(c.Resolve<CloudLogger>())
-                .BuildStorageProviders();
-
-            return new RuntimeProviders(
-                providers.BlobStorage,
-                providers.QueueStorage,
-                providers.TableStorage,
-                providers.RuntimeFinalizer,
-                providers.Log);
+                .BuildRuntimeProviders();
         }
 
         static CloudInfrastructureProviders CloudInfrastructureProviders(IContext c)

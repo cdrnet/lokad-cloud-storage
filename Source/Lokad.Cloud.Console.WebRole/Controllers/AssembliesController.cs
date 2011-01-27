@@ -25,7 +25,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         public override ActionResult ByHostedService(string hostedServiceName)
         {
             InitializeDeploymentTenant(hostedServiceName);
-            var cloudAssemblies = new Management.CloudAssemblies(Storage.BlobStorage);
+            var cloudAssemblies = new Management.CloudAssemblies(Providers);
             var appDefinition = cloudAssemblies.GetApplicationDefinition();
 
             return View(new AssembliesModel
@@ -38,7 +38,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         public ActionResult UploadPackage(string hostedServiceName, HttpPostedFileBase package)
         {
             InitializeDeploymentTenant(hostedServiceName);
-            var cloudAssemblies = new Management.CloudAssemblies(Storage.BlobStorage);
+            var cloudAssemblies = new Management.CloudAssemblies(Providers);
 
             byte[] bytes;
             using (var reader = new BinaryReader(package.InputStream))

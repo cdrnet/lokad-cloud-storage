@@ -65,9 +65,6 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
 
         private static LokadCloudHostedService MapHostedService(HostedService hostedService)
         {
-            // TODO: Find out the correct matching DataSerializer in some way or another
-            var serializer = new CloudFormatter();
-
             var lokadCloudDeployments = hostedService.Deployments.Select(d =>
                 {
                     var config = XElement.Parse(Base64Decode(hostedService.Deployments.First().Configuration));
@@ -107,7 +104,6 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
                     StorageAccount = lokadCloudDeployments[0].StorageAccount,
                     StorageAccountName = lokadCloudDeployments[0].StorageAccountName,
                     StorageAccountKeyPrefix = lokadCloudDeployments[0].StorageAccountKeyPrefix,
-                    DataSerializer = serializer
                 };
         }
 

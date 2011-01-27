@@ -21,8 +21,6 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         public CloudStorageAccount StorageAccount { get; set; }
         public string StorageAccountName { get; set; }
         public string StorageAccountKeyPrefix { get; set; }
-
-        public IDataSerializer DataSerializer { get; set; }
     }
 
     public class LokadCloudDeployment

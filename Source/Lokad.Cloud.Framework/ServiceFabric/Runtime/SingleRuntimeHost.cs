@@ -92,32 +92,24 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         {
             _stoppedWaitHandle.Reset();
 
-            // IoC Setup
+            // Runtime IoC Setup
 
-            var builder = new ContainerBuilder();
-            builder.RegisterModule(new CloudModule());
-            if (externalRoleConfiguration.HasValue)
-            {
-                builder.RegisterModule(new CloudConfigurationModule(externalRoleConfiguration.Value));
-            }
-            else
-            {
-                builder.RegisterModule(new CloudConfigurationModule());
-            }
-
-            builder.Register(typeof (Runtime)).FactoryScoped();
+            var runtimeBuilder = new ContainerBuilder();
+            runtimeBuilder.RegisterModule(new CloudModule());
+            runtimeBuilder.RegisterModule(externalRoleConfiguration.Convert(s =>  new CloudConfigurationModule(s), () => new CloudConfigurationModule()));
+            runtimeBuilder.Register<Runtime>().FactoryScoped();
 
             // Run
 
-            using (var container = builder.Build())
+            using (var runtimeContainer = runtimeBuilder.Build())
             {
-                var log = container.Resolve<ILog>();
+                var log = runtimeContainer.Resolve<ILog>();
 
                 _runtime = null;
                 try
                 {
-                    _runtime = container.Resolve<Runtime>();
-                    _runtime.RuntimeContainer = container;
+                    _runtime = runtimeContainer.Resolve<Runtime>();
+                    _runtime.RuntimeContainer = runtimeContainer;
 
                     // runtime endlessly keeps pinging queues for pending work
                     _runtime.Execute();

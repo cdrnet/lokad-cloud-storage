@@ -5,37 +5,35 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using ICSharpCode.SharpZipLib.Zip;
+using Lokad.Cloud.Application;
 using Lokad.Cloud.Management.Api10;
+using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
-using Lokad.Cloud.Storage;
 using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
-    using System.Linq;
-
-    using Lokad.Cloud.Application;
-
     /// <summary>
     /// Management facade for cloud assemblies.
     /// </summary>
     [UsedImplicitly]
     public class CloudAssemblies : ICloudAssembliesApi
     {
-        readonly IBlobStorageProvider _blobProvider;
+        readonly RuntimeProviders _runtimeProviders;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CloudAssemblies"/> class.
         /// </summary>
-        public CloudAssemblies(IBlobStorageProvider blobStorageProvider)
+        public CloudAssemblies(RuntimeProviders runtimeProviders)
         {
-            _blobProvider = blobStorageProvider;
+            _runtimeProviders = runtimeProviders;
         }
 
         public Maybe<CloudApplicationDefinition> GetApplicationDefinition()
         {
-            var inspector = new CloudApplicationInspector(_blobProvider);
+            var inspector = new CloudApplicationInspector(_runtimeProviders);
             return inspector.Inspect();
         }
 
@@ -70,7 +68,7 @@ namespace Lokad.Cloud.Management
         /// </summary>
         public void UploadAssemblyZipContainer(byte[] data)
         {
-            _blobProvider.PutBlob(
+            _runtimeProviders.BlobStorage.PutBlob(
                 AssemblyLoader.ContainerName,
                 AssemblyLoader.PackageBlobName,
                 data,

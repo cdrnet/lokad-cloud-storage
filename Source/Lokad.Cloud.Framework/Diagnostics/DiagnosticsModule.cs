@@ -44,6 +44,9 @@ namespace Lokad.Cloud.Diagnostics
 
         static IBlobStorageProvider BlobStorageForDiagnostics(IContext c)
         {
+            // No log is provided here (WithLog method) since the providers
+            // used for logging obviously can't log themselves (cyclic dependency)
+
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
                 .WithDataSerializer(new CloudFormatter())

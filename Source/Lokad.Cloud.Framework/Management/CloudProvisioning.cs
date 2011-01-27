@@ -18,346 +18,346 @@ using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
-	/// <summary>
-	/// Azure Management API Provider, Provisioning Provider.
-	/// </summary>
-	[UsedImplicitly]
-	public class CloudProvisioning : IProvisioningProvider, ICloudProvisioningApi 
-	{
-		readonly ILog _log;
+    /// <summary>
+    /// Azure Management API Provider, Provisioning Provider.
+    /// </summary>
+    [UsedImplicitly]
+    public class CloudProvisioning : IProvisioningProvider, ICloudProvisioningApi 
+    {
+        readonly ILog _log;
 
-		readonly bool _enabled;
-		readonly Maybe<X509Certificate2> _certificate = Maybe<X509Certificate2>.Empty;
-		readonly Maybe<string> _deploymentId = Maybe.String;
-		readonly Maybe<string> _subscriptionId = Maybe.String;
+        readonly bool _enabled;
+        readonly Maybe<X509Certificate2> _certificate = Maybe<X509Certificate2>.Empty;
+        readonly Maybe<string> _deploymentId = Maybe.String;
+        readonly Maybe<string> _subscriptionId = Maybe.String;
 
-		readonly ActionPolicy _retryPolicy;
+        readonly ActionPolicy _retryPolicy;
 
-		ManagementStatus _status;
-		Maybe<HostedService> _service = Maybe<HostedService>.Empty;
-		Maybe<Deployment> _deployment = Maybe<Deployment>.Empty;
+        ManagementStatus _status;
+        Maybe<HostedService> _service = Maybe<HostedService>.Empty;
+        Maybe<Deployment> _deployment = Maybe<Deployment>.Empty;
 
-		ManagementClient _client;
+        ManagementClient _client;
 
-		//[ThreadStatic]
-		IAzureServiceManagement _channel;
+        //[ThreadStatic]
+        IAzureServiceManagement _channel;
 
-		/// <summary>IoC constructor.</summary>>
-		public CloudProvisioning(ICloudConfigurationSettings settings, ILog log)
-		{
-			_log = log;
-			_retryPolicy = AzureManagementPolicies.TransientServerErrorBackOff;
+        /// <summary>IoC constructor.</summary>>
+        public CloudProvisioning(ICloudConfigurationSettings settings, ILog log)
+        {
+            _log = log;
+            _retryPolicy = AzureManagementPolicies.TransientServerErrorBackOff;
 
-			// try get settings and certificate
-			_deploymentId = CloudEnvironment.AzureDeploymentId;
-			_subscriptionId = settings.SelfManagementSubscriptionId ?? Maybe.String;
-			var certificateThumbprint = settings.SelfManagementCertificateThumbprint ?? Maybe.String;
-			if (certificateThumbprint.HasValue)
-			{
-				_certificate = CloudEnvironment.GetCertificate(certificateThumbprint.Value);
-			}
+            // try get settings and certificate
+            _deploymentId = CloudEnvironment.AzureDeploymentId;
+            _subscriptionId = settings.SelfManagementSubscriptionId ?? Maybe.String;
+            var certificateThumbprint = settings.SelfManagementCertificateThumbprint ?? Maybe.String;
+            if (certificateThumbprint.HasValue)
+            {
+                _certificate = CloudEnvironment.GetCertificate(certificateThumbprint.Value);
+            }
 
-			// early evaluate management status for intrinsic fault states, to skip further processing
-			if (!_deploymentId.HasValue || !_subscriptionId.HasValue || !certificateThumbprint.HasValue)
-			{
-				_status = ManagementStatus.ConfigurationMissing;
-				return;
-			}
-			if (!_certificate.HasValue)
-			{
-				_status = ManagementStatus.CertificateMissing;
-				return;
-			}
+            // early evaluate management status for intrinsic fault states, to skip further processing
+            if (!_deploymentId.HasValue || !_subscriptionId.HasValue || !certificateThumbprint.HasValue)
+            {
+                _status = ManagementStatus.ConfigurationMissing;
+                return;
+            }
+            if (!_certificate.HasValue)
+            {
+                _status = ManagementStatus.CertificateMissing;
+                return;
+            }
 
-			// ok, now try find service matching the deployment
-			_enabled = true;
-			TryFindDeployment();
-		}
+            // ok, now try find service matching the deployment
+            _enabled = true;
+            TryFindDeployment();
+        }
 
-		public ManagementStatus Status
-		{
-			get { return _status; }
-		}
+        public ManagementStatus Status
+        {
+            get { return _status; }
+        }
 
-		public bool IsAvailable
-		{
-			get { return _status == ManagementStatus.Available; }
-		}
+        public bool IsAvailable
+        {
+            get { return _status == ManagementStatus.Available; }
+        }
 
-		public Maybe<X509Certificate2> Certificate
-		{
-			get { return _certificate; }
-		}
+        public Maybe<X509Certificate2> Certificate
+        {
+            get { return _certificate; }
+        }
 
-		public Maybe<string> Subscription
-		{
-			get { return _subscriptionId; }
-		}
+        public Maybe<string> Subscription
+        {
+            get { return _subscriptionId; }
+        }
 
-		public Maybe<string> DeploymentName
-		{
-			get { return _deployment.Convert(d => d.Name); }
-		}
+        public Maybe<string> DeploymentName
+        {
+            get { return _deployment.Convert(d => d.Name); }
+        }
 
-		public Maybe<string> DeploymentId
-		{
-			get { return _deployment.Convert(d => d.PrivateID); }
-		}
+        public Maybe<string> DeploymentId
+        {
+            get { return _deployment.Convert(d => d.PrivateID); }
+        }
 
-		public Maybe<string> DeploymentLabel
-		{
-			get { return _deployment.Convert(d => Base64Decode(d.Label)); }
-		}
+        public Maybe<string> DeploymentLabel
+        {
+            get { return _deployment.Convert(d => Base64Decode(d.Label)); }
+        }
 
-		public Maybe<DeploymentSlot> DeploymentSlot
-		{
-			get { return _deployment.Convert(d => d.DeploymentSlot); }
-		}
+        public Maybe<DeploymentSlot> DeploymentSlot
+        {
+            get { return _deployment.Convert(d => d.DeploymentSlot); }
+        }
 
-		public Maybe<DeploymentStatus> DeploymentStatus
-		{
-			get { return _deployment.Convert(d => d.Status); }
-		}
+        public Maybe<DeploymentStatus> DeploymentStatus
+        {
+            get { return _deployment.Convert(d => d.Status); }
+        }
 
-		public Maybe<string> ServiceName
-		{
-			get { return _service.Convert(s => s.ServiceName); }
-		}
+        public Maybe<string> ServiceName
+        {
+            get { return _service.Convert(s => s.ServiceName); }
+        }
 
-		public Maybe<string> ServiceLabel
-		{
-			get { return _service.Convert(s => Base64Decode(s.HostedServiceProperties.Label)); }
-		}
+        public Maybe<string> ServiceLabel
+        {
+            get { return _service.Convert(s => Base64Decode(s.HostedServiceProperties.Label)); }
+        }
 
-		public Maybe<int> WorkerInstanceCount
-		{
-			get { return _deployment.Convert(d => d.RoleInstanceList.Count(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")); }
-		}
+        public Maybe<int> WorkerInstanceCount
+        {
+            get { return _deployment.Convert(d => d.RoleInstanceList.Count(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")); }
+        }
 
-		public void Update()
-		{
-			if (!IsAvailable)
-			{
-				return;
-			}
+        public void Update()
+        {
+            if (!IsAvailable)
+            {
+                return;
+            }
 
-			PrepareRequest();
+            PrepareRequest();
 
-			_deployment = _retryPolicy.Get(() => _channel.GetDeployment(_subscriptionId.Value, _service.Value.ServiceName, _deployment.Value.Name));
-		}
+            _deployment = _retryPolicy.Get(() => _channel.GetDeployment(_subscriptionId.Value, _service.Value.ServiceName, _deployment.Value.Name));
+        }
 
-		Maybe<int> IProvisioningProvider.GetWorkerInstanceCount()
-		{
-			Update();
-			return WorkerInstanceCount;
-		}
+        Maybe<int> IProvisioningProvider.GetWorkerInstanceCount()
+        {
+            Update();
+            return WorkerInstanceCount;
+        }
 
-		public void SetWorkerInstanceCount(int count)
-		{
-			if(count <= 0 && count > 500)
-			{
-				throw new ArgumentOutOfRangeException("count");
-			}
+        public void SetWorkerInstanceCount(int count)
+        {
+            if(count <= 0 && count > 500)
+            {
+                throw new ArgumentOutOfRangeException("count");
+            }
 
-			ChangeDeploymentConfiguration(
-				(config, inProgress) =>
-					{
-						XAttribute instanceCount;
-						try
-						{
-							// need to be careful about namespaces
-							instanceCount = config
-								.Descendants()
-								.Single(d => d.Name.LocalName == "Role" && d.Attributes().Single(a => a.Name.LocalName == "name").Value == "Lokad.Cloud.WorkerRole")
-								.Elements()
-								.Single(e => e.Name.LocalName == "Instances")
-								.Attributes()
-								.Single(a => a.Name.LocalName == "count");
-						}
-						catch (Exception ex)
-						{
-							_log.Error(ex, "Azure Self-Management: Unexpected service configuration file format.");
-							throw;
-						}
+            ChangeDeploymentConfiguration(
+                (config, inProgress) =>
+                    {
+                        XAttribute instanceCount;
+                        try
+                        {
+                            // need to be careful about namespaces
+                            instanceCount = config
+                                .Descendants()
+                                .Single(d => d.Name.LocalName == "Role" && d.Attributes().Single(a => a.Name.LocalName == "name").Value == "Lokad.Cloud.WorkerRole")
+                                .Elements()
+                                .Single(e => e.Name.LocalName == "Instances")
+                                .Attributes()
+                                .Single(a => a.Name.LocalName == "count");
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Error(ex, "Azure Self-Management: Unexpected service configuration file format.");
+                            throw;
+                        }
 
-						var oldCount = instanceCount.Value;
-						var newCount = count.ToString();
+                        var oldCount = instanceCount.Value;
+                        var newCount = count.ToString();
 
-						if (inProgress)
-						{
-							_log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}. Application will be delayed because a deployment update is already in progress.", oldCount, newCount);
-						}
-						else
-						{
-							_log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}.", oldCount, newCount);
-						}
+                        if (inProgress)
+                        {
+                            _log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}. Application will be delayed because a deployment update is already in progress.", oldCount, newCount);
+                        }
+                        else
+                        {
+                            _log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}.", oldCount, newCount);
+                        }
 
-						instanceCount.Value = newCount;
-					});
-		}
+                        instanceCount.Value = newCount;
+                    });
+        }
 
-		void ChangeDeploymentConfiguration(Action<XElement, bool> updater)
-		{
-			PrepareRequest();
+        void ChangeDeploymentConfiguration(Action<XElement, bool> updater)
+        {
+            PrepareRequest();
 
-			_deployment = _retryPolicy.Get(() => _channel.GetDeployment(
-				_subscriptionId.Value,
-				_service.Value.ServiceName,
-				_deployment.Value.Name));
+            _deployment = _retryPolicy.Get(() => _channel.GetDeployment(
+                _subscriptionId.Value,
+                _service.Value.ServiceName,
+                _deployment.Value.Name));
 
-			var config = Base64Decode(_deployment.Value.Configuration);
-			var xml = XDocument.Parse(config, LoadOptions.SetBaseUri | LoadOptions.PreserveWhitespace);
-			var inProgress = _deployment.Value.Status != Azure.Entities.DeploymentStatus.Running;
+            var config = Base64Decode(_deployment.Value.Configuration);
+            var xml = XDocument.Parse(config, LoadOptions.SetBaseUri | LoadOptions.PreserveWhitespace);
+            var inProgress = _deployment.Value.Status != Azure.Entities.DeploymentStatus.Running;
 
-			updater(xml.Root, inProgress);
+            updater(xml.Root, inProgress);
 
-			var newConfig = xml.ToString(SaveOptions.DisableFormatting);
+            var newConfig = xml.ToString(SaveOptions.DisableFormatting);
 
-			_retryPolicy.Do(() => _channel.ChangeConfiguration(
-				_subscriptionId.Value,
-				_service.Value.ServiceName,
-				_deployment.Value.Name,
-				new ChangeConfigurationInput
-					{
-						Configuration = Base64Encode(newConfig)
-					}));
-		}
+            _retryPolicy.Do(() => _channel.ChangeConfiguration(
+                _subscriptionId.Value,
+                _service.Value.ServiceName,
+                _deployment.Value.Name,
+                new ChangeConfigurationInput
+                    {
+                        Configuration = Base64Encode(newConfig)
+                    }));
+        }
 
-		void PrepareRequest()
-		{
-			if (!_enabled)
-			{
-				throw new InvalidOperationException("not enabled");
-			}
+        void PrepareRequest()
+        {
+            if (!_enabled)
+            {
+                throw new InvalidOperationException("not enabled");
+            }
 
-			if (_channel == null)
-			{
-				if (_client == null)
-				{
-					_client = new ManagementClient(_certificate.Value);
-				}
+            if (_channel == null)
+            {
+                if (_client == null)
+                {
+                    _client = new ManagementClient(_certificate.Value);
+                }
 
-				_channel = _client.CreateChannel();
-			}
+                _channel = _client.CreateChannel();
+            }
 
-			if (_status == ManagementStatus.Unknown)
-			{
-				TryFindDeployment();
-			}
+            if (_status == ManagementStatus.Unknown)
+            {
+                TryFindDeployment();
+            }
 
-			if (_status != ManagementStatus.Available)
-			{
-				throw new InvalidOperationException("not operational");
-			}
-		}
+            if (_status != ManagementStatus.Available)
+            {
+                throw new InvalidOperationException("not operational");
+            }
+        }
 
-		bool TryFindDeployment()
-		{
-			if (!_enabled || _status != ManagementStatus.Unknown)
-			{
-				throw new InvalidOperationException();
-			}
+        bool TryFindDeployment()
+        {
+            if (!_enabled || _status != ManagementStatus.Unknown)
+            {
+                throw new InvalidOperationException();
+            }
 
-			if (_channel == null)
-			{
-				if (_client == null)
-				{
-					_client = new ManagementClient(_certificate.Value);
-				}
+            if (_channel == null)
+            {
+                if (_client == null)
+                {
+                    _client = new ManagementClient(_certificate.Value);
+                }
 
-				_channel = _client.CreateChannel();
-			}
+                _channel = _client.CreateChannel();
+            }
 
 
-			var deployments = new List<Pair<Deployment, HostedService>>();
-			try
-			{
-				var hostedServices = _retryPolicy.Get(() => _channel.ListHostedServices(_subscriptionId.Value));
-				foreach (var hostedService in hostedServices)
-				{
-					var service = _retryPolicy.Get(() => _channel.GetHostedServiceWithDetails(_subscriptionId.Value, hostedService.ServiceName, true));
-					if (service == null || service.Deployments == null)
-					{
-						_log.Warn("Azure Self-Management: skipped unexpected null service or deployment list");
-						continue;
-					}
+            var deployments = new List<Pair<Deployment, HostedService>>();
+            try
+            {
+                var hostedServices = _retryPolicy.Get(() => _channel.ListHostedServices(_subscriptionId.Value));
+                foreach (var hostedService in hostedServices)
+                {
+                    var service = _retryPolicy.Get(() => _channel.GetHostedServiceWithDetails(_subscriptionId.Value, hostedService.ServiceName, true));
+                    if (service == null || service.Deployments == null)
+                    {
+                        _log.Warn("Azure Self-Management: skipped unexpected null service or deployment list");
+                        continue;
+                    }
 
-					foreach (var deployment in service.Deployments)
-					{
-						deployments.Add(Tuple.From(deployment, service));
-					}
-				}
-			}
-			catch (MessageSecurityException)
-			{
-				_status = ManagementStatus.AuthenticationFailed;
-				return false;
-			}
-			catch (Exception ex)
-			{
-				_log.Error(ex, "Azure Self-Management: unexpected error when listing all hosted services.");
-				return false;
-			}
+                    foreach (var deployment in service.Deployments)
+                    {
+                        deployments.Add(Tuple.From(deployment, service));
+                    }
+                }
+            }
+            catch (MessageSecurityException)
+            {
+                _status = ManagementStatus.AuthenticationFailed;
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "Azure Self-Management: unexpected error when listing all hosted services.");
+                return false;
+            }
 
-			if (deployments.Count == 0)
-			{
-				_log.Warn("Azure Self-Management: found no hosted service deployments");
-				_status = ManagementStatus.DeploymentNotFound;
-				return false;
-			}
+            if (deployments.Count == 0)
+            {
+                _log.Warn("Azure Self-Management: found no hosted service deployments");
+                _status = ManagementStatus.DeploymentNotFound;
+                return false;
+            }
 
-			var selfServiceAndDeployment = deployments.FirstOrEmpty(pair => pair.Key.PrivateID == _deploymentId.Value);
-			if (!selfServiceAndDeployment.HasValue)
-			{
-				_log.WarnFormat("Azure Self-Management: no hosted service deployment matches {0}", _deploymentId.Value);
-				_status = ManagementStatus.DeploymentNotFound;
-				return false;
-			}
+            var selfServiceAndDeployment = deployments.FirstOrEmpty(pair => pair.Key.PrivateID == _deploymentId.Value);
+            if (!selfServiceAndDeployment.HasValue)
+            {
+                _log.WarnFormat("Azure Self-Management: no hosted service deployment matches {0}", _deploymentId.Value);
+                _status = ManagementStatus.DeploymentNotFound;
+                return false;
+            }
 
-			_status = ManagementStatus.Available;
-			_service = selfServiceAndDeployment.Value.Value;
-			_deployment = selfServiceAndDeployment.Value.Key;
-			return true;
-		}
+            _status = ManagementStatus.Available;
+            _service = selfServiceAndDeployment.Value.Value;
+            _deployment = selfServiceAndDeployment.Value.Key;
+            return true;
+        }
 
-		static string Base64Decode(string value)
-		{
-			var bytes = Convert.FromBase64String(value);
-			return Encoding.UTF8.GetString(bytes);
-		}
+        static string Base64Decode(string value)
+        {
+            var bytes = Convert.FromBase64String(value);
+            return Encoding.UTF8.GetString(bytes);
+        }
 
-		static string Base64Encode(string value)
-		{
-			var bytes = Encoding.UTF8.GetBytes(value);
-			return Convert.ToBase64String(bytes);
-		}
+        static string Base64Encode(string value)
+        {
+            var bytes = Encoding.UTF8.GetBytes(value);
+            return Convert.ToBase64String(bytes);
+        }
 
-		int ICloudProvisioningApi.GetWorkerInstanceCount()
-		{
-			if (!IsAvailable)
-			{
-				throw new NotSupportedException("Provisioning not supported on this environment.");
-			}
-			return WorkerInstanceCount.Value;
-		}
+        int ICloudProvisioningApi.GetWorkerInstanceCount()
+        {
+            if (!IsAvailable)
+            {
+                throw new NotSupportedException("Provisioning not supported on this environment.");
+            }
+            return WorkerInstanceCount.Value;
+        }
 
-		void ICloudProvisioningApi.SetWorkerInstanceCount(int count)
-		{
-			if (!IsAvailable)
-			{
-				throw new NotSupportedException("Provisioning not supported on this environment.");
-			}
-			SetWorkerInstanceCount(count);
-		}
-	}
+        void ICloudProvisioningApi.SetWorkerInstanceCount(int count)
+        {
+            if (!IsAvailable)
+            {
+                throw new NotSupportedException("Provisioning not supported on this environment.");
+            }
+            SetWorkerInstanceCount(count);
+        }
+    }
 
-	public enum ManagementStatus
-	{
-		Unknown = 0,
-		Available,
-		ConfigurationMissing,
-		CertificateMissing,
-		AuthenticationFailed,
-		DeploymentNotFound,
-	}
+    public enum ManagementStatus
+    {
+        Unknown = 0,
+        Available,
+        ConfigurationMissing,
+        CertificateMissing,
+        AuthenticationFailed,
+        DeploymentNotFound,
+    }
 }

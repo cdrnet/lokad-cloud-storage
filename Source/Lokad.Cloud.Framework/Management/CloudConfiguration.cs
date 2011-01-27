@@ -6,73 +6,74 @@
 using System;
 using System.Text;
 using Lokad.Cloud.Management.Api10;
+using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
 using Lokad.Cloud.Storage;
 using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
-	/// <summary>
-	/// Management facade for cloud configuration.
-	/// </summary>
-	[UsedImplicitly]
-	public class CloudConfiguration : ICloudConfigurationApi
-	{
-		readonly IBlobStorageProvider _blobProvider;
-		readonly UTF8Encoding _encoding = new UTF8Encoding();
+    /// <summary>
+    /// Management facade for cloud configuration.
+    /// </summary>
+    [UsedImplicitly]
+    public class CloudConfiguration : ICloudConfigurationApi
+    {
+        readonly IBlobStorageProvider _blobProvider;
+        readonly UTF8Encoding _encoding = new UTF8Encoding();
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="CloudConfiguration"/> class.
-		/// </summary>
-		public CloudConfiguration(IBlobStorageProvider blobStorageProvider)
-		{
-			_blobProvider = blobStorageProvider;
-		}
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloudConfiguration"/> class.
+        /// </summary>
+        public CloudConfiguration(RuntimeProviders runtimeProviders)
+        {
+            _blobProvider = runtimeProviders.BlobStorage;
+        }
 
-		/// <summary>
-		/// Get the cloud configuration file.
-		/// </summary>
-		public string GetConfigurationString()
-		{
-			var buffer = _blobProvider.GetBlob<byte[]>(
-				AssemblyLoader.ContainerName,
-				AssemblyLoader.ConfigurationBlobName);
+        /// <summary>
+        /// Get the cloud configuration file.
+        /// </summary>
+        public string GetConfigurationString()
+        {
+            var buffer = _blobProvider.GetBlob<byte[]>(
+                AssemblyLoader.ContainerName,
+                AssemblyLoader.ConfigurationBlobName);
 
-			return buffer.Convert(bytes => _encoding.GetString(bytes), String.Empty);
-		}
+            return buffer.Convert(bytes => _encoding.GetString(bytes), String.Empty);
+        }
 
-		/// <summary>
-		/// Set or update the cloud configuration file.
-		/// </summary>
-		public void SetConfiguration(string configuration)
-		{
-			if(configuration == null)
-			{
-				RemoveConfiguration();
-				return;
-			}
+        /// <summary>
+        /// Set or update the cloud configuration file.
+        /// </summary>
+        public void SetConfiguration(string configuration)
+        {
+            if(configuration == null)
+            {
+                RemoveConfiguration();
+                return;
+            }
 
-			configuration = configuration.Trim();
-			if(String.IsNullOrEmpty(configuration))
-			{
-				RemoveConfiguration();
-				return;
-			}
+            configuration = configuration.Trim();
+            if(String.IsNullOrEmpty(configuration))
+            {
+                RemoveConfiguration();
+                return;
+            }
 
-			_blobProvider.PutBlob(
-				AssemblyLoader.ContainerName,
-				AssemblyLoader.ConfigurationBlobName,
-				_encoding.GetBytes(configuration));
-		}
+            _blobProvider.PutBlob(
+                AssemblyLoader.ContainerName,
+                AssemblyLoader.ConfigurationBlobName,
+                _encoding.GetBytes(configuration));
+        }
 
-		/// <summary>
-		/// Remove the cloud configuration file.
-		/// </summary>
-		public void RemoveConfiguration()
-		{
-			_blobProvider.DeleteBlobIfExist(
-				AssemblyLoader.ContainerName,
-				AssemblyLoader.ConfigurationBlobName);
-		}
-	}
+        /// <summary>
+        /// Remove the cloud configuration file.
+        /// </summary>
+        public void RemoveConfiguration()
+        {
+            _blobProvider.DeleteBlobIfExist(
+                AssemblyLoader.ContainerName,
+                AssemblyLoader.ConfigurationBlobName);
+        }
+    }
 }
