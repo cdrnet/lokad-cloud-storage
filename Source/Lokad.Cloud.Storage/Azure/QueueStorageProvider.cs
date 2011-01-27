@@ -188,7 +188,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                             if (_log != null)
                             {
-                                _log.WarnFormat("Cloud Storage: A message of type {0} failed to process repeatedly and has been quarantined.", typeof(T).Name);
+                                _log.WarnFormat("Cloud Storage: A message of type {0} in queue {1} failed to process repeatedly and has been quarantined.", typeof(T).Name, queueName);
                             }
 
                             continue;
@@ -227,7 +227,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                         if (_log != null)
                         {
-                            _log.WarnFormat(messageAsT.Error, "Cloud Storage: A message failed to deserialize to type {0} and any wrappers repeatedly and has been quarantined.", typeof(T).Name);
+                            _log.WarnFormat(messageAsT.Error, "Cloud Storage: A message in queue {0} failed to deserialize to type {1} and has been quarantined.", queueName, typeof(T).Name);
                         }
                     }
                     finally
@@ -421,10 +421,8 @@ namespace Lokad.Cloud.Storage.Azure
                     }
                     else if (_log != null)
                     {
-                        _log.WarnFormat(messageWrapper.Error, "Cloud Storage: The overflowing part of a corrupt message could not be identified and may have not been deleted while deleting the message itself.");
+                        _log.WarnFormat(messageWrapper.Error, "Cloud Storage: The overflowing part of a corrupt message in queue {0} could not be identified and may have not been deleted while deleting the message itself.", queueName);
                     }
-
-                    // TODO: else-case would mean that we won't delete the overflow blob, consider to report it
                 }
 
                 // 3. DELETE THE MESSAGE FROM THE QUEUE
@@ -751,14 +749,34 @@ namespace Lokad.Cloud.Storage.Azure
             }
             catch (StorageClientException ex)
             {
-                if (ex.ErrorCode != StorageErrorCode.ResourceNotFound
-                    && ex.ExtendedErrorInformation.ErrorCode != QueueErrorCodeStrings.QueueNotFound)
+                if (ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                {
+                    return false;
+                }
+
+                var info = ex.ExtendedErrorInformation;
+                if (info == null)
                 {
                     throw;
                 }
-            }
 
-            return false;
+                if (info.ErrorCode == QueueErrorCodeStrings.PopReceiptMismatch)
+                {
+                    if (_log != null)
+                    {
+                        _log.WarnFormat("Cloud Storage: A message to be deleted in queue {0} was already remotely deleted or the invisibility timeout has elapsed.", queue.Name);
+                    }
+
+                    return false;
+                }
+
+                if (info.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
+                {
+                    return false;
+                }
+
+                throw;
+            }
         }
 
         void PutRawMessage(CloudQueueMessage message, CloudQueue queue)
