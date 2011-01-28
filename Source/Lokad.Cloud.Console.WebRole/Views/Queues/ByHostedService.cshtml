@@ -36,12 +36,12 @@
 <script type="text/html" id="queueRowTemplate">
 	<tr>
 		<td><button data-bind="click: function() { removeQueue($data) }">Delete</button></td>
-		<td><b>${QueueName}</b>
+		<td><b data-bind="css: { queueNameWithMessages: MessageCount() > 0 }">${QueueName}</b>
 		{{each Services}}
 			<br/><small>Consumed by: ${TypeName}</small>
 		{{/each}}
 		</td>
-		<td>${MessageCount}</td>
+		<td data-bind="css: { queueMessageNumberWithMessages: MessageCount() > 0 }">${MessageCount}</td>
 		<td>${Latency}</td>
 	</tr>
 </script>

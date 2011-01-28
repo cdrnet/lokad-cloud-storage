@@ -293,6 +293,9 @@ a.imagelink { display: block; }
 /* Contains the Special characters in the Edit.aspx page */
 #SpecialCharsDiv { margin-top: 8px; border: solid 1px #888888; padding: 4px; }
 
+.queueNameWithMessages { color: #AB0B00; }
+.queueMessageNumberWithMessages { font-weight: bold; font-size:1.5em; color: #AB0B00; }
+
 #FormatUl { margin: 0px; padding: 0px; }
 
 #FormatUl li { display: inline; list-style-image: none; margin: 0px; padding: 0px; }
