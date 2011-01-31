@@ -31,6 +31,11 @@ namespace Lokad.Cloud.Storage
             return new AzureCloudStorageBuilder(storageAccount);
         }
 
+        public static CloudStorageBuilder ForAzureAccountAndKey([NotNull] string accountName, [NotNull] string key, bool useHttps = true)
+        {
+            return new AzureCloudStorageBuilder(new CloudStorageAccount(new StorageCredentialsAccountAndKey(accountName, key), useHttps));
+        }
+
         public static CloudStorageBuilder ForDevelopmentStorage()
         {
             return new AzureCloudStorageBuilder(CloudStorageAccount.DevelopmentStorageAccount);
