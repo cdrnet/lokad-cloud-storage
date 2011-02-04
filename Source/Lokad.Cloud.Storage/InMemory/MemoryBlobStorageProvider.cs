@@ -317,12 +317,12 @@ namespace Lokad.Cloud.Storage.InMemory
 
         public Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t)).Value;
+            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t));
         }
 
         public Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update).Value;
+            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
         }
 
         public Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update)

@@ -107,7 +107,7 @@ namespace Lokad.Cloud.Storage
         /// <returns>The value returned by the lambda, or empty if the blob did not exist.</returns>
         public static Maybe<T> UpdateBlobIfExist<T>(this IBlobStorageProvider provider, BlobName<T> name, Func<T, T> update)
         {
-            return provider.UpsertBlobOrSkip(name.ContainerName, name.ToString(), () => Maybe<T>.Empty, t => update(t)).Value;
+            return provider.UpsertBlobOrSkip(name.ContainerName, name.ToString(), () => Maybe<T>.Empty, t => update(t));
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace Lokad.Cloud.Storage
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or no change was applied.</returns>
         public static Maybe<T> UpdateBlobIfExistOrSkip<T>(this IBlobStorageProvider provider, BlobName<T> name, Func<T, Maybe<T>> update)
         {
-            return provider.UpsertBlobOrSkip(name.ContainerName, name.ToString(), () => Maybe<T>.Empty, update).Value;
+            return provider.UpsertBlobOrSkip(name.ContainerName, name.ToString(), () => Maybe<T>.Empty, update);
         }
 
         /// <summary>
