@@ -208,8 +208,10 @@ namespace Lokad.Cloud.Storage.InMemory
             lock (_syncRoot)
             {
                 // deleting all existing entities
-                entities.GroupBy(e => e.PartitionKey)
-                    .ForEach(g => Delete<T>(tableName, g.Key, g.Select(e => e.RowKey)));
+                foreach (var g in entities.GroupBy(e => e.PartitionKey))
+                {
+                    Delete<T>(tableName, g.Key, g.Select(e => e.RowKey));
+                }
 
                 // inserting all entities
                 Insert(tableName, entities);

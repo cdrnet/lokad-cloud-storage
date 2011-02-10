@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -80,7 +80,10 @@ namespace Lokad.Cloud.Test.Storage.InMemory
                 ? new ThreadParameters("threadId" + i, "container-1", storage)
                 : new ThreadParameters("threadId" + i, "container-2", storage)).ToArray();
 
-            Enumerable.Range(0,32).ForEach(i=> threads[i].Start(threadParameters[i]));
+            foreach (var i in Enumerable.Range(0, 32))
+            {
+                threads[i].Start(threadParameters[i]);
+            }
             
             Thread.Sleep(2000);
 

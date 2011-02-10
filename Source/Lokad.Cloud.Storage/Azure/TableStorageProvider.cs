@@ -245,8 +245,10 @@ namespace Lokad.Cloud.Storage.Azure
 
         public void Insert<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
-            entities.GroupBy(e => e.PartitionKey)
-                .ForEach(g => InsertInternal(tableName, g));
+            foreach (var g in entities.GroupBy(e => e.PartitionKey))
+            {
+                InsertInternal(tableName, g);
+            }
         }
 
         void InsertInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
@@ -364,8 +366,10 @@ namespace Lokad.Cloud.Storage.Azure
 
         public void Update<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
-            entities.GroupBy(e => e.PartitionKey)
-                .ForEach(g => UpdateInternal(tableName, g, force));
+            foreach (var g in entities.GroupBy(e => e.PartitionKey))
+            {
+                UpdateInternal(tableName, g, force);
+            }
         }
 
         void UpdateInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
@@ -463,8 +467,10 @@ namespace Lokad.Cloud.Storage.Azure
 
         public void Upsert<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
-            entities.GroupBy(e => e.PartitionKey)
-                .ForEach(g => UpsertInternal(tableName, g));
+            foreach (var g in entities.GroupBy(e => e.PartitionKey))
+            {
+                UpsertInternal(tableName, g);
+            }
         }
 
         // HACK: no 'upsert' (update or insert) available at the time
@@ -521,9 +527,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         public void Delete<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
-            entities.GroupBy(e => e.PartitionKey)
-                .ForEach(g => DeleteInternal<T>(tableName, g.Key,
-                    g.Select(e => System.Tuple.Create(e.RowKey, MapETag(e.ETag, force))), force));
+            foreach (var g in entities.GroupBy(e => e.PartitionKey))
+            {
+                DeleteInternal<T>(tableName, 
+                    g.Key, g.Select(e => System.Tuple.Create(e.RowKey, MapETag(e.ETag, force))), force);
+            }
         }
 
         void DeleteInternal<T>(string tableName, string partitionKey, IEnumerable<System.Tuple<string,string>> rowKeysAndETags, bool force)

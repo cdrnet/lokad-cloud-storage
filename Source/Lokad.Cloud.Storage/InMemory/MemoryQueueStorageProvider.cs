@@ -93,7 +93,10 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                messages.ForEach(message => Put(queueName, message));
+                foreach(var message in messages)
+                {
+                    Put(queueName, message);
+                }
             }
         }
 
