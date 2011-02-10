@@ -17,10 +17,7 @@ using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
-    /// <summary>
-    /// Management facade for cloud services.
-    /// </summary>
-    [UsedImplicitly]
+    /// <summary>Management facade for cloud services.</summary>
     public class CloudServices : ICloudServicesApi
     {
         readonly IBlobStorageProvider _blobProvider;

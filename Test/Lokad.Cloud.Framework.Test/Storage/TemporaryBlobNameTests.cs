@@ -5,7 +5,6 @@
 
 using System;
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Storage
@@ -40,7 +39,7 @@ namespace Lokad.Cloud.Test.Storage
 
         private class TestTemporaryBlobName : TemporaryBlobName<int>
         {
-            [UsedImplicitly, Rank(0)] public readonly Guid Id;
+            [Rank(0)] public readonly Guid Id;
 
             public TestTemporaryBlobName(DateTimeOffset expiration, string prefix, Guid id)
                 : base(expiration, prefix)

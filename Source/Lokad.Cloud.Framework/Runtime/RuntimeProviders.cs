@@ -4,7 +4,6 @@
 #endregion
 
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Runtime
 {
@@ -35,9 +34,9 @@ namespace Lokad.Cloud.Runtime
 
         /// <summary>IoC constructor.</summary>
         public RuntimeProviders(
-            [NotNull] IBlobStorageProvider blobStorage,
-            [NotNull] IQueueStorageProvider queueStorage,
-            [NotNull] ITableStorageProvider tableStorage,
+            IBlobStorageProvider blobStorage,
+            IQueueStorageProvider queueStorage,
+            ITableStorageProvider tableStorage,
             IRuntimeFinalizer runtimeFinalizer,
             ILog log)
         {

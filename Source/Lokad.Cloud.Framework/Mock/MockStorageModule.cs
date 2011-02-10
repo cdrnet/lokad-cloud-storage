@@ -8,11 +8,9 @@ using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.InMemory;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Mock
 {
-	[NoCodeCoverage]
 	public sealed class MockStorageModule : Module
 	{
 		protected override void Load(ContainerBuilder builder)

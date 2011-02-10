@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using Lokad.Cloud.Jobs;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 using Lokad.Threading;
 
 namespace Lokad.Cloud.ServiceFabric
@@ -95,7 +94,6 @@ namespace Lokad.Cloud.ServiceFabric
         }
 
         /// <summary>Providers used by the cloud service to access the storage.</summary>
-        [UsedImplicitly]
         public CloudInfrastructureProviders Providers { get; set; }
 
         public RuntimeProviders RuntimeProviders { get; set; }
@@ -115,7 +113,6 @@ namespace Lokad.Cloud.ServiceFabric
         /// <summary>Short-hand for <c>Providers.Log</c>.</summary>
         public ILog Log { get { return RuntimeProviders.Log; } }
 
-        [UsedImplicitly]
         public JobManager Jobs { get; set; }
 
         /// <summary>

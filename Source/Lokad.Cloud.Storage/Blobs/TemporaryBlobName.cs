@@ -1,11 +1,10 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using System;
 using System.Runtime.Serialization;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Storage
 {
@@ -13,7 +12,7 @@ namespace Lokad.Cloud.Storage
     /// Reference to a unique blob with a fixed limited lifespan.
     /// </summary>
     /// <remarks>
-    /// Used in conjunction with the <see cref="GarbageCollectorService"/>. Use as
+    /// Used in conjunction with the Gargage Collector service. Use as
     /// base class for custom temporary blobs with additional attributes, or use
     /// the method 
     /// <see cref="GetNew(System.DateTimeOffset)"/> to instantiate a new instance
@@ -33,8 +32,8 @@ namespace Lokad.Cloud.Storage
             get { return DefaultContainerName; }
         }
 
-        [UsedImplicitly, Rank(0), DataMember] public readonly DateTimeOffset Expiration;
-        [UsedImplicitly, Rank(1), DataMember] public readonly string Suffix;
+        [Rank(0), DataMember] public readonly DateTimeOffset Expiration;
+        [Rank(1), DataMember] public readonly string Suffix;
 
         /// <summary>
         /// Explicit constructor.

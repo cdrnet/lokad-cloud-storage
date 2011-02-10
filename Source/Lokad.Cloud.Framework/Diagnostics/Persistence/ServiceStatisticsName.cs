@@ -1,10 +1,9 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Diagnostics.Persistence
 {
@@ -15,10 +14,10 @@ namespace Lokad.Cloud.Diagnostics.Persistence
             get { return "lokad-cloud-diag-service"; }
         }
 
-        [UsedImplicitly, Rank(0)]
+        [Rank(0)]
         public readonly string TimeSegment;
 
-        [UsedImplicitly, Rank(1)]
+        [Rank(1)]
         public readonly string ServiceName;
 
         public ServiceStatisticsName(string timeSegment, string serviceName)

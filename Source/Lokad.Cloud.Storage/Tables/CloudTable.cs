@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2010
+﻿#region Copyright (c) Lokad 2010-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Storage
 {
@@ -17,7 +16,6 @@ namespace Lokad.Cloud.Storage
     /// table storage in the client code. Indeed, the row table storage provider typically
     /// let you (potentially) mix different types into a single table.
     /// </remarks>
-    [Immutable]
     public class CloudTable<T>
     {
         readonly ITableStorageProvider _provider;

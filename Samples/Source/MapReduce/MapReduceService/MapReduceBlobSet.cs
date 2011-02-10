@@ -1,16 +1,11 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Lokad.Cloud;
-using Lokad;
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Samples.MapReduce
 {
@@ -374,9 +369,10 @@ namespace Lokad.Cloud.Samples.MapReduce
 				get { return MapReduceBlobSet.ContainerName; }
 			}
 
-			[UsedImplicitly, Rank(0)]
+			[Rank(0)]
 			public string Prefix;
-			[UsedImplicitly, Rank(1)]
+
+			[Rank(1)]
 			public string JobName;
 
 			public MapReduceConfigurationName(string prefix, string jobName)
@@ -404,13 +400,16 @@ namespace Lokad.Cloud.Samples.MapReduce
 				get { return MapReduceBlobSet.ContainerName; }
 			}
 
-			[UsedImplicitly, Rank(0)]
+			[Rank(0)]
 			public string Prefix;
-			[UsedImplicitly, Rank(1)]
+
+			[Rank(1)]
 			public string JobName;
-			[UsedImplicitly, Rank(2)]
+
+			[Rank(2)]
 			public int? BlobSetId;
-			[UsedImplicitly, Rank(3)]
+
+			[Rank(3)]
 			public int? BlobId;
 
 			public InputBlobName(string prefix, string jobName, int? blobSetId, int? blobId)
@@ -445,11 +444,13 @@ namespace Lokad.Cloud.Samples.MapReduce
 				get { return MapReduceBlobSet.ContainerName; }
 			}
 
-			[UsedImplicitly, Rank(0)]
+			[Rank(0)]
 			public string Prefix;
-			[UsedImplicitly, Rank(1)]
+
+			[Rank(1)]
 			public string JobName;
-			[UsedImplicitly, Rank(2, true)]
+
+			[Rank(2, true)]
 			public int BlobSetId;
 
 			public ReducedBlobName(string prefix, string jobName, int blobSetIt)
@@ -478,9 +479,10 @@ namespace Lokad.Cloud.Samples.MapReduce
 				get { return MapReduceBlobSet.ContainerName; }
 			}
 
-			[UsedImplicitly, Rank(0)]
+			[Rank(0)]
 			public string Prefix;
-			[UsedImplicitly, Rank(1)]
+
+			[Rank(1)]
 			public string JobName;
 
 			public AggregatedBlobName(string prefix, string jobName)
@@ -503,9 +505,10 @@ namespace Lokad.Cloud.Samples.MapReduce
 				get { return MapReduceBlobSet.ContainerName; }
 			}
 
-			[UsedImplicitly, Rank(0)]
+			[Rank(0)]
 			public string Prefix;
-			[UsedImplicitly, Rank(1)]
+
+			[Rank(1)]
 			public string JobName;
 
 			public BlobCounterName(string prefix, string jobName)

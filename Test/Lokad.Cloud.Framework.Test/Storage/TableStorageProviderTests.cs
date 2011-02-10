@@ -11,7 +11,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;
-using Lokad.Quality;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Storage
@@ -25,7 +24,6 @@ namespace Lokad.Cloud.Test.Storage
 
         const string TableName = "teststablestorageprovidermytable";
 
-        [UsedImplicitly]
         public TableStorageProviderTests()
         {
             _tableStorage = GlobalSetup.Container.Resolve<ITableStorageProvider>();

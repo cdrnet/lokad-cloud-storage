@@ -14,14 +14,10 @@ using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Management.Azure;
 using Lokad.Cloud.Management.Azure.Entities;
 using Lokad.Cloud.Management.Azure.InputParameters;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
-    /// <summary>
-    /// Azure Management API Provider, Provisioning Provider.
-    /// </summary>
-    [UsedImplicitly]
+    /// <summary>Azure Management API Provider, Provisioning Provider.</summary>
     public class CloudProvisioning : IProvisioningProvider, ICloudProvisioningApi 
     {
         readonly ILog _log;

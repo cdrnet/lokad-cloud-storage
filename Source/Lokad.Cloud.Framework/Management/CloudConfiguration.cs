@@ -9,14 +9,12 @@ using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
     /// <summary>
     /// Management facade for cloud configuration.
     /// </summary>
-    [UsedImplicitly]
     public class CloudConfiguration : ICloudConfigurationApi
     {
         readonly IBlobStorageProvider _blobProvider;

@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -10,7 +10,6 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
 using Lokad.Diagnostics;
-using Lokad.Quality;
 using Lokad.Serialization;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -983,11 +982,11 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <summary>Indicates the name of the queue where the message has been originally pushed.</summary>
-        [UsedImplicitly, Rank(0)]
+        [Rank(0)]
         public string QueueName;
 
         /// <summary>Message identifiers as specified by the queue storage itself.</summary>
-        [UsedImplicitly, Rank(1)]
+        [Rank(1)]
         public Guid MessageId;
 
         OverflowingMessageBlobName(string queueName, Guid guid)
@@ -1034,10 +1033,10 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <summary>Indicates the name of the swap out store where the message is persisted.</summary>
-        [UsedImplicitly, Rank(0)]
+        [Rank(0)]
         public string StoreName;
 
-        [UsedImplicitly, Rank(1)]
+        [Rank(1)]
         public string Key;
 
         public PersistedMessageBlobName(string storeName, string key)

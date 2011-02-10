@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Lokad.Cloud.ServiceFabric;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Storage
 {
@@ -44,7 +43,7 @@ namespace Lokad.Cloud.Storage
 		}
 
 		[Rank(0, true), DataMember] public readonly DateTimeOffset TriggerTime;
-		[UsedImplicitly, Rank(1, true), DataMember] public readonly Guid Identifier;
+		[Rank(1, true), DataMember] public readonly Guid Identifier;
 
         /// <summary>Empty constructor, used for prefixing.</summary>
         public DelayedMessageName()
@@ -61,7 +60,6 @@ namespace Lokad.Cloud.Storage
 	/// <summary>Allows to put messages in a queue, delaying them as needed.</summary>
 	/// <remarks>A <see cref="IBlobStorageProvider"/> is used for storing messages that 
 	/// must be enqueued with a delay.</remarks>
-	[Immutable]
 	public class DelayedQueue
 	{
 		readonly IBlobStorageProvider _provider;

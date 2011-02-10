@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2010
+﻿#region Copyright (c) Lokad 2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -6,7 +6,6 @@
 using System;
 using System.ComponentModel;
 using System.Net;
-using Lokad.Quality;
 using Lokad.Serialization;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
@@ -15,12 +14,12 @@ namespace Lokad.Cloud.Storage
 {
     public static class CloudStorage
     {
-        public static CloudStorageBuilder ForAzureAccount([NotNull] CloudStorageAccount storageAccount)
+        public static CloudStorageBuilder ForAzureAccount(CloudStorageAccount storageAccount)
         {
             return new AzureCloudStorageBuilder(storageAccount);
         }
 
-        public static CloudStorageBuilder ForAzureConnectionString([NotNull] string connectionString)
+        public static CloudStorageBuilder ForAzureConnectionString(string connectionString)
         {
             CloudStorageAccount storageAccount;
             if (!CloudStorageAccount.TryParse(connectionString, out storageAccount))
@@ -31,7 +30,7 @@ namespace Lokad.Cloud.Storage
             return new AzureCloudStorageBuilder(storageAccount);
         }
 
-        public static CloudStorageBuilder ForAzureAccountAndKey([NotNull] string accountName, [NotNull] string key, bool useHttps = true)
+        public static CloudStorageBuilder ForAzureAccountAndKey(string accountName, string key, bool useHttps = true)
         {
             return new AzureCloudStorageBuilder(new CloudStorageAccount(new StorageCredentialsAccountAndKey(accountName, key), useHttps));
         }
@@ -67,7 +66,7 @@ namespace Lokad.Cloud.Storage
             /// <summary>
             /// Replace the default data serializer with a custom implementation
             /// </summary>
-            public CloudStorageBuilder WithDataSerializer([NotNull] IDataSerializer dataSerializer)
+            public CloudStorageBuilder WithDataSerializer(IDataSerializer dataSerializer)
             {
                 DataSerializer = dataSerializer;
                 return this;
@@ -138,7 +137,7 @@ namespace Lokad.Cloud.Storage
     {
         private readonly CloudStorageAccount _storageAccount;
 
-        internal AzureCloudStorageBuilder([NotNull] CloudStorageAccount storageAccount)
+        internal AzureCloudStorageBuilder(CloudStorageAccount storageAccount)
         {
             _storageAccount = storageAccount;
 

@@ -1,10 +1,9 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using Autofac.Builder;
-using Lokad.Quality;
 
 namespace Lokad.Cloud
 {
@@ -21,15 +20,12 @@ namespace Lokad.Cloud
 	public sealed class CloudConfigurationModule : Module
 	{
 		/// <summary>Azure storage connection string.</summary>
-		[UsedImplicitly]
 		public string DataConnectionString { get; set; }
 
 		/// <summary>Azure subscription Id (optional).</summary>
-		[UsedImplicitly]
 		public string SelfManagementSubscriptionId { get; set; }
 
 		/// <summary>Azure management certificate thumbprint (optional).</summary>
-		[UsedImplicitly]
 		public string SelfManagementCertificateThumbprint { get; set; }
 
 		public CloudConfigurationModule()

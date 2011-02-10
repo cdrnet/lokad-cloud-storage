@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -10,7 +10,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Storage
 {
@@ -94,7 +93,6 @@ namespace Lokad.Cloud.Storage
             return func(value);
         }
 
-        [UsedImplicitly]
         class ConverterTypeCache<T>
         {
             static readonly MemberInfo[] Members; // either 'FieldInfo' or 'PropertyInfo'

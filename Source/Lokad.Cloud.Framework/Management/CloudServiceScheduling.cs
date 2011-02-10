@@ -11,17 +11,13 @@ using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric;
 using Lokad.Cloud.Services;
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 
 // TODO: blobs are sequentially enumerated, performance issue
 // if there are more than a few dozen services
 
 namespace Lokad.Cloud.Management
 {
-    /// <summary>
-    /// Management facade for scheduled cloud services.
-    /// </summary>
-    [UsedImplicitly]
+    /// <summary>Management facade for scheduled cloud services.</summary>
     public class CloudServiceScheduling : ICloudServiceSchedulingApi
     {
         readonly IBlobStorageProvider _blobProvider;

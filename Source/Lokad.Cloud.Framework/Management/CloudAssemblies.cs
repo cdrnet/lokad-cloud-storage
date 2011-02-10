@@ -11,14 +11,10 @@ using Lokad.Cloud.Application;
 using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Management
 {
-    /// <summary>
-    /// Management facade for cloud assemblies.
-    /// </summary>
-    [UsedImplicitly]
+    /// <summary>Management facade for cloud assemblies.</summary>
     public class CloudAssemblies : ICloudAssembliesApi
     {
         readonly RuntimeProviders _runtimeProviders;

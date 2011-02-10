@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Diagnostics.Persistence
 {
@@ -19,7 +18,6 @@ namespace Lokad.Cloud.Diagnostics.Persistence
     /// In order for retention to work correctly, time segments need to be strictly
     /// ordered ascending by time and date when compared as string.
     /// </remarks>
-    [UsedImplicitly]
     public class BlobDiagnosticsRepository : ICloudDiagnosticsRepository
     {
         readonly IBlobStorageProvider _blobs;

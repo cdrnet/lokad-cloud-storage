@@ -1,10 +1,9 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using System;
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Storage
 {
@@ -13,12 +12,12 @@ namespace Lokad.Cloud.Storage
     /// is made compact not to make client code too verbose.</remarks>
     public class RankAttribute : Attribute
     {
-        [UsedImplicitly] public readonly int Index;
+        public readonly int Index;
 
         /// <summary>Indicates whether the default value (for value types)
         /// should be treated as 'null'. Not relevant for class types.
         /// </summary>
-        [UsedImplicitly] public readonly bool TreatDefaultAsNull;
+        public readonly bool TreatDefaultAsNull;
 
         /// <summary>Position v</summary>
         public RankAttribute(int index)

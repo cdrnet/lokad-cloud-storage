@@ -1,9 +1,7 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
-
-using Lokad.Quality;
 
 namespace Lokad.Cloud.Storage
 {
@@ -26,9 +24,9 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>IoC constructor.</summary>
         public CloudStorageProviders(
-            [NotNull] IBlobStorageProvider blobStorage,
-            [NotNull] IQueueStorageProvider queueStorage,
-            [NotNull] ITableStorageProvider tableStorage,
+            IBlobStorageProvider blobStorage,
+            IQueueStorageProvider queueStorage,
+            ITableStorageProvider tableStorage,
             IRuntimeFinalizer runtimeFinalizer,
             ILog log)
         {
@@ -41,7 +39,7 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Copy constructor.</summary>
         protected CloudStorageProviders(
-            [NotNull] CloudStorageProviders copyFrom)
+            CloudStorageProviders copyFrom)
         {
             BlobStorage = copyFrom.BlobStorage;
             QueueStorage = copyFrom.QueueStorage;
