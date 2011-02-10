@@ -5,8 +5,10 @@
 
 using System;
 using System.IO.Compression;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -25,7 +27,8 @@ namespace Lokad.Cloud.Storage
     {
         XmlObjectSerializer GetXmlSerializer(Type type)
         {
-            if (type.GetAttributes<DataContractAttribute>(false).Length > 0)
+            // 'false' == do not inherit the attribute
+            if (GetAttributes<DataContractAttribute>(type, false).Length > 0)
             {
                 return new DataContractSerializer(type);
             }
@@ -83,6 +86,22 @@ namespace Lokad.Cloud.Storage
         static GZipStream Decompress(Stream stream, bool leaveOpen)
         {
             return new GZipStream(stream, CompressionMode.Decompress, leaveOpen);
+        }
+
+        ///<summary>Retrieve attributes from the type.</summary>
+        ///<param name="target">Type to perform operation upon</param>
+        ///<param name="inherit"><see cref="MemberInfo.GetCustomAttributes(Type,bool)"/></param>
+        ///<typeparam name="T">Attribute to use</typeparam>
+        ///<returns>Empty array of <typeparamref name="T"/> if there are no attributes</returns>
+        static T[] GetAttributes<T>(ICustomAttributeProvider target, bool inherit) where T : Attribute
+        {
+            if (target.IsDefined(typeof(T), inherit))
+            {
+                return target
+                    .GetCustomAttributes(typeof(T), inherit)
+                    .Select(a => (T)a).ToArray();
+            }
+            return new T[0];
         }
     }
 }
