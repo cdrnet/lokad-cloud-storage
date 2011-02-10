@@ -4,6 +4,7 @@
 #endregion
 
 using System;
+using System.IO.Compression;
 using System.Runtime.Serialization;
 using System.IO;
 using System.Xml;
@@ -36,7 +37,7 @@ namespace Lokad.Cloud.Storage
         {
             var serializer = GetXmlSerializer(instance.GetType());
 
-            using(var compressed = destination.Compress(true))
+            using(var compressed = Compress(destination, true))
             using(var writer = XmlDictionaryWriter.CreateBinaryWriter(compressed, null, null, false))
             {
                 serializer.WriteObject(writer, instance);
@@ -47,7 +48,7 @@ namespace Lokad.Cloud.Storage
         {
             var serializer = GetXmlSerializer(type);
 
-            using(var decompressed = source.Decompress(true))
+            using(var decompressed = Decompress(source, true))
             using(var reader = XmlDictionaryReader.CreateBinaryReader(decompressed, XmlDictionaryReaderQuotas.Max))
             {
                 return serializer.ReadObject(reader);
@@ -56,7 +57,7 @@ namespace Lokad.Cloud.Storage
 
         public XElement UnpackXml(Stream source)
         {
-            using(var decompressed = source.Decompress(true))
+            using(var decompressed = Decompress(source, true))
             using (var reader = XmlDictionaryReader.CreateBinaryReader(decompressed, XmlDictionaryReaderQuotas.Max))
             {
                 return XElement.Load(reader);
@@ -65,13 +66,23 @@ namespace Lokad.Cloud.Storage
 
         public void RepackXml(XElement data, Stream destination)
         {
-            using(var compressed = destination.Compress(true))
+            using(var compressed = Compress(destination, true))
             using(var writer = XmlDictionaryWriter.CreateBinaryWriter(compressed, null, null, false))
             {
                 data.Save(writer);
                 writer.Flush();
                 compressed.Flush();
             }
+        }
+
+        static GZipStream Compress(Stream stream, bool leaveOpen)
+        {
+            return new GZipStream(stream, CompressionMode.Compress, leaveOpen);
+        }
+
+        static GZipStream Decompress(Stream stream, bool leaveOpen)
+        {
+            return new GZipStream(stream, CompressionMode.Decompress, leaveOpen);
         }
     }
 }
