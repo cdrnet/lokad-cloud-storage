@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 using System.IO;
 using System.Xml;
 using System.Xml.Linq;
-using Lokad.Serialization;
 
 namespace Lokad.Cloud.Storage
 {
@@ -21,7 +20,7 @@ namespace Lokad.Cloud.Storage
     /// is favored. If not, then the <c>NetDataContractSerializer</c> is used instead.
     /// This class is not <b>thread-safe</b>.
     /// </remarks>
-    public class CloudFormatter : IDataSerializer, IIntermediateDataSerializer
+    public class CloudFormatter : IIntermediateDataSerializer
     {
         XmlObjectSerializer GetXmlSerializer(Type type)
         {

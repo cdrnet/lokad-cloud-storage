@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -7,9 +7,9 @@ using System;
 using System.Net;
 using Autofac;
 using Autofac.Builder;
+using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
-using Lokad.Serialization;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 using Module=Autofac.Builder.Module;

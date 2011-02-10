@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2011
+﻿#region Copyright (c) Lokad 2010-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -6,7 +6,7 @@
 using System;
 using System.ComponentModel;
 using System.Net;
-using Lokad.Serialization;
+using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -66,7 +66,7 @@ namespace Lokad.Cloud.Storage
             /// <summary>
             /// Replace the default data serializer with a custom implementation
             /// </summary>
-            public CloudStorageBuilder WithDataSerializer(IDataSerializer dataSerializer)
+            public CloudStorageBuilder WithDataSerializer(Shared.IDataSerializer dataSerializer)
             {
                 DataSerializer = dataSerializer;
                 return this;

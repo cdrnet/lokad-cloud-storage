@@ -1,11 +1,11 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using System.IO;
 using Lokad.Cloud.Storage;
-using Lokad.Serialization;
+using Lokad.Cloud.Storage.Shared;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Storage

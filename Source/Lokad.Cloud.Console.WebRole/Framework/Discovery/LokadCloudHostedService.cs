@@ -5,7 +5,6 @@
 
 using System.Collections.Generic;
 using System.Xml.Linq;
-using Lokad.Serialization;
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Discovery

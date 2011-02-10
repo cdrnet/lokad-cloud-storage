@@ -1,16 +1,16 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using System;
 using System.Runtime.Serialization;
-using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;
-using Lokad.Serialization;
+using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Test;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Test.Storage
+namespace Lokad.Cloud.Storage.Tests
 {
     [TestFixture]
     public class FatEntityTests

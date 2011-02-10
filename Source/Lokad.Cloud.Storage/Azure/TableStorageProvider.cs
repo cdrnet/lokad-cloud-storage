@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2010
+﻿#region Copyright (c) Lokad 2010-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -10,8 +10,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Web;
+using Lokad.Cloud.Storage.Shared;
 using Lokad.Diagnostics;
-using Lokad.Serialization;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
