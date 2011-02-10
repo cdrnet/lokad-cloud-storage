@@ -60,7 +60,7 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
                 .ListHostedServices(_subscriptionId)
                 .AsParallel()
                 .Select(service => proxy.GetHostedServiceWithDetails(_subscriptionId, service.ServiceName, true))
-                .Where(hs => hs.Deployments.Exists(d => d.RoleInstanceList.Exists(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")));
+                .Where(hs => hs.Deployments.Any(d => d.RoleInstanceList.Exists(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")));
         }
 
         private static LokadCloudHostedService MapHostedService(HostedService hostedService)

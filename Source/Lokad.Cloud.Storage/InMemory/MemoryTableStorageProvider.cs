@@ -252,7 +252,7 @@ namespace Lokad.Cloud.Storage.InMemory
                 }
 
                 // ok, we can delete safely now
-                entries.RemoveAll(entry => entityList.Exists(entity => entity.PartitionKey == entry.PartitionKey && entity.RowKey == entry.RowKey));
+                entries.RemoveAll(entry => entityList.Any(entity => entity.PartitionKey == entry.PartitionKey && entity.RowKey == entry.RowKey));
             }
         }
 

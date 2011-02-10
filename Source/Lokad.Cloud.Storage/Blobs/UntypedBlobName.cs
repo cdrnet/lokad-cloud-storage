@@ -108,7 +108,7 @@ namespace Lokad.Cloud.Storage
                 // NB: this approach could be used to generate F# style objects!
                 Members = 
                     (typeof(T).GetFields().Select(f => (MemberInfo)f).Union(typeof(T).GetProperties()))
-                    .Where(f => f.GetCustomAttributes(typeof(RankAttribute), true).Exists())
+                    .Where(f => f.GetCustomAttributes(typeof(RankAttribute), true).Any())
                     // ordering always respect inheritance
                     .GroupBy(f => f.DeclaringType)
                     .OrderBy(g => g.Key, new InheritanceComparer())

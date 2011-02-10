@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -281,7 +281,7 @@ namespace Lokad.Cloud.Test.Storage
                     () => 1,
                     i => i + 1), array.Length);
 
-            Assert.IsFalse(array.Exists(x => !x.HasValue), "No skips");
+            Assert.IsFalse(array.Any(x => !x.HasValue), "No skips");
 
             var sorted = array.Select(m => m.Value)
                 .OrderBy(i => i)

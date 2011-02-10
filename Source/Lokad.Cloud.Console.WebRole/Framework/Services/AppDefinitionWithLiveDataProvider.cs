@@ -57,10 +57,10 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Services
                 d => d.TypeName,
                 (s, d) => new QueueServiceModel { ServiceName = s.ServiceName, IsStarted = s.IsStarted, Definition = d }).ToArray();
 
-            var scheduledServices = services.Where(s => appDefinition.ScheduledServices.Exists(ads => ads.TypeName.StartsWith(s.ServiceName))).ToArray();
-            var otherServices = services.Where(s => appDefinition.CloudServices.Exists(ads => ads.TypeName.StartsWith(s.ServiceName))).ToArray();
+            var scheduledServices = services.Where(s => appDefinition.ScheduledServices.Any(ads => ads.TypeName.StartsWith(s.ServiceName))).ToArray();
+            var otherServices = services.Where(s => appDefinition.CloudServices.Any(ads => ads.TypeName.StartsWith(s.ServiceName))).ToArray();
             var unavailableServices = services
-                .Where(s => !queueServices.Exists(d => d.ServiceName == s.ServiceName))
+                .Where(s => !queueServices.Any(d => d.ServiceName == s.ServiceName))
                 .Except(scheduledServices).Except(otherServices).ToArray();
 
             return new ServicesModel

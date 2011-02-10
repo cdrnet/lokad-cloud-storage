@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -27,7 +27,7 @@ namespace Lokad.Cloud.Web
 		protected void OpenIdLogin_OnLoggingIn(object sender, OpenIdEventArgs e)
 		{
 			var users = new LokadCloudUserRoles();
-			var isAdmin = users.GetAdministrators().Exists(
+			var isAdmin = users.GetAdministrators().Any(
 				user => user.Credential == e.ClaimedIdentifier);
 
 			// if the user isn't listed as an administrator, cancel the login
