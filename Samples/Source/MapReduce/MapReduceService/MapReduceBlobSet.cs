@@ -43,8 +43,8 @@ namespace Lokad.Cloud.Samples.MapReduce
 		/// <param name="queueStorage">The queue storage provider.</param>
 		public MapReduceBlobSet(IBlobStorageProvider blobStorage, IQueueStorageProvider queueStorage)
 		{
-			Enforce.Argument(() => blobStorage);
-			Enforce.Argument(() => queueStorage);
+			if(null == blobStorage) throw new ArgumentNullException("blobStorage");
+            if(null == queueStorage) throw new ArgumentNullException("queueStorage");
 
 			_blobStorage = blobStorage;
 			_queueStorage = queueStorage;
@@ -106,7 +106,11 @@ namespace Lokad.Cloud.Samples.MapReduce
 
 				processedBlobs += thisSetSize;
 			}
-			Enforce.That(processedBlobs == itemCount, "Processed Blobs are less than the number of items");
+
+			if(processedBlobs != itemCount)
+			{
+                throw new InvalidOperationException("Processed Blobs are less than the number of items");    
+			}
 
 			// 2.2. Store input data (separate cycle for clarity)
 			processedBlobs = 0;

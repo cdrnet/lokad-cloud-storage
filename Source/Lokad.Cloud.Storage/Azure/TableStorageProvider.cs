@@ -83,7 +83,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName)
         {
-            Enforce.That(() => tableName);
+            if(null == tableName) throw new ArgumentNullException("tableName");
 
             var context = _tableStorage.GetDataServiceContext();
             return GetInternal<T>(context, tableName, Maybe.String);
@@ -91,9 +91,10 @@ namespace Lokad.Cloud.Storage.Azure
 
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey)
         {
-            Enforce.That(() => tableName);
-            Enforce.That(() => partitionKey);
-            Enforce.That(!partitionKey.Contains("'"), "Incorrect char in partitionKey.");
+            if(null == tableName) throw new ArgumentNullException("tableName");
+            if(null == partitionKey) throw new ArgumentNullException("partitionKey");
+            if (partitionKey.Contains("'"))
+                throw new ArgumentOutOfRangeException("partitionKey", "Incorrect char in partitionKey.");
 
             var filter = string.Format("(PartitionKey eq '{0}')", HttpUtility.UrlEncode(partitionKey));
 
@@ -103,11 +104,14 @@ namespace Lokad.Cloud.Storage.Azure
 
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey, string startRowKey, string endRowKey)
         {
-            Enforce.That(() => tableName);
-            Enforce.That(() => partitionKey);
-            Enforce.That(!partitionKey.Contains("'"), "Incorrect char in partitionKey.");
-            Enforce.That(!(startRowKey != null && startRowKey.Contains("'")), "Incorrect char in startRowKey.");
-            Enforce.That(!(endRowKey != null && endRowKey.Contains("'")), "Incorrect char in endRowKey.");
+            if(null == tableName) throw new ArgumentNullException("tableName");
+            if(null == partitionKey) throw new ArgumentNullException("partitionKey");
+            if (partitionKey.Contains("'"))
+                throw new ArgumentOutOfRangeException("partitionKey", "Incorrect char.");
+            if(startRowKey != null && startRowKey.Contains("'"))
+                throw new ArgumentOutOfRangeException("startRowKey", "Incorrect char.");
+            if(endRowKey != null && endRowKey.Contains("'"))
+                throw new ArgumentOutOfRangeException("endRowKey", "Incorrect char.");
 
             var filter = string.Format("(PartitionKey eq '{0}')", HttpUtility.UrlEncode(partitionKey));
 
@@ -130,9 +134,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey, IEnumerable<string> rowKeys)
         {
-            Enforce.That(() => tableName);
-            Enforce.That(() => partitionKey);
-            Enforce.That(!partitionKey.Contains("'"), "Incorrect char in partitionKey.");
+            if(null == tableName) throw new ArgumentNullException("tableName");
+            if(null == partitionKey) throw new ArgumentNullException("partitionKey");
+            if(partitionKey.Contains("'")) throw new ArgumentOutOfRangeException("partitionKey", "Incorrect char.");
 
             var context = _tableStorage.GetDataServiceContext();
 
@@ -145,7 +149,7 @@ namespace Lokad.Cloud.Storage.Azure
                 for (int i = 0; i < slice.Length; i++)
                 {
                     // in order to avoid SQL-injection-like problems 
-                    Enforce.That(!slice[i].Contains("'"), "Incorrect char in rowKey.");
+                    if (slice[i].Contains("'")) throw new ArgumentOutOfRangeException("rowKeys", "Incorrect char.");
 
                     builder.Append(string.Format("(RowKey eq '{0}')", HttpUtility.UrlEncode(slice[i])));
                     if (i < slice.Length - 1)

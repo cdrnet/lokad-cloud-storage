@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -33,8 +33,8 @@ namespace Lokad.Cloud.Samples.MapReduce
 		/// <param name="queueStorage">The queue storage provider.</param>
 		public MapReduceJob(IBlobStorageProvider blobStorage, IQueueStorageProvider queueStorage)
 		{
-			Enforce.Argument(() => blobStorage);
-			Enforce.Argument(() => queueStorage);
+			if(null == blobStorage) throw new ArgumentNullException("blobStorage");
+            if(null == queueStorage) throw new ArgumentNullException("queueStorage");
 
 			_jobName = Guid.NewGuid().ToString("N");
 			_blobStorage = blobStorage;
@@ -48,9 +48,9 @@ namespace Lokad.Cloud.Samples.MapReduce
 		/// <param name="queueStorage">The queue storage provider.</param>
 		public MapReduceJob(string jobId, IBlobStorageProvider blobStorage, IQueueStorageProvider queueStorage)
 		{
-			Enforce.Argument(() => jobId);
-			Enforce.Argument(() => blobStorage);
-			Enforce.Argument(() => queueStorage);
+			if(null == jobId) throw new ArgumentNullException("jobId");
+            if(null == blobStorage) throw new ArgumentNullException("blobStorage");
+            if(null == queueStorage) throw new ArgumentNullException("queueStorage");
 
 			_jobName = jobId;
 			_itemsPushed = true;

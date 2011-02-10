@@ -68,7 +68,7 @@ namespace Lokad.Cloud.Storage
 		/// <param name="provider">The blob storage provider.</param>
 		public DelayedQueue(IBlobStorageProvider provider)
 		{
-			Enforce.Argument(() => provider);
+			if(null == provider) throw new ArgumentNullException("provider");
 			_provider = provider;
 		}
 

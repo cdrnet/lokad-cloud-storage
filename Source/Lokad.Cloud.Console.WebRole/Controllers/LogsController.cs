@@ -3,6 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using System;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -41,7 +42,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         [HttpGet]
         public ActionResult Entries(string hostedServiceName, string threshold, int skip = 0, int count = InitialEntriesCount, string olderThanToken = null, string newerThanToken = null)
         {
-            Enforce.Argument(() => count, Rules.Is.Between(0, 101));
+            if(count < 1 || count > 100) throw new ArgumentOutOfRangeException("count", "Must be in range [1;100].");
 
             InitializeDeploymentTenant(hostedServiceName);
 

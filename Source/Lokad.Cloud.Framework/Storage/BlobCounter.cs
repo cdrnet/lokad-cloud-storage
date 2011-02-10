@@ -1,7 +1,9 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
+
+using System;
 
 namespace Lokad.Cloud.Storage
 {
@@ -37,9 +39,9 @@ namespace Lokad.Cloud.Storage
 		/// <summary>Full constructor.</summary>
 		public BlobCounter(IBlobStorageProvider provider, string containerName, string blobName)
 		{
-			Enforce.Argument(() => provider);
-			Enforce.Argument(() => containerName);
-			Enforce.Argument(() => blobName);
+            if(null == provider) throw new ArgumentNullException("provider");
+            if(null == containerName) throw new ArgumentNullException("containerName");
+            if(null == blobName) throw new ArgumentNullException("blobName");
 
 			_provider = provider;
 			_containerName = containerName;

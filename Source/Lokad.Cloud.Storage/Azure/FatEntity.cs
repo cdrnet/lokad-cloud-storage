@@ -80,8 +80,8 @@ namespace Lokad.Cloud.Storage.Azure
 
         public void SetData(byte[] data)
         {
-            Enforce.That(() => data);
-            Enforce.That(data.Length < MaxByteCapacity);
+            if(null == data) throw new ArgumentNullException("data");
+            if(data.Length >= MaxByteCapacity) throw new ArgumentOutOfRangeException("data");
 
             var setters = new Action<byte[]>[]
                 {
