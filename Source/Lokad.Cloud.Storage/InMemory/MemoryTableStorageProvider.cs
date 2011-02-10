@@ -256,13 +256,13 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        static Tuple<string, string> ToId<T>(CloudEntity<T> entity)
+        static System.Tuple<string, string> ToId<T>(CloudEntity<T> entity)
         {
-            return Tuple.From(entity.PartitionKey, entity.RowKey);
+            return System.Tuple.Create(entity.PartitionKey, entity.RowKey);
         }
-        static Tuple<string, string> ToId(MockTableEntry entry)
+        static System.Tuple<string, string> ToId(MockTableEntry entry)
         {
-            return Tuple.From(entry.PartitionKey, entry.RowKey);
+            return System.Tuple.Create(entry.PartitionKey, entry.RowKey);
         }
 
         class MockTableEntry

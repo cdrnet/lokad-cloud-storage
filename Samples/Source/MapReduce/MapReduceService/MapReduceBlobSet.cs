@@ -261,7 +261,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 		/// <param name="jobName">The name of the job.</param>
 		/// <returns>The number of completed blobsets (<c>Tuple.Item1</c>) and the total number of blobsets (<c>Tuple.Item2</c>).</returns>
 		/// <exception cref="ArgumentException">If <paramref name="jobName"/> refers to an inexistent job.</exception>
-		public Tuple<int, int> GetCompletedBlobSets(string jobName)
+		public System.Tuple<int, int> GetCompletedBlobSets(string jobName)
 		{
 			var config = GetJobConfig(jobName);
 			if (!config.HasValue)
@@ -272,7 +272,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 			var counter = new BlobCounter(_blobStorage, BlobCounterName.Create(jobName));
 			int completedBlobsets = (int)counter.GetValue();
 
-			return new Tuple<int, int>(completedBlobsets, config.Value.BlobSetCount);
+			return new System.Tuple<int, int>(completedBlobsets, config.Value.BlobSetCount);
 		}
 
 		/// <summary>Retrieves the aggregated result of a map/reduce job.</summary>

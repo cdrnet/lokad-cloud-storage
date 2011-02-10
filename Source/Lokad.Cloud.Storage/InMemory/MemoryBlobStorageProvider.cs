@@ -198,8 +198,8 @@ namespace Lokad.Cloud.Storage.InMemory
             var tempResult = blobNames.SelectInParallel(blobName =>
             {
                 string etag;
-                Maybe<T> blob = GetBlob<T>(containerName, blobName, out etag);
-                return new Tuple<Maybe<T>, string>(blob, etag);
+                var blob = GetBlob<T>(containerName, blobName, out etag);
+                return new System.Tuple<Maybe<T>, string>(blob, etag);
             }, blobNames.Length);
 
             etags = new string[blobNames.Length];

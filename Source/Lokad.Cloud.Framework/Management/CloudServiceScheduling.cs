@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -38,14 +38,14 @@ namespace Lokad.Cloud.Management
             // TODO: Redesign to make it self-contained (so that we don't need to pass the name as well)
 
             return _blobProvider.ListBlobNames(ScheduledServiceStateName.GetPrefix())
-                .Select(name => Tuple.From(name, _blobProvider.GetBlob(name)))
-                .Where(pair => pair.Value.HasValue)
+                .Select(name => System.Tuple.Create(name, _blobProvider.GetBlob(name)))
+                .Where(pair => pair.Item2.HasValue)
                 .Select(pair =>
                     {
-                        var state = pair.Value.Value;
+                        var state = pair.Item2.Value;
                         var info = new CloudServiceSchedulingInfo
                             {
-                                ServiceName = pair.Key.ServiceName,
+                                ServiceName = pair.Item1.ServiceName,
                                 TriggerInterval = state.TriggerInterval,
                                 LastExecuted = state.LastExecuted,
                                 WorkerScoped = state.SchedulePerWorker,

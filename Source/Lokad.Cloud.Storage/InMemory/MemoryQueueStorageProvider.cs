@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Lokad.Cloud.Storage.Shared;
+using Tu = System.Tuple<string, object, System.Collections.Generic.List<byte[]>>;
 
 namespace Lokad.Cloud.Storage.InMemory
 {
@@ -18,8 +19,8 @@ namespace Lokad.Cloud.Storage.InMemory
         private readonly object _sync = new object();
 
         private readonly Dictionary<string, Queue<byte[]>> _queues;
-        private readonly Dictionary<object, Triple<string, object, List<byte[]>>> _inProcessMessages;
-        private readonly HashSet<Quad<string, string, string, byte[]>> _persistedMessages;
+        private readonly Dictionary<object, Tu> _inProcessMessages;
+        private readonly HashSet<System.Tuple<string, string, string, byte[]>> _persistedMessages;
 
         internal IDataSerializer DataSerializer { get; set; }
         
@@ -27,8 +28,8 @@ namespace Lokad.Cloud.Storage.InMemory
         public MemoryQueueStorageProvider()
         {
             _queues = new Dictionary<string, Queue<byte[]>>();
-            _inProcessMessages = new Dictionary<object, Triple<string, object, List<byte[]>>>();
-            _persistedMessages = new HashSet<Quad<string, string, string, byte[]>>();
+            _inProcessMessages = new Dictionary<object, Tu>();
+            _persistedMessages = new HashSet<System.Tuple<string, string, string, byte[]>>();
             DataSerializer = new CloudFormatter();
         }
 
@@ -53,10 +54,10 @@ namespace Lokad.Cloud.Storage.InMemory
                             message = DataSerializer.Deserialize(stream, typeof (T));
                         }
 
-                        Triple<string, object, List<byte[]>> inProcess;
+                        Tu inProcess;
                         if (!_inProcessMessages.TryGetValue(message, out inProcess))
                         {
-                            inProcess = Tuple.From(queueName, message, new List<byte[]>());
+                            inProcess = new Tu(queueName, message, new List<byte[]>());
                             _inProcessMessages.Add(message, inProcess);
                         }
 
@@ -114,7 +115,7 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                Triple<string, object, List<byte[]>> inProcess;
+                Tu inProcess;
                 if (!_inProcessMessages.TryGetValue(message, out inProcess))
                 {
                     return false;
@@ -142,7 +143,7 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                Triple<string, object, List<byte[]>> inProcess;
+                Tu inProcess;
                 if (!_inProcessMessages.TryGetValue(message, out inProcess))
                 {
                     return false;
@@ -191,7 +192,7 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             lock (_sync)
             {
-                Triple<string, object, List<byte[]>> inProcess;
+                Tu inProcess;
                 if (!_inProcessMessages.TryGetValue(message, out inProcess))
                 {
                     return;
@@ -199,7 +200,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
                 // persist
                 var key = Guid.NewGuid().ToString("N");
-                _persistedMessages.Add(Tuple.From(storeName, key, inProcess.Item1, inProcess.Item3[0]));
+                _persistedMessages.Add(System.Tuple.Create(storeName, key, inProcess.Item1, inProcess.Item3[0]));
 
                 // Remove from invisible queue
                 inProcess.Item3.RemoveAt(0);

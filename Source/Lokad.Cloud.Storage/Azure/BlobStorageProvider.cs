@@ -354,7 +354,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 string etag;
                 var blob = GetBlob<T>(containerName, blobName, out etag);
-                return new Tuple<Maybe<T>, string>(blob, etag);
+                return new System.Tuple<Maybe<T>, string>(blob, etag);
             }, blobNames.Length);
 
             etags = new string[blobNames.Length];

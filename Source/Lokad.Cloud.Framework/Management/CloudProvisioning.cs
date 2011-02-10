@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2010
+﻿#region Copyright (c) Lokad 2010-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -265,7 +265,7 @@ namespace Lokad.Cloud.Management
             }
 
 
-            var deployments = new List<Pair<Deployment, HostedService>>();
+            var deployments = new List<System.Tuple<Deployment, HostedService>>();
             try
             {
                 var hostedServices = _retryPolicy.Get(() => _channel.ListHostedServices(_subscriptionId.Value));
@@ -280,7 +280,7 @@ namespace Lokad.Cloud.Management
 
                     foreach (var deployment in service.Deployments)
                     {
-                        deployments.Add(Tuple.From(deployment, service));
+                        deployments.Add(System.Tuple.Create(deployment, service));
                     }
                 }
             }
@@ -302,7 +302,7 @@ namespace Lokad.Cloud.Management
                 return false;
             }
 
-            var selfServiceAndDeployment = deployments.FirstOrEmpty(pair => pair.Key.PrivateID == _deploymentId.Value);
+            var selfServiceAndDeployment = deployments.FirstOrEmpty(pair => pair.Item1.PrivateID == _deploymentId.Value);
             if (!selfServiceAndDeployment.HasValue)
             {
                 _log.WarnFormat("Azure Self-Management: no hosted service deployment matches {0}", _deploymentId.Value);
@@ -311,8 +311,8 @@ namespace Lokad.Cloud.Management
             }
 
             _status = ManagementStatus.Available;
-            _service = selfServiceAndDeployment.Value.Value;
-            _deployment = selfServiceAndDeployment.Value.Key;
+            _service = selfServiceAndDeployment.Value.Item2;
+            _deployment = selfServiceAndDeployment.Value.Item1;
             return true;
         }
 

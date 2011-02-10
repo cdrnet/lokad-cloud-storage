@@ -255,21 +255,19 @@ namespace Lokad.Cloud.Storage.Azure
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
-            var fatEntities = entities.Select(e => Tuple.From(FatEntity.Convert(e, _serializer), e));
+            var fatEntities = entities.Select(e => System.Tuple.Create(FatEntity.Convert(e, _serializer), e));
 
             var noBatchMode = false;
 
-            foreach (var slice in SliceEntities(fatEntities, e => e.Key.GetPayload()))
+            foreach (var slice in SliceEntities(fatEntities, e => e.Item1.GetPayload()))
             {
                 var timestamp = _countInsert.Open();
-
-                Debug.Assert(context.Entities.Count == 0);
 
                 var cloudEntityOfFatEntity = new Dictionary<object, CloudEntity<T>>();
                 foreach (var fatEntity in slice)
                 {
-                    context.AddObject(tableName, fatEntity.Key);
-                    cloudEntityOfFatEntity.Add(fatEntity.Key, fatEntity.Value);
+                    context.AddObject(tableName, fatEntity.Item1);
+                    cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
                 _storagePolicy.Do(() =>
@@ -376,23 +374,21 @@ namespace Lokad.Cloud.Storage.Azure
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
-            var fatEntities = entities.Select(e => Tuple.From(FatEntity.Convert(e, _serializer), e));
+            var fatEntities = entities.Select(e => System.Tuple.Create(FatEntity.Convert(e, _serializer), e));
 
             var noBatchMode = false;
 
-            foreach (var slice in SliceEntities(fatEntities, e => e.Key.GetPayload()))
+            foreach (var slice in SliceEntities(fatEntities, e => e.Item1.GetPayload()))
             {
                 var timestamp = _countUpdate.Open();
-
-                Debug.Assert(context.Entities.Count == 0);
 
                 var cloudEntityOfFatEntity = new Dictionary<object, CloudEntity<T>>();
                 foreach (var fatEntity in slice)
                 {
                     // entities should be updated in a single round-trip
-                    context.AttachTo(tableName, fatEntity.Key, MapETag(fatEntity.Value.ETag, force));
-                    context.UpdateObject(fatEntity.Key);
-                    cloudEntityOfFatEntity.Add(fatEntity.Key, fatEntity.Value);
+                    context.AttachTo(tableName, fatEntity.Item1, MapETag(fatEntity.Item2.ETag, force));
+                    context.UpdateObject(fatEntity.Item1);
+                    cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
                 _storagePolicy.Do(() =>
@@ -520,23 +516,23 @@ namespace Lokad.Cloud.Storage.Azure
 
         public void Delete<T>(string tableName, string partitionKey, IEnumerable<string> rowKeys)
         {
-            DeleteInternal<T>(tableName, partitionKey, rowKeys.Select(k => Tuple.From(k, "*")), true);
+            DeleteInternal<T>(tableName, partitionKey, rowKeys.Select(k => System.Tuple.Create(k, "*")), true);
         }
 
         public void Delete<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
             entities.GroupBy(e => e.PartitionKey)
                 .ForEach(g => DeleteInternal<T>(tableName, g.Key,
-                    g.Select(e => Tuple.From(e.RowKey, MapETag(e.ETag, force))), force));
+                    g.Select(e => System.Tuple.Create(e.RowKey, MapETag(e.ETag, force))), force));
         }
 
-        void DeleteInternal<T>(string tableName, string partitionKey, IEnumerable<Pair<string,string>> rowKeysAndETags, bool force)
+        void DeleteInternal<T>(string tableName, string partitionKey, IEnumerable<System.Tuple<string,string>> rowKeysAndETags, bool force)
         {
             var context = _tableStorage.GetDataServiceContext();
 
             // CAUTION: make sure to get rid of potential duplicate in rowkeys.
             // (otherwise insertion in 'context' is likely to fail)
-            foreach (var s in rowKeysAndETags.Distinct(pair => pair.Key).Slice(MaxEntityTransactionCount))
+            foreach (var s in rowKeysAndETags.Distinct(pair => pair.Item1).Slice(MaxEntityTransactionCount))
             {
                 var timestamp = _countDelete.Open();
 
@@ -551,10 +547,10 @@ namespace Lokad.Cloud.Storage.Azure
                     var mock = new FatEntity
                         {
                             PartitionKey = partitionKey,
-                            RowKey = rowKeyAndETag.Key
+                            RowKey = rowKeyAndETag.Item1
                         };
 
-                    context.AttachTo(tableName, mock, rowKeyAndETag.Value);
+                    context.AttachTo(tableName, mock, rowKeyAndETag.Item2);
                     context.DeleteObject(mock);
 
                 }
@@ -592,8 +588,8 @@ namespace Lokad.Cloud.Storage.Azure
                         throw;
                     }
 
-                    slice = Get<T>(tableName, partitionKey, slice.Select(p => p.Key))
-                        .Select(e => Tuple.From(e.RowKey, MapETag(e.ETag, force))).ToArray();
+                    slice = Get<T>(tableName, partitionKey, slice.Select(p => p.Item1))
+                        .Select(e => System.Tuple.Create(e.RowKey, MapETag(e.ETag, force))).ToArray();
 
                     // entities with same name will be added again
                     context = _tableStorage.GetDataServiceContext();

@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -10,7 +10,6 @@ using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric;
 using Lokad.Cloud.Services;
 using Lokad.Cloud.Storage;
-using Lokad.Quality;
 
 // TODO: blobs are sequentially enumerated, performance issue
 // if there are more than a few dozen services
@@ -38,12 +37,12 @@ namespace Lokad.Cloud.Management
             // TODO: Redesign to make it self-contained (so that we don't need to pass the name as well)
 
             return _blobProvider.ListBlobNames(CloudServiceStateName.GetPrefix())
-                .Select(name => Tuple.From(name, _blobProvider.GetBlob(name)))
-                .Where(pair => pair.Value.HasValue)
+                .Select(name => System.Tuple.Create(name, _blobProvider.GetBlob(name)))
+                .Where(pair => pair.Item2.HasValue)
                 .Select(pair => new CloudServiceInfo
                     {
-                        ServiceName = pair.Key.ServiceName,
-                        IsStarted = pair.Value.Value == CloudServiceState.Started
+                        ServiceName = pair.Item1.ServiceName,
+                        IsStarted = pair.Item2.Value == CloudServiceState.Started
                     })
                 .ToList();
         }

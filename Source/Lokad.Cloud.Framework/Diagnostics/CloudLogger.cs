@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -136,7 +136,7 @@ namespace Lokad.Cloud.Diagnostics
 					{
 						var containerName = LevelToContainer(level);
 						return _blobStorage.ListBlobNames(containerName, string.Empty)
-							.Select(blobName => Tuple.From(containerName, blobName))
+							.Select(blobName => System.Tuple.Create(containerName, blobName))
 							.GetEnumerator();
 					})
 				.ToList();
@@ -152,7 +152,7 @@ namespace Lokad.Cloud.Diagnostics
 			// Skip
 			for (var i = skip; i > 0 && enumerators.Count > 0; i--)
 			{
-				var max = enumerators.Aggregate((left, right) => string.Compare(left.Current.Value, right.Current.Value) < 0 ? left : right);
+				var max = enumerators.Aggregate((left, right) => string.Compare(left.Current.Item2, right.Current.Item2) < 0 ? left : right);
 				if (!max.MoveNext())
 				{
 					enumerators.Remove(max);
@@ -162,8 +162,8 @@ namespace Lokad.Cloud.Diagnostics
 			// actual iterator
 			while (enumerators.Count > 0)
 			{
-				var max = enumerators.Aggregate((left, right) => string.Compare(left.Current.Value, right.Current.Value) < 0 ? left : right);
-				var blob = _blobStorage.GetBlob<string>(max.Current.Key, max.Current.Value);
+				var max = enumerators.Aggregate((left, right) => string.Compare(left.Current.Item2, right.Current.Item2) < 0 ? left : right);
+				var blob = _blobStorage.GetBlob<string>(max.Current.Item1, max.Current.Item2);
 				if (blob.HasValue)
 				{
 					yield return ParseLogEntry(blob.Value);
