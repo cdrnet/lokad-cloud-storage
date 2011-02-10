@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -9,13 +9,14 @@ using System.Threading;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.ServiceFabric.Runtime;
 using NUnit.Framework;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Test.Diagnostics
 {
     [TestFixture]
     public class CloudLoggerTests
     {
-        readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<ILog>();
+        readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<Cloud.Storage.Shared.Logging.ILog>();
 
         [SetUp]
         public void Setup()
@@ -48,11 +49,11 @@ namespace Lokad.Cloud.Test.Diagnostics
             _logger.Info(new TriggerRestartException("CloudLoggerTests.Log"), "Not a restart, just a test.");
             _logger.Info(new TriggerRestartException("CloudLoggerTests.Log"), "Not a restart, just a test II.");
 
-            Assert.AreEqual(0, _logger.GetLogsOfLevel(LogLevel.Fatal).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(1, _logger.GetLogsOfLevel(LogLevel.Error).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(0, _logger.GetLogsOfLevel(LogLevel.Warn).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(2, _logger.GetLogsOfLevel(LogLevel.Info).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(0, _logger.GetLogsOfLevel(LogLevel.Debug).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(0, _logger.GetLogsOfLevel(Cloud.Storage.Shared.Logging.LogLevel.Fatal).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(1, _logger.GetLogsOfLevel(Cloud.Storage.Shared.Logging.LogLevel.Error).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(0, _logger.GetLogsOfLevel(Cloud.Storage.Shared.Logging.LogLevel.Warn).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(2, _logger.GetLogsOfLevel(Cloud.Storage.Shared.Logging.LogLevel.Info).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(0, _logger.GetLogsOfLevel(Cloud.Storage.Shared.Logging.LogLevel.Debug).Where(l => l.DateTimeUtc > now).Count());
         }
 
         [Test]
@@ -69,11 +70,11 @@ namespace Lokad.Cloud.Test.Diagnostics
             _logger.Info(new TriggerRestartException("CloudLoggerTests.Log"), "Not a restart, just a test.");
             _logger.Info(new TriggerRestartException("CloudLoggerTests.Log"), "Not a restart, just a test II.");
 
-            Assert.AreEqual(0, _logger.GetLogsOfLevelOrHigher(LogLevel.Fatal).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(1, _logger.GetLogsOfLevelOrHigher(LogLevel.Error).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(1, _logger.GetLogsOfLevelOrHigher(LogLevel.Warn).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(3, _logger.GetLogsOfLevelOrHigher(LogLevel.Info).Where(l => l.DateTimeUtc > now).Count());
-            Assert.AreEqual(3, _logger.GetLogsOfLevelOrHigher(LogLevel.Debug).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(0, _logger.GetLogsOfLevelOrHigher(Cloud.Storage.Shared.Logging.LogLevel.Fatal).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(1, _logger.GetLogsOfLevelOrHigher(Cloud.Storage.Shared.Logging.LogLevel.Error).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(1, _logger.GetLogsOfLevelOrHigher(Cloud.Storage.Shared.Logging.LogLevel.Warn).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(3, _logger.GetLogsOfLevelOrHigher(Cloud.Storage.Shared.Logging.LogLevel.Info).Where(l => l.DateTimeUtc > now).Count());
+            Assert.AreEqual(3, _logger.GetLogsOfLevelOrHigher(Cloud.Storage.Shared.Logging.LogLevel.Debug).Where(l => l.DateTimeUtc > now).Count());
         }
 
         [Test]
@@ -116,7 +117,7 @@ namespace Lokad.Cloud.Test.Diagnostics
             Thread.Sleep(100);
             var after = DateTime.UtcNow;
 
-            var entries = _logger.GetLogsOfLevelOrHigher(LogLevel.Info).Take(3).ToList();
+            var entries = _logger.GetLogsOfLevelOrHigher(Cloud.Storage.Shared.Logging.LogLevel.Info).Take(3).ToList();
 
             var beforeRef = (before - reference).TotalMilliseconds;
             var afterRef = (after - reference).TotalMilliseconds;

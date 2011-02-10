@@ -1,4 +1,9 @@
-﻿using System;
+﻿#region Copyright (c) Lokad 2010-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -12,7 +17,7 @@ namespace Lokad.Cloud.Web
     /// <remarks>This class grabs data to be pushed through the monitoring endpoint.</remarks>
     public class RsmHttpHandler : IHttpHandler
     {
-        readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<ILog>();
+        readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<Storage.Shared.Logging.ILog>();
         readonly IQueueStorageProvider _queues = GlobalSetup.Container.Resolve<IQueueStorageProvider>();
 
         public void ProcessRequest(HttpContext context)
@@ -48,7 +53,7 @@ namespace Lokad.Cloud.Web
 
         private IEnumerable<MonitoringMessageReport> ListLogMessages()
         {
-            return _logger.GetLogsOfLevelOrHigher(LogLevel.Warn)
+            return _logger.GetLogsOfLevelOrHigher(Storage.Shared.Logging.LogLevel.Warn)
                 .Take(20)
                 .Select(entry => new MonitoringMessageReport
                     {

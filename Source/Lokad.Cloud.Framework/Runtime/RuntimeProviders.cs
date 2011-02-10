@@ -30,7 +30,7 @@ namespace Lokad.Cloud.Runtime
         /// in case of runtime shutdown).</summary>
         public IRuntimeFinalizer RuntimeFinalizer { get; private set; }
 
-        public ILog Log { get; private set; }
+        public Storage.Shared.Logging.ILog Log { get; private set; }
 
         /// <summary>IoC constructor.</summary>
         public RuntimeProviders(
@@ -38,7 +38,7 @@ namespace Lokad.Cloud.Runtime
             IQueueStorageProvider queueStorage,
             ITableStorageProvider tableStorage,
             IRuntimeFinalizer runtimeFinalizer,
-            ILog log)
+            Storage.Shared.Logging.ILog log)
         {
             BlobStorage = blobStorage;
             QueueStorage = queueStorage;

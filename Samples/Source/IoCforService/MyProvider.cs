@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -9,9 +9,9 @@ namespace IoCforService
 	/// <summary>Sample provider, registered though Autofac module.</summary>
 	public class MyProvider
 	{
-		public MyProvider(ILog logger)
+        public MyProvider(Lokad.Cloud.Storage.Shared.Logging.ILog logger)
 		{
-			logger.Log(LogLevel.Info, "Client IoC module loaded.");
+            logger.Log(Lokad.Cloud.Storage.Shared.Logging.LogLevel.Info, "Client IoC module loaded.");
 		}
 	}
 }

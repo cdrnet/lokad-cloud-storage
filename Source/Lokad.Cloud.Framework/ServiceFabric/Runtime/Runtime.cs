@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -13,6 +13,7 @@ using Autofac.Builder;
 using Autofac.Configuration;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Runtime;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
 {
@@ -21,7 +22,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
     {
         readonly RuntimeProviders _runtimeProviders;
         readonly IRuntimeFinalizer _runtimeFinalizer;
-        readonly ILog _log;
+        readonly Storage.Shared.Logging.ILog _log;
 
         readonly IServiceMonitor _monitoring;
         readonly DiagnosticsAcquisition _diagnostics;

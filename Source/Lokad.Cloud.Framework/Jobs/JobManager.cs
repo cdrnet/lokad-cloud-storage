@@ -1,12 +1,14 @@
 ﻿using System;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Jobs
 {
+    /// <summary>NOT IMPLEMENTED YET.</summary>
     public class JobManager
     {
-        private readonly ILog _log;
+        private readonly Storage.Shared.Logging.ILog _log;
 
-        public JobManager(ILog log)
+        public JobManager(Storage.Shared.Logging.ILog log)
         {
             _log = log;
         }

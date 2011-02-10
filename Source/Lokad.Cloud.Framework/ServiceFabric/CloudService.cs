@@ -111,7 +111,7 @@ namespace Lokad.Cloud.ServiceFabric
         public ITableStorageProvider TableStorage { get { return Providers.TableStorage; } }
 
         /// <summary>Short-hand for <c>Providers.Log</c>.</summary>
-        public ILog Log { get { return RuntimeProviders.Log; } }
+        public Storage.Shared.Logging.ILog Log { get { return RuntimeProviders.Log; } }
 
         public JobManager Jobs { get; set; }
 

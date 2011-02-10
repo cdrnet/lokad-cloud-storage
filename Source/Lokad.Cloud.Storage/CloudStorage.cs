@@ -52,7 +52,7 @@ namespace Lokad.Cloud.Storage
             protected IDataSerializer DataSerializer { get; private set; }
 
             /// <remarks>Can be null if not needed</remarks>
-            protected ILog Log { get; private set; }
+            protected Shared.Logging.ILog Log { get; private set; }
 
             /// <remarks>Can be null if not needed</remarks>
             protected IRuntimeFinalizer RuntimeFinalizer { get; private set; }
@@ -66,7 +66,7 @@ namespace Lokad.Cloud.Storage
             /// <summary>
             /// Replace the default data serializer with a custom implementation
             /// </summary>
-            public CloudStorageBuilder WithDataSerializer(Shared.IDataSerializer dataSerializer)
+            public CloudStorageBuilder WithDataSerializer(IDataSerializer dataSerializer)
             {
                 DataSerializer = dataSerializer;
                 return this;
@@ -75,7 +75,7 @@ namespace Lokad.Cloud.Storage
             /// <summary>
             /// Optionally provide a log provider.
             /// </summary>
-            public CloudStorageBuilder WithLog(ILog log)
+            public CloudStorageBuilder WithLog(Shared.Logging.ILog log)
             {
                 Log = log;
                 return this;

@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Web.UI.WebControls;
 using Lokad.Cloud.Management.Api10;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Web
 {
@@ -17,7 +18,7 @@ namespace Lokad.Cloud.Web
     public partial class Assemblies : System.Web.UI.Page
     {
         readonly ICloudAssembliesApi _cloudAssemblies = GlobalSetup.Container.Resolve<ICloudAssembliesApi>();
-        readonly ILog _log = GlobalSetup.Container.Resolve<ILog>();
+        readonly Storage.Shared.Logging.ILog _log = GlobalSetup.Container.Resolve<Storage.Shared.Logging.ILog>();
 
         protected void Page_Load(object sender, EventArgs e)
         {

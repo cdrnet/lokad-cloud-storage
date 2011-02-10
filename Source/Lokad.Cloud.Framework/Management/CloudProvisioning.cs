@@ -14,13 +14,14 @@ using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Management.Azure;
 using Lokad.Cloud.Management.Azure.Entities;
 using Lokad.Cloud.Management.Azure.InputParameters;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Management
 {
     /// <summary>Azure Management API Provider, Provisioning Provider.</summary>
     public class CloudProvisioning : IProvisioningProvider, ICloudProvisioningApi 
     {
-        readonly ILog _log;
+        readonly Storage.Shared.Logging.ILog _log;
 
         readonly bool _enabled;
         readonly Maybe<X509Certificate2> _certificate = Maybe<X509Certificate2>.Empty;
@@ -39,7 +40,7 @@ namespace Lokad.Cloud.Management
         IAzureServiceManagement _channel;
 
         /// <summary>IoC constructor.</summary>>
-        public CloudProvisioning(ICloudConfigurationSettings settings, ILog log)
+        public CloudProvisioning(ICloudConfigurationSettings settings, Storage.Shared.Logging.ILog log)
         {
             _log = log;
             _retryPolicy = AzureManagementPolicies.TransientServerErrorBackOff;

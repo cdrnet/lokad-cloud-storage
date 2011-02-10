@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -14,7 +14,7 @@ namespace Lokad.Cloud.Web
 	{
 		private const int PageSize = 20;
 
-		readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<ILog>();
+        readonly CloudLogger _logger = (CloudLogger)GlobalSetup.Container.Resolve<Storage.Shared.Logging.ILog>();
 
 		protected void Page_Load(object sender, EventArgs e)
 		{
@@ -83,15 +83,15 @@ namespace Lokad.Cloud.Web
 			return logs;
 		}
 
-		LogLevel GetSelectedLevelThreshold()
+        Storage.Shared.Logging.LogLevel GetSelectedLevelThreshold()
 		{
 			var selectedString = LevelSelector.SelectedValue;
 			if(String.IsNullOrEmpty(selectedString))
 			{
-				return LogLevel.Min;
+                return Storage.Shared.Logging.LogLevel.Min;
 			}
 
-			return EnumUtil.Parse<LogLevel>(selectedString);
+            return EnumUtil.Parse<Storage.Shared.Logging.LogLevel>(selectedString);
 		}
 	}
 }

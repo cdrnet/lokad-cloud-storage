@@ -12,6 +12,8 @@ using System.Security;
 using System.Xml.XPath;
 using Lokad.Cloud.Storage;
 
+// TODO: clean-up the 'Storage.Shared.Logging.' type prefix once Lokad.Shared is removed.
+
 namespace Lokad.Cloud.Diagnostics
 {
 	/// <summary>
@@ -52,7 +54,7 @@ namespace Lokad.Cloud.Diagnostics
 	/// code paths while reading is almost never time-critical.
 	/// </para>
 	/// </remarks>
-	public class CloudLogger : ILog
+    public class CloudLogger : Storage.Shared.Logging.ILog
 	{
 		private const string ContainerNamePrefix = "lokad-cloud-logs";
 		private const int DeleteBatchSize = 50;
@@ -62,27 +64,27 @@ namespace Lokad.Cloud.Diagnostics
 
 		/// <summary>Minimal log level (inclusive), below this level,
 		/// notifications are ignored.</summary>
-		public LogLevel LogLevelThreshold { get; set; }
+		public Storage.Shared.Logging.LogLevel LogLevelThreshold { get; set; }
 
 		public CloudLogger(IBlobStorageProvider blobStorage, string source)
 		{
 			_blobStorage = blobStorage;
 			_source = source;
 
-			LogLevelThreshold = LogLevel.Min;
+            LogLevelThreshold = Storage.Shared.Logging.LogLevel.Min;
 		}
 
-		public bool IsEnabled(LogLevel level)
+        public bool IsEnabled(Storage.Shared.Logging.LogLevel level)
 		{
 			return level >= LogLevelThreshold;
 		}
 
-		public void Log(LogLevel level, object message)
+        public void Log(Storage.Shared.Logging.LogLevel level, object message)
 		{
 			Log(level, null, message);
 		}
 
-		public void Log(LogLevel level, Exception ex, object message)
+        public void Log(Storage.Shared.Logging.LogLevel level, Exception ex, object message)
 		{
 			if (!IsEnabled(level))
 			{
@@ -114,7 +116,7 @@ namespace Lokad.Cloud.Diagnostics
 		/// <summary>
 		/// Lazily enuerate all logs of the specified level, ordered with the newest entry first.
 		/// </summary>
-		public IEnumerable<LogEntry> GetLogsOfLevel(LogLevel level, int skip = 0)
+        public IEnumerable<LogEntry> GetLogsOfLevel(Storage.Shared.Logging.LogLevel level, int skip = 0)
 		{
 			return _blobStorage
 				.ListBlobs<string>(LevelToContainer(level), skip: skip)
@@ -124,14 +126,14 @@ namespace Lokad.Cloud.Diagnostics
 		/// <summary>
 		/// Lazily enuerate all logs of the specified level or higher, ordered with the newest entry first.
 		/// </summary>
-		public IEnumerable<LogEntry> GetLogsOfLevelOrHigher(LogLevel levelThreshold, int skip = 0)
+        public IEnumerable<LogEntry> GetLogsOfLevelOrHigher(Storage.Shared.Logging.LogLevel levelThreshold, int skip = 0)
 		{
 			// We need to sort by date (desc), but want to do it lazily based on
 			// the guarantee that the enumerators themselves are ordered alike.
 			// To do that we always select the newest value, move next, and repeat.
 
-			var enumerators = EnumUtil<LogLevel>.Values
-				.Where(l => l >= levelThreshold && l < LogLevel.Max && l > LogLevel.Min)
+            var enumerators = EnumUtil<Storage.Shared.Logging.LogLevel>.Values
+                .Where(l => l >= levelThreshold && l < Storage.Shared.Logging.LogLevel.Max && l > Storage.Shared.Logging.LogLevel.Min)
 				.Select(level =>
 					{
 						var containerName = LevelToContainer(level);
@@ -180,7 +182,7 @@ namespace Lokad.Cloud.Diagnostics
 		/// <returns></returns>
 		public IEnumerable<LogEntry> GetLogs(int skip = 0)
 		{
-			return GetLogsOfLevelOrHigher(LogLevel.Min, skip);
+            return GetLogsOfLevelOrHigher(Storage.Shared.Logging.LogLevel.Min, skip);
 		}
 
 		/// <summary>
@@ -188,7 +190,8 @@ namespace Lokad.Cloud.Diagnostics
 		/// </summary>
 		public void DeleteAllLogs()
 		{
-			foreach (var level in EnumUtil<LogLevel>.Values.Where(l => l < LogLevel.Max && l > LogLevel.Min))
+            foreach (var level in EnumUtil<Storage.Shared.Logging.LogLevel>.Values
+                .Where(l => l < Storage.Shared.Logging.LogLevel.Max && l > Storage.Shared.Logging.LogLevel.Min))
 			{
 				_blobStorage.DeleteContainerIfExist(LevelToContainer(level));
 			}
@@ -199,7 +202,8 @@ namespace Lokad.Cloud.Diagnostics
 		/// </summary>
 		public void DeleteOldLogs(DateTime olderThanUtc)
 		{
-			foreach (var level in EnumUtil<LogLevel>.Values.Where(l => l < LogLevel.Max && l > LogLevel.Min))
+            foreach (var level in EnumUtil<Storage.Shared.Logging.LogLevel>.Values
+                .Where(l => l < Storage.Shared.Logging.LogLevel.Max && l > Storage.Shared.Logging.LogLevel.Min))
 			{
 				DeleteOldLogsOfLevel(level, olderThanUtc);
 			}
@@ -208,7 +212,7 @@ namespace Lokad.Cloud.Diagnostics
 		/// <summary>
 		/// Deletes all the logs of a level and older than the provided date.
 		/// </summary>
-		public void DeleteOldLogsOfLevel(LogLevel level, DateTime olderThanUtc)
+        public void DeleteOldLogsOfLevel(Storage.Shared.Logging.LogLevel level, DateTime olderThanUtc)
 		{
 			// Algorithm:
 			// Iterate over the logs, queuing deletions up to 50 items at a time,
@@ -237,7 +241,7 @@ namespace Lokad.Cloud.Diagnostics
 			} while (deleteQueue.Count > 0);
 		}
 
-		private static string LevelToContainer(LogLevel level)
+        private static string LevelToContainer(Storage.Shared.Logging.LogLevel level)
 		{
 			return ContainerNamePrefix + "-" + level.ToString().ToLower();
 		}
@@ -316,19 +320,19 @@ namespace Lokad.Cloud.Diagnostics
 		}
 	}
 
-	///<summary>
-	/// Log provider for the cloud logger
-	///</summary>
-	public class CloudLogProvider : ILogProvider
+	///<summary>Log provider for the cloud logger.</summary>
+    public class CloudLogProvider : Storage.Shared.Logging.ILogProvider
 	{
 		readonly IBlobStorageProvider _provider;
 
+        /// <summary>IoC constructor.</summary>
 		public CloudLogProvider(IBlobStorageProvider provider)
 		{
 			_provider = provider;
 		}
 
-		ILog IProvider<string, ILog>.Get(string key)
+        /// <remarks></remarks>
+        public Storage.Shared.Logging.ILog Get(string key)
 		{
 			return new CloudLogger(_provider, key);
 		}

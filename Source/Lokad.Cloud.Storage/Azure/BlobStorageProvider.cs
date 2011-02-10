@@ -17,6 +17,7 @@ using Lokad.Diagnostics;
 using Lokad.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -37,7 +38,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IDataSerializer _serializer;
         readonly ActionPolicy _azureServerPolicy;
         readonly ActionPolicy _networkPolicy;
-        readonly ILog _log;
+        readonly Shared.Logging.ILog _log;
 
         // Instrumentation
         readonly ExecutionCounter _countPutBlob;
@@ -47,7 +48,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countUpsertBlobOrSkip;
         readonly ExecutionCounter _countDeleteBlob;
 
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log = null)
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, Shared.Logging.ILog log = null)
         {
             _blobStorage = blobStorage;
             _serializer = serializer;

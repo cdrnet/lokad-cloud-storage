@@ -33,7 +33,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             InitializeDeploymentTenant(hostedServiceName);
 
             var entries = new CloudLogger(Providers.BlobStorage, string.Empty)
-                .GetLogsOfLevelOrHigher(LogLevel.Info)
+                .GetLogsOfLevelOrHigher(Storage.Shared.Logging.LogLevel.Info)
                 .Take(InitialEntriesCount);
 
             return View(LogEntriesToModel(entries.ToArray(), InitialEntriesCount));
@@ -47,7 +47,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             InitializeDeploymentTenant(hostedServiceName);
 
             var entries = new CloudLogger(Providers.BlobStorage, string.Empty)
-                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true), skip);
+                .GetLogsOfLevelOrHigher(EnumUtil.Parse<Storage.Shared.Logging.LogLevel>(threshold, true), skip);
 
             if (!string.IsNullOrWhiteSpace(olderThanToken))
             {
@@ -70,7 +70,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             InitializeDeploymentTenant(hostedServiceName);
 
             var entry = new CloudLogger(Providers.BlobStorage, string.Empty)
-                .GetLogsOfLevelOrHigher(EnumUtil.Parse<LogLevel>(threshold, true))
+                .GetLogsOfLevelOrHigher(EnumUtil.Parse<Storage.Shared.Logging.LogLevel>(threshold, true))
                 .FirstOrEmpty();
 
             if (entry.HasValue && string.Compare(EntryToToken(entry.Value), newerThanToken) > 0)

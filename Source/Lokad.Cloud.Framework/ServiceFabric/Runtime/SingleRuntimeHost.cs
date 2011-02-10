@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Security;
 using System.Threading;
 using Autofac.Builder;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
 {
@@ -103,7 +104,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 
             using (var runtimeContainer = runtimeBuilder.Build())
             {
-                var log = runtimeContainer.Resolve<ILog>();
+                var log = runtimeContainer.Resolve<Storage.Shared.Logging.ILog>();
 
                 _runtime = null;
                 try

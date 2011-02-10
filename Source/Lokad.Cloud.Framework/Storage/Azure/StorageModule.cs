@@ -78,7 +78,7 @@ namespace Lokad.Cloud.Storage.Azure
                 c.Resolve<IQueueStorageProvider>(),
                 c.Resolve<ITableStorageProvider>(),
                 c.ResolveOptional<IRuntimeFinalizer>(),
-                c.ResolveOptional<ILog>());
+                c.ResolveOptional<Storage.Shared.Logging.ILog>());
         }
 
         static ITableStorageProvider TableStorageProvider(IContext c)
@@ -110,7 +110,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // This dependency is typically not available in a pure O/C mapper scenario.
                 // In such case, we just pass a dummy finalizer (that won't be used any
                 c.ResolveOptional<IRuntimeFinalizer>(),
-                c.ResolveOptional<ILog>());
+                c.ResolveOptional<Storage.Shared.Logging.ILog>());
         }
 
         static IBlobStorageProvider BlobStorageProvider(IContext c)
@@ -124,7 +124,7 @@ namespace Lokad.Cloud.Storage.Azure
             return new BlobStorageProvider(
                 c.Resolve<CloudBlobClient>(),
                 formatter,
-                c.ResolveOptional<ILog>());
+                c.ResolveOptional<Storage.Shared.Logging.ILog>());
         }
 
         static CloudTableClient TableClient(IContext c)
