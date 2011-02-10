@@ -82,15 +82,33 @@ namespace Lokad.Cloud.Storage
 
         static object InternalParse(string value, Type type)
         {
-            var func = Parsers.GetValue(type, s => Convert.ChangeType(s, type));
+            var func = GetValue(Parsers, type, s => Convert.ChangeType(s, type));
             return func(value);
         }
 
 
         static string InternalPrint(object value, Type type)
         {
-            var func = Printers.GetValue(type, o => o.ToString());
+            var func = GetValue(Printers, type, o => o.ToString());
             return func(value);
+        }
+
+        /// <summary>Returns <paramref name="defaultValue"/> if the given <paramref name="key"/>
+        /// is not present within the dictionary.</summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="self">The dictionary.</param>
+        /// <param name="key">The key to look for.</param>
+        /// <param name="defaultValue">The default value.</param>
+        /// <returns>value matching <paramref name="key"/> or <paramref name="defaultValue"/> if none is found</returns>
+        static TValue GetValue<TKey, TValue>(IDictionary<TKey, TValue> self, TKey key, TValue defaultValue)
+        {
+            TValue value;
+            if (self.TryGetValue(key, out value))
+            {
+                return value;
+            }
+            return defaultValue;
         }
 
         class ConverterTypeCache<T>
