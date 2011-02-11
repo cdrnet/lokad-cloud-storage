@@ -80,6 +80,11 @@
     <Compile Include="Queues\MessageEnvelope.cs" />
     <Compile Include="Queues\MessageWrapper.cs" />
     <Compile Include="Queues\QueueStorageExtensions.cs" />
+    <Compile Include="Shared\Monads\Maybe.1.cs" />
+    <Compile Include="Shared\Monads\Maybe.cs" />
+    <Compile Include="Shared\Monads\Result.1.cs" />
+    <Compile Include="Shared\Monads\Result.2.cs" />
+    <Compile Include="Shared\Monads\Result.cs" />
     <Compile Include="Shared\Policies\ActionPolicy.cs" />
     <Compile Include="Shared\Policies\ExceptionHandler.cs" />
     <Compile Include="Shared\Policies\ExceptionHandlerSyntax.cs" />

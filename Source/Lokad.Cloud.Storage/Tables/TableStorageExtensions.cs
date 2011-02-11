@@ -17,9 +17,9 @@ namespace Lokad.Cloud.Storage
     {
         /// <summary>Gets the specified cloud entity if it exists.</summary>
         /// <typeparam name="T"></typeparam>
-        public static Maybe<CloudEntity<T>> Get<T>(this ITableStorageProvider provider, string tableName, string partitionName, string rowKey)
+        public static Shared.Monads.Maybe<CloudEntity<T>> Get<T>(this ITableStorageProvider provider, string tableName, string partitionName, string rowKey)
         {
-            return provider.Get<T>(tableName, partitionName, new[] { rowKey }).FirstOrEmpty();
+            return Shared.Monads.Maybe.FirstOrEmpty(provider.Get<T>(tableName, partitionName, new[] { rowKey }));
         }
 
         /// <summary>Gets a strong typed wrapper around the table storage provider.</summary>

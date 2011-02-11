@@ -6,12 +6,13 @@
 using System;
 using System.Linq;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Test;
 using Lokad.Threading;
 using NUnit.Framework;
 
 // TODO: refactor tests so that containers do not have to be created each time.
 
-namespace Lokad.Cloud.Test.Storage
+namespace Lokad.Cloud.Storage.Test
 {
     [TestFixture]
     public class BlobStorageProviderTests
@@ -237,7 +238,7 @@ namespace Lokad.Cloud.Test.Storage
 // ReSharper disable AccessToModifiedClosure
 
             // skip insert
-            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip(ContainerName, blobName, () => Maybe<int>.Empty, x => ++updated).HasValue);
+            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip(ContainerName, blobName, () => Shared.Monads.Maybe<int>.Empty, x => ++updated).HasValue);
             Assert.AreEqual(0, inserted);
             Assert.AreEqual(10, updated);
             Assert.IsFalse(_blobStorage.GetBlob<int>(ContainerName, blobName).HasValue);
@@ -249,7 +250,7 @@ namespace Lokad.Cloud.Test.Storage
             Assert.AreEqual(1, _blobStorage.GetBlob<int>(ContainerName, blobName).Value);
 
             // skip update
-            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => Maybe<int>.Empty).HasValue);
+            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => Shared.Monads.Maybe<int>.Empty).HasValue);
             Assert.AreEqual(1, inserted);
             Assert.AreEqual(10, updated);
             Assert.AreEqual(1, _blobStorage.GetBlob<int>(ContainerName, blobName).Value);
@@ -274,7 +275,7 @@ namespace Lokad.Cloud.Test.Storage
         {
             _blobStorage.PutBlob(ContainerName, BlobName, 0);
 
-            var array = new Maybe<int>[8];
+            var array = new Shared.Monads.Maybe<int>[8];
             array = array.SelectInParallel(
                 k => _blobStorage.UpsertBlobOrSkip<int>(
                     ContainerName, BlobName,

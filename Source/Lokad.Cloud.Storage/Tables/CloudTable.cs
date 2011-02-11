@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Storage
 {
@@ -41,9 +42,9 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <seealso cref="ITableStorageProvider.Get{T}(string, string)"/>
-        public Maybe<CloudEntity<T>> Get(string partitionName, string rowKey)
+        public Shared.Monads.Maybe<CloudEntity<T>> Get(string partitionName, string rowKey)
         {
-            return _provider.Get<T>(_tableName, partitionName, new[] { rowKey }).FirstOrEmpty();
+            return Shared.Monads.Maybe.FirstOrEmpty(_provider.Get<T>(_tableName, partitionName, new[] { rowKey }));
         }
 
         /// <seealso cref="ITableStorageProvider.Get{T}(string)"/>

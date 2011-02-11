@@ -602,7 +602,7 @@ namespace Lokad.Cloud.Storage.Azure
             return _blobStorage.ListBlobNames(blobPrefix).Select(blobReference => blobReference.Key);
         }
 
-        public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
+        public Shared.Monads.Maybe<PersistedMessage> GetPersisted(string storeName, string key)
         {
             // 1. GET PERSISTED MESSAGE BLOB
 
@@ -610,12 +610,12 @@ namespace Lokad.Cloud.Storage.Azure
             var blob = _blobStorage.GetBlob(blobReference);
             if (!blob.HasValue)
             {
-                return Maybe<PersistedMessage>.Empty;
+                return Shared.Monads.Maybe<PersistedMessage>.Empty;
             }
 
             var persistedMessage = blob.Value;
             var data = persistedMessage.Data;
-            var dataXml = Maybe<XElement>.Empty;
+            var dataXml = Shared.Monads.Maybe<XElement>.Empty;
 
             // 2. IF WRAPPED, UNWRAP; UNPACK XML IF SUPPORTED
 
@@ -912,7 +912,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>
         /// Gets the approximate age of the top message of this queue.
         /// </summary>
-        public Maybe<TimeSpan> GetApproximateLatency(string queueName)
+        public Shared.Monads.Maybe<TimeSpan> GetApproximateLatency(string queueName)
         {
             var queue = _queueStorage.GetQueueReference(queueName);
             CloudQueueMessage rawMessage;
@@ -926,7 +926,7 @@ namespace Lokad.Cloud.Storage.Azure
                 if (ex.ErrorCode == StorageErrorCode.ResourceNotFound
                     || ex.ExtendedErrorInformation.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
                 {
-                    return Maybe<TimeSpan>.Empty;
+                    return Shared.Monads.Maybe<TimeSpan>.Empty;
                 }
 
                 throw;
@@ -934,7 +934,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             if(rawMessage == null || !rawMessage.InsertionTime.HasValue)
             {
-                return Maybe<TimeSpan>.Empty;
+                return Shared.Monads.Maybe<TimeSpan>.Empty;
             }
 
             var latency = DateTimeOffset.UtcNow - rawMessage.InsertionTime.Value;

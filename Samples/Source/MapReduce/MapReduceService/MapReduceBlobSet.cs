@@ -50,7 +50,7 @@ namespace Lokad.Cloud.Samples.MapReduce
 			_queueStorage = queueStorage;
 		}
 
-		Maybe<MapReduceConfiguration> GetJobConfig(string jobName)
+        Storage.Shared.Monads.Maybe<MapReduceConfiguration> GetJobConfig(string jobName)
 		{
 			var configBlobName = MapReduceConfigurationName.Create(jobName);
 			var config = _blobStorage.GetBlob(configBlobName);

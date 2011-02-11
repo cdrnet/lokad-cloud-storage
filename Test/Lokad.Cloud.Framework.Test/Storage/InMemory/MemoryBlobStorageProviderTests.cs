@@ -6,10 +6,10 @@
 using System;
 using System.Linq;
 using System.Threading;
-using Lokad.Cloud.Storage.InMemory;
+using Lokad.Cloud.Storage.Test;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Test.Storage.InMemory
+namespace Lokad.Cloud.Storage.InMemory.Test
 {
     [TestFixture]
     public class MemoryBlobStorageProviderTests : BlobStorageProviderTests

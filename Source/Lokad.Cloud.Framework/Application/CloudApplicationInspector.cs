@@ -25,7 +25,7 @@ namespace Lokad.Cloud.Application
         public Maybe<CloudApplicationDefinition> Inspect()
         {
             var definitionBlob = _blobs.GetBlob<CloudApplicationDefinition>(ContainerName, ApplicationDefinitionBlobName);
-            Maybe<byte[]> packageBlob;
+            Storage.Shared.Monads.Maybe<byte[]> packageBlob;
             string packageETag;
 
             if (definitionBlob.HasValue)

@@ -243,19 +243,19 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        public Maybe<T> GetBlob<T>(string containerName, string blobName)
+        public Shared.Monads.Maybe<T> GetBlob<T>(string containerName, string blobName)
         {
             string ignoredEtag;
             return GetBlob<T>(containerName, blobName, out ignoredEtag);
         }
 
-        public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
+        public Shared.Monads.Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
         {
             return GetBlob(containerName, blobName, typeof(T), out etag)
-                .Convert(o => (T)o, Maybe<T>.Empty);
+                .Convert(o => (T)o, Shared.Monads.Maybe<T>.Empty);
         }
 
-        public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
+        public Shared.Monads.Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
         {
             var timestamp = _countGetBlob.Open();
 
@@ -284,7 +284,7 @@ namespace Lokad.Cloud.Storage.Azure
                         || ex.ErrorCode == StorageErrorCode.BlobNotFound
                             || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
                     {
-                        return Maybe<object>.Empty;
+                        return Shared.Monads.Maybe<object>.Empty;
                     }
 
                     throw;
@@ -306,14 +306,14 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag)
+        public Shared.Monads.Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag)
         {
             etag = null;
 
             var formatter = _serializer as IIntermediateDataSerializer;
             if (formatter == null)
             {
-                return Maybe<XElement>.Empty;
+                return Shared.Monads.Maybe<XElement>.Empty;
             }
 
             var container = _blobStorage.GetContainerReference(containerName);
@@ -339,7 +339,7 @@ namespace Lokad.Cloud.Storage.Azure
                         || ex.ErrorCode == StorageErrorCode.BlobNotFound
                             || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
                     {
-                        return Maybe<XElement>.Empty;
+                        return Shared.Monads.Maybe<XElement>.Empty;
                     }
 
                     throw;
@@ -350,17 +350,17 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        public Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
+        public Shared.Monads.Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
         {
             var tempResult = blobNames.SelectInParallel(blobName =>
             {
                 string etag;
                 var blob = GetBlob<T>(containerName, blobName, out etag);
-                return new System.Tuple<Maybe<T>, string>(blob, etag);
+                return new System.Tuple<Shared.Monads.Maybe<T>, string>(blob, etag);
             }, blobNames.Length);
 
             etags = new string[blobNames.Length];
-            var result = new Maybe<T>[blobNames.Length];
+            var result = new Shared.Monads.Maybe<T>[blobNames.Length];
 
             for (int i = 0; i < tempResult.Length; i++)
             {
@@ -371,7 +371,7 @@ namespace Lokad.Cloud.Storage.Azure
             return result;
         }
 
-        public Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag)
+        public Shared.Monads.Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag)
         {
             // 'oldEtag' is null, then behavior always match simple 'GetBlob'.
             if (null == oldEtag)
@@ -427,7 +427,7 @@ namespace Lokad.Cloud.Storage.Azure
                     // see http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/4817cafa-12d8-4979-b6a7-7bda053e6b21
                     ex.Message == @"The condition specified using HTTP conditional header(s) is not met.")
                 {
-                    return Maybe<T>.Empty;
+                    return Shared.Monads.Maybe<T>.Empty;
                 }
 
                 // call fails due to misc problems
@@ -435,7 +435,7 @@ namespace Lokad.Cloud.Storage.Azure
                     || ex.ErrorCode == StorageErrorCode.BlobNotFound
                         || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
                 {
-                    return Maybe<T>.Empty;
+                    return Shared.Monads.Maybe<T>.Empty;
                 }
 
                 throw;
@@ -496,7 +496,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 var container = _blobStorage.GetContainerReference(containerName);
 
-                Func<Maybe<string>> doUpload = () =>
+                Func<Shared.Monads.Maybe<string>> doUpload = () =>
                 {
                     var blob = container.GetBlockBlobReference(blobName);
 
@@ -526,7 +526,7 @@ namespace Lokad.Cloud.Storage.Azure
                     {
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
-                        var tentativeEtag = Maybe<string>.Empty;
+                        var tentativeEtag = Shared.Monads.Maybe<string>.Empty;
                         AzurePolicies.SlowInstantiation.Do(() =>
                         {
                             _azureServerPolicy.Get(container.CreateIfNotExist);
@@ -577,7 +577,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="expectedEtag">When specified, no writing occurs unless the blob etag
         /// matches the one specified as argument.</param>
         /// <returns>The ETag of the written blob, if it was written.</returns>
-        Maybe<string> UploadBlobContent(CloudBlob blob, Stream stream, bool overwrite, string expectedEtag)
+        Shared.Monads.Maybe<string> UploadBlobContent(CloudBlob blob, Stream stream, bool overwrite, string expectedEtag)
         {
             BlobRequestOptions options;
 
@@ -608,28 +608,31 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 if (ex.ErrorCode == StorageErrorCode.ConditionFailed)
                 {
-                    return Maybe<string>.Empty;
+                    return Shared.Monads.Maybe<string>.Empty;
                 }
 
                 throw;
             }
 
-            return Maybe.From(blob.Properties.ETag);
+            return Shared.Monads.Maybe.From(blob.Properties.ETag);
         }
 
-        public Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update)
+        public Shared.Monads.Maybe<T> UpdateBlobIfExist<T>(
+            string containerName, string blobName, Func<T, T> update)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t));
+            return UpsertBlobOrSkip(containerName, blobName, () => Shared.Monads.Maybe<T>.Empty, t => update(t));
         }
 
-        public Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpdateBlobIfExistOrSkip<T>(
+            string containerName, string blobName, Func<T, Shared.Monads.Maybe<T>> update)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
+            return UpsertBlobOrSkip(containerName, blobName, () => Shared.Monads.Maybe<T>.Empty, update);
         }
 
-        public Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpdateBlobIfExistOrDelete<T>(
+            string containerName, string blobName, Func<T, Shared.Monads.Maybe<T>> update)
         {
-            var result = UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
+            var result = UpsertBlobOrSkip(containerName, blobName, () => Shared.Monads.Maybe<T>.Empty, update);
             if (!result.HasValue)
             {
                 DeleteBlobIfExist(containerName, blobName);
@@ -643,14 +646,15 @@ namespace Lokad.Cloud.Storage.Azure
             return UpsertBlobOrSkip<T>(containerName, blobName, () => insert(), t => update(t)).Value;
         }
 
-        public Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpsertBlobOrSkip<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>> insert, Func<T, Shared.Monads.Maybe<T>> update)
         {
             var timestamp = _countUpsertBlobOrSkip.Open();
 
             var container = _blobStorage.GetContainerReference(containerName);
             var blob = container.GetBlockBlobReference(blobName);
 
-            Maybe<T> output;
+            Shared.Monads.Maybe<T> output;
 
             TimeSpan retryInterval;
             var retryPolicy = AzurePolicies.OptimisticConcurrency();
@@ -658,7 +662,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 // 1. DOWNLOAD EXISTING INPUT BLOB, IF IT EXISTS
 
-                Maybe<T> input;
+                Shared.Monads.Maybe<T> input;
                 bool inputBlobExists = false;
                 string inputETag = null;
 
@@ -696,7 +700,7 @@ namespace Lokad.Cloud.Storage.Azure
                         || ex.ErrorCode == StorageErrorCode.BlobNotFound
                             || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
                     {
-                        input = Maybe<T>.Empty;
+                        input = Shared.Monads.Maybe<T>.Empty;
 
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
@@ -753,7 +757,8 @@ namespace Lokad.Cloud.Storage.Azure
             throw new TimeoutException("Failed to resolve optimistic concurrency errors within a limited number of retrials");
         }
 
-        public Maybe<T> UpsertBlobOrDelete<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpsertBlobOrDelete<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>> insert, Func<T, Shared.Monads.Maybe<T>> update)
         {
             var result = UpsertBlobOrSkip(containerName, blobName, insert, update);
             if (!result.HasValue)
@@ -816,7 +821,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        public Result<string> TryAcquireLease(string containerName, string blobName)
+        public Shared.Monads.Result<string> TryAcquireLease(string containerName, string blobName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
             var blob = container.GetBlockBlobReference(blobName);
@@ -838,7 +843,7 @@ namespace Lokad.Cloud.Storage.Azure
                     case HttpStatusCode.Conflict:
                     case HttpStatusCode.RequestTimeout:
                     case HttpStatusCode.InternalServerError:
-                        return Result<string>.CreateError(statusCode.ToString());
+                        return Shared.Monads.Result<string>.CreateError(statusCode.ToString());
                     default:
                         throw;
                 }
@@ -847,8 +852,8 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 return response.StatusCode == HttpStatusCode.Created
-                    ? Result<string>.CreateSuccess(response.Headers["x-ms-lease-id"])
-                    : Result<string>.CreateError(response.StatusCode.ToString());
+                    ? Shared.Monads.Result<string>.CreateSuccess(response.Headers["x-ms-lease-id"])
+                    : Shared.Monads.Result<string>.CreateError(response.StatusCode.ToString());
             }
             finally
             {
@@ -934,37 +939,39 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Shared.Monads.Maybe<T>, T> updater)
         {
-            return ((IBlobStorageProvider)this).UpdateIfNotModified<T>(containerName, blobName, x => Result.CreateSuccess(updater(x)));
+            return ((IBlobStorageProvider)this).UpdateIfNotModified<T>(containerName, blobName, x => Shared.Monads.Result.CreateSuccess(updater(x)));
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Shared.Monads.Maybe<T>, Shared.Monads.Result<T>> updater)
         {
-            Result<T> ignored;
+            Shared.Monads.Result<T> ignored;
             return ((IBlobStorageProvider)this).UpdateIfNotModified(containerName, blobName, updater, out ignored);
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater, out T result)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Shared.Monads.Maybe<T>, T> updater, out T result)
         {
-            Result<T> rresult;
-            var flag = ((IBlobStorageProvider)this).UpdateIfNotModified(containerName, blobName, x => Result.CreateSuccess(updater(x)), out rresult);
+            Shared.Monads.Result<T> rresult;
+            var flag = ((IBlobStorageProvider)this).UpdateIfNotModified(containerName, blobName, x => Shared.Monads.Result.CreateSuccess(updater(x)), out rresult);
 
             result = rresult.Value;
             return flag;
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater, out Result<T> result)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(
+            string containerName, string blobName, 
+            Func<Shared.Monads.Maybe<T>, Shared.Monads.Result<T>> updater, out Shared.Monads.Result<T> result)
         {
             var timestamp = _countUpdateIfNotModified.Open();
 
             var container = _blobStorage.GetContainerReference(containerName);
             CloudBlockBlob blob = null;
 
-            Maybe<T> input;
+            Shared.Monads.Maybe<T> input;
             string originalEtag = null;
             try
             {
@@ -1001,7 +1008,7 @@ namespace Lokad.Cloud.Storage.Azure
                     || ex.ErrorCode == StorageErrorCode.BlobNotFound
                         || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
                 {
-                    input = Maybe<T>.Empty;
+                    input = Shared.Monads.Maybe<T>.Empty;
 
                     // caution: the container might have been freshly deleted
                     // (multiple retries are needed in such a situation)

@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Threading;
 
 namespace Lokad.Cloud.Storage.InMemory
 {
@@ -132,19 +131,19 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Maybe<T> GetBlob<T>(string containerName, string blobName)
+        public Shared.Monads.Maybe<T> GetBlob<T>(string containerName, string blobName)
         {
             string ignoredEtag;
             return GetBlob<T>(containerName, blobName, out ignoredEtag);
         }
 
-        public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
+        public Shared.Monads.Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
         {
             return GetBlob(containerName, blobName, typeof(T), out etag)
-                .Convert(o => o is T ? (T)o : Maybe<T>.Empty, Maybe<T>.Empty);
+                .Convert(o => o is T ? (T)o : Shared.Monads.Maybe<T>.Empty, Shared.Monads.Maybe<T>.Empty);
         }
 
-        public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
+        public Shared.Monads.Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
         {
             lock (_syncRoot)
             {
@@ -152,7 +151,7 @@ namespace Lokad.Cloud.Storage.InMemory
                     || !Containers[containerName].BlobNames.Contains(blobName))
                 {
                     etag = null;
-                    return Maybe<object>.Empty;
+                    return Shared.Monads.Maybe<object>.Empty;
                 }
 
                 etag = Containers[containerName].BlobsEtag[blobName];
@@ -160,14 +159,14 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag)
+        public Shared.Monads.Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag)
         {
             etag = null;
 
             var formatter = DataSerializer as IIntermediateDataSerializer;
             if (formatter == null)
             {
-                return Maybe<XElement>.Empty;
+                return Shared.Monads.Maybe<XElement>.Empty;
             }
 
             object data;
@@ -176,7 +175,7 @@ namespace Lokad.Cloud.Storage.InMemory
                 if (!Containers.ContainsKey(containerName)
                     || !Containers[containerName].BlobNames.Contains(blobName))
                 {
-                    return Maybe<XElement>.Empty;
+                    return Shared.Monads.Maybe<XElement>.Empty;
                 }
 
                 etag = Containers[containerName].BlobsEtag[blobName];
@@ -187,23 +186,23 @@ namespace Lokad.Cloud.Storage.InMemory
             {
                 formatter.Serialize(data, stream);
                 stream.Position = 0;
-                return Maybe.From(formatter.UnpackXml(stream));
+                return Shared.Monads.Maybe.From(formatter.UnpackXml(stream));
             }
         }
 
-        public Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
+        public Shared.Monads.Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
         {
             // Copy-paste from BlobStorageProvider.cs
 
-            var tempResult = blobNames.SelectInParallel(blobName =>
+            var tempResult = blobNames.Select(blobName =>
             {
                 string etag;
                 var blob = GetBlob<T>(containerName, blobName, out etag);
-                return new System.Tuple<Maybe<T>, string>(blob, etag);
-            }, blobNames.Length);
+                return new System.Tuple<Shared.Monads.Maybe<T>, string>(blob, etag);
+            }).ToArray();
 
             etags = new string[blobNames.Length];
-            var result = new Maybe<T>[blobNames.Length];
+            var result = new Shared.Monads.Maybe<T>[blobNames.Length];
 
             for (int i = 0; i < tempResult.Length; i++)
             {
@@ -214,7 +213,7 @@ namespace Lokad.Cloud.Storage.InMemory
             return result;
         }
 
-        public Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag)
+        public Shared.Monads.Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag)
         {
             lock (_syncRoot)
             {
@@ -223,7 +222,7 @@ namespace Lokad.Cloud.Storage.InMemory
                 if (currentEtag == oldEtag)
                 {
                     newEtag = null;
-                    return Maybe<T>.Empty;
+                    return Shared.Monads.Maybe<T>.Empty;
                 }
 
                 newEtag = currentEtag;
@@ -315,19 +314,19 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update)
+        public Shared.Monads.Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t));
+            return UpsertBlobOrSkip(containerName, blobName, () => Shared.Monads.Maybe<T>.Empty, t => update(t));
         }
 
-        public Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Shared.Monads.Maybe<T>> update)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
+            return UpsertBlobOrSkip(containerName, blobName, () => Shared.Monads.Maybe<T>.Empty, update);
         }
 
-        public Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Shared.Monads.Maybe<T>> update)
         {
-            var result = UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
+            var result = UpsertBlobOrSkip(containerName, blobName, () => Shared.Monads.Maybe<T>.Empty, update);
             if (!result.HasValue)
             {
                 DeleteBlobIfExist(containerName, blobName);
@@ -341,27 +340,28 @@ namespace Lokad.Cloud.Storage.InMemory
             return UpsertBlobOrSkip<T>(containerName, blobName, () => insert(), t => update(t)).Value;
         }
 
-        public Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpsertBlobOrSkip<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>> insert, Func<T, Shared.Monads.Maybe<T>> update)
         {
             lock (_syncRoot)
             {
-                Maybe<T> input;
+                Shared.Monads.Maybe<T> input;
                 if (Containers.ContainsKey(containerName))
                 {
                     if (Containers[containerName].BlobNames.Contains(blobName))
                     {
                         var blobData = Containers[containerName].GetBlob(blobName);
-                        input = blobData == null ? Maybe<T>.Empty : (T)blobData;
+                        input = blobData == null ? Shared.Monads.Maybe<T>.Empty : (T)blobData;
                     }
                     else
                     {
-                        input = Maybe<T>.Empty;
+                        input = Shared.Monads.Maybe<T>.Empty;
                     }
                 }
                 else
                 {
                     Containers.Add(containerName, new MockContainer());
-                    input = Maybe<T>.Empty;
+                    input = Shared.Monads.Maybe<T>.Empty;
                 }
 
                 var output = input.HasValue ? update(input.Value) : insert();
@@ -375,7 +375,8 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Maybe<T> UpsertBlobOrDelete<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+        public Shared.Monads.Maybe<T> UpsertBlobOrDelete<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>> insert, Func<T, Shared.Monads.Maybe<T>> update)
         {
             var result = UpsertBlobOrSkip(containerName, blobName, insert, update);
             if (!result.HasValue)
@@ -429,7 +430,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Result<string> TryAcquireLease(string containerName, string blobName)
+        public Shared.Monads.Result<string> TryAcquireLease(string containerName, string blobName)
         {
             lock (_syncRoot)
             {
@@ -437,10 +438,10 @@ namespace Lokad.Cloud.Storage.InMemory
                 {
                     var leaseId = Guid.NewGuid().ToString("N");
                     Containers[containerName].BlobsLeases[blobName] = leaseId;
-                    return Result.CreateSuccess(leaseId);
+                    return Shared.Monads.Result.CreateSuccess(leaseId);
                 }
 
-                return Result<string>.CreateError("Conflict");
+                return Shared.Monads.Result<string>.CreateError("Conflict");
             }
         }
 
@@ -486,27 +487,28 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater, out Result<T> result)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>, Shared.Monads.Result<T>> updater, out Shared.Monads.Result<T> result)
         {
             lock (_syncRoot)
             {
-                Maybe<T> input;
+                Shared.Monads.Maybe<T> input;
                 if (Containers.ContainsKey(containerName))
                 {
                     if (Containers[containerName].BlobNames.Contains(blobName))
                     {
                         var blobData = Containers[containerName].GetBlob(blobName);
-                        input = blobData == null ? Maybe<T>.Empty : (T)blobData;
+                        input = blobData == null ? Shared.Monads.Maybe<T>.Empty : (T)blobData;
                     }
                     else
                     {
-                        input = Maybe<T>.Empty;
+                        input = Shared.Monads.Maybe<T>.Empty;
                     }
                 }
                 else
                 {
                     Containers.Add(containerName, new MockContainer());
-                    input = Maybe<T>.Empty;
+                    input = Shared.Monads.Maybe<T>.Empty;
                 }
 
                 // updating the item
@@ -522,26 +524,31 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater, out T result)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>, T> updater, out T result)
         {
-            Result<T> rresult;
-            var flag = ((IBlobStorageProvider)this).UpdateIfNotModified(containerName, blobName, x => Result.CreateSuccess(updater(x)), out rresult);
+            Shared.Monads.Result<T> rresult;
+            var flag = ((IBlobStorageProvider)this).UpdateIfNotModified(
+                containerName, blobName, x => Shared.Monads.Result.CreateSuccess(updater(x)), out rresult);
 
             result = rresult.Value;
             return flag;
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>, Shared.Monads.Result<T>> updater)
         {
-            Result<T> ignored;
+            Shared.Monads.Result<T> ignored;
             return ((IBlobStorageProvider)this).UpdateIfNotModified(containerName, blobName, updater, out ignored);
         }
 
         [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater)
+        bool IBlobStorageProvider.UpdateIfNotModified<T>(
+            string containerName, string blobName, Func<Shared.Monads.Maybe<T>, T> updater)
         {
-            return ((IBlobStorageProvider)this).UpdateIfNotModified<T>(containerName, blobName, x => Result.CreateSuccess(updater(x)));
+            return ((IBlobStorageProvider)this).UpdateIfNotModified<T>(
+                containerName, blobName, x => Shared.Monads.Result.CreateSuccess(updater(x)));
         }
 
         [Obsolete]

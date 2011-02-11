@@ -86,7 +86,7 @@ namespace Lokad.Cloud.Storage.Azure
             if(null == tableName) throw new ArgumentNullException("tableName");
 
             var context = _tableStorage.GetDataServiceContext();
-            return GetInternal<T>(context, tableName, Maybe.String);
+            return GetInternal<T>(context, tableName, Shared.Monads.Maybe.String);
         }
 
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey)
@@ -166,7 +166,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        private IEnumerable<CloudEntity<T>> GetInternal<T>(TableServiceContext context, string tableName, Maybe<string> filter)
+        private IEnumerable<CloudEntity<T>> GetInternal<T>(TableServiceContext context, string tableName, Shared.Monads.Maybe<string> filter)
         {
             string continuationRowKey = null;
             string continuationPartitionKey = null;

@@ -236,24 +236,30 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
+        public Shared.Monads.Maybe<PersistedMessage> GetPersisted(string storeName, string key)
         {
             var intermediateDataSerializer = DataSerializer as IIntermediateDataSerializer;
             var xmlProvider = intermediateDataSerializer != null
-                ? Maybe.From(intermediateDataSerializer)
-                : Maybe<IIntermediateDataSerializer>.Empty;
+                ? Shared.Monads.Maybe.From(intermediateDataSerializer)
+                : Shared.Monads.Maybe<IIntermediateDataSerializer>.Empty;
 
             lock (_sync)
             {
-                var tuple = _persistedMessages.FirstOrEmpty(x => x.Item1 == storeName && x.Item2 == key);
-                return tuple.Convert(x => new PersistedMessage
-                    {
-                        QueueName = x.Item3,
-                        StoreName = x.Item1,
-                        Key = x.Item2,
-                        IsDataAvailable = true,
-                        DataXml = xmlProvider.Convert(s => s.UnpackXml(new MemoryStream(x.Item4)))
-                    });
+                var tuple = Shared.Monads.Maybe.FirstOrEmpty(_persistedMessages, x => x.Item1 == storeName && x.Item2 == key);
+                if(tuple.HasValue)
+                {
+                    var x = tuple.Value;
+                    return new PersistedMessage
+                        {
+                            QueueName = x.Item3,
+                            StoreName = x.Item1,
+                            Key = x.Item2,
+                            IsDataAvailable = true,
+                            DataXml = xmlProvider.Convert(s => s.UnpackXml(new MemoryStream(x.Item4)))
+                        };
+                }
+                
+                return Shared.Monads.Maybe<PersistedMessage>.Empty;
             }
         }
 
@@ -313,9 +319,9 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Maybe<TimeSpan> GetApproximateLatency(string queueName)
+        public Shared.Monads.Maybe<TimeSpan> GetApproximateLatency(string queueName)
         {
-            return Maybe<TimeSpan>.Empty;
+            return Shared.Monads.Maybe<TimeSpan>.Empty;
         }
     }
 }
