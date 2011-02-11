@@ -6,7 +6,6 @@
 using System;
 using System.Linq;
 using Lokad.Cloud.Storage;
-using Lokad.Threading;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Storage
@@ -58,7 +57,7 @@ namespace Lokad.Cloud.Test.Storage
             var random = new Random();
             const int threadsCount = 4;
             var increments = Range.Array(threadsCount).Convert(e => Range.Array(5).Convert(i => random.Next(20) - 10));
-            var localSums = increments.SelectInParallel(e =>
+            var localSums = increments.AsParallel().WithDegreeOfParallelism(threadsCount).Select(e =>
                 {
                     var counter = new BlobCounter(provider, ContainerName, "SomeBlobName");
                     foreach (var increment in e)
@@ -66,7 +65,7 @@ namespace Lokad.Cloud.Test.Storage
                         counter.Increment(increment);
                     }
                     return e.Sum();
-                }, threadsCount);
+                }).ToArray();
 
             Assert.AreEqual(localSums.Sum(), count.GetValue(), "values should be equal, BlobCounter supposed to be thread-safe");
         }

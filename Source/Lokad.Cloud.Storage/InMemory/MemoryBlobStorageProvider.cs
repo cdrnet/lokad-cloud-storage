@@ -28,6 +28,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
         internal IDataSerializer DataSerializer { get; set; }
 
+        /// <remarks></remarks>
         public MemoryBlobStorageProvider()
         {
             _containers = new Dictionary<string, MockContainer>();

@@ -5,9 +5,7 @@
 
 using System;
 using System.Linq;
-using Lokad.Cloud.Storage;
 using Lokad.Cloud.Test;
-using Lokad.Threading;
 using NUnit.Framework;
 
 // TODO: refactor tests so that containers do not have to be created each time.
@@ -210,11 +208,11 @@ namespace Lokad.Cloud.Storage.Test
 
             int ignored;
 
-            array = array.SelectInParallel(
+            array = array.AsParallel().WithDegreeOfParallelism(array.Length).Select(
                 k => _blobStorage.UpdateIfNotModified(
                     ContainerName, BlobName,
                     i => i.HasValue ? i.Value + 1 : 1,
-                    out ignored), array.Length);
+                    out ignored)).ToArray();
 
             Assert.IsTrue(array.Any(x => x), "#A00 write should have happened at least once.");
             Assert.IsTrue(array.Any(x => !x), "#A01 conflict should have happened at least once.");
@@ -276,11 +274,11 @@ namespace Lokad.Cloud.Storage.Test
             _blobStorage.PutBlob(ContainerName, BlobName, 0);
 
             var array = new Shared.Monads.Maybe<int>[8];
-            array = array.SelectInParallel(
+            array = array.AsParallel().WithDegreeOfParallelism(array.Length).Select(
                 k => _blobStorage.UpsertBlobOrSkip<int>(
                     ContainerName, BlobName,
                     () => 1,
-                    i => i + 1), array.Length);
+                    i => i + 1)).ToArray();
 
             Assert.IsFalse(array.Any(x => !x.HasValue), "No skips");
 
@@ -294,7 +292,7 @@ namespace Lokad.Cloud.Storage.Test
             }
         }
 
-        // TODO: CreatePutGetRangeDelete is way to complex as a unit test
+        // TODO: CreatePutGetRangeDelete is way too complex as a unit test
 
         [Test]
         public void CreatePutGetRangeDelete()

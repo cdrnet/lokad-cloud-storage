@@ -14,11 +14,9 @@ using System.Threading;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Diagnostics;
-using Lokad.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
 using Lokad.Cloud.Storage.Shared.Logging;
-using Lokad.Cloud.Storage.Shared.Policies;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -350,14 +348,15 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <summary>As many parallel requests than there are blob names.</summary>
         public Shared.Monads.Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
         {
-            var tempResult = blobNames.SelectInParallel(blobName =>
+            var tempResult = blobNames.AsParallel().WithDegreeOfParallelism(blobNames.Length).Select(blobName =>
             {
                 string etag;
                 var blob = GetBlob<T>(containerName, blobName, out etag);
                 return new System.Tuple<Shared.Monads.Maybe<T>, string>(blob, etag);
-            }, blobNames.Length);
+            }).ToArray();
 
             etags = new string[blobNames.Length];
             var result = new Shared.Monads.Maybe<T>[blobNames.Length];
