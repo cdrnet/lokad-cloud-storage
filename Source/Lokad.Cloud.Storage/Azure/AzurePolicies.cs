@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -10,6 +10,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Lokad.Diagnostics;
 using Microsoft.WindowsAzure.StorageClient;
+using Lokad.Cloud.Storage.Shared.Policies;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -24,22 +25,22 @@ namespace Lokad.Cloud.Storage.Azure
         /// thinks we're a too heavy user. Blocks the thread while backing off to
         /// prevent further requests for a while (per thread).
         /// </summary>
-        public static ActionPolicy TransientServerErrorBackOff { get; private set; }
+        public static Shared.Policies.ActionPolicy TransientServerErrorBackOff { get; private set; }
 
         /// <summary>Similar to <see cref="TransientServerErrorBackOff"/>, yet
         /// the Table Storage comes with its own set or exceptions/.</summary>
-        public static ActionPolicy TransientTableErrorBackOff { get; private set; }
+        public static Shared.Policies.ActionPolicy TransientTableErrorBackOff { get; private set; }
 
         /// <summary>
         /// Very patient retry policy to deal with container, queue or table instantiation
         /// that happens just after a deletion.
         /// </summary>
-        public static ActionPolicy SlowInstantiation { get; private set; }
+        public static Shared.Policies.ActionPolicy SlowInstantiation { get; private set; }
 
         /// <summary>
         /// Limited retry related to MD5 validation failure.
         /// </summary>
-        public static ActionPolicy NetworkCorruption { get; private set; }
+        public static Shared.Policies.ActionPolicy NetworkCorruption { get; private set; }
 
         /// <summary>
         /// Retry policy for optimistic concurrency retrials. The exception parameter is ignored, it can be null.
@@ -75,16 +76,16 @@ namespace Lokad.Cloud.Storage.Azure
                 });
 
             // Initialize Policies
-            TransientServerErrorBackOff = ActionPolicy.With(TransientServerErrorExceptionFilter)
+            TransientServerErrorBackOff = Shared.Policies.ActionPolicy.With(TransientServerErrorExceptionFilter)
                 .Retry(30, OnTransientServerErrorRetry);
 
-            TransientTableErrorBackOff = ActionPolicy.With(TransientTableErrorExceptionFilter)
+            TransientTableErrorBackOff = Shared.Policies.ActionPolicy.With(TransientTableErrorExceptionFilter)
                 .Retry(30, OnTransientTableErrorRetry);
 
-            SlowInstantiation = ActionPolicy.With(SlowInstantiationExceptionFilter)
+            SlowInstantiation = Shared.Policies.ActionPolicy.With(SlowInstantiationExceptionFilter)
                 .Retry(30, OnSlowInstantiationRetry);
 
-            NetworkCorruption = ActionPolicy.With(NetworkCorruptionExceptionFilter)
+            NetworkCorruption = Shared.Policies.ActionPolicy.With(NetworkCorruptionExceptionFilter)
                 .Retry(2, OnNetworkCorruption);
         }
 

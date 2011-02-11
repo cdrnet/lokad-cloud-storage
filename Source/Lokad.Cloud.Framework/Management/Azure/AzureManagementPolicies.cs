@@ -6,6 +6,7 @@
 using System;
 using System.ServiceModel;
 using System.ServiceModel.Security;
+using Lokad.Cloud.Storage.Shared.Policies;
 
 namespace Lokad.Cloud.Management.Azure
 {
@@ -20,7 +21,7 @@ namespace Lokad.Cloud.Management.Azure
 		/// thinks we're a too heavy user. Blocks the thread while backing off to
 		/// prevent further requests for a while (per thread).
 		/// </summary>
-		public static ActionPolicy TransientServerErrorBackOff { get; private set; }
+		public static Storage.Shared.Policies.ActionPolicy TransientServerErrorBackOff { get; private set; }
 
 		/// <summary>
 		/// Static Constructor
@@ -28,7 +29,7 @@ namespace Lokad.Cloud.Management.Azure
 		static AzureManagementPolicies()
 		{
 			// Initialize Policies
-			TransientServerErrorBackOff = ActionPolicy.With(TransientServerErrorExceptionFilter)
+            TransientServerErrorBackOff = Storage.Shared.Policies.ActionPolicy.With(TransientServerErrorExceptionFilter)
 				.Retry(30, OnTransientServerErrorRetry);
 		}
 

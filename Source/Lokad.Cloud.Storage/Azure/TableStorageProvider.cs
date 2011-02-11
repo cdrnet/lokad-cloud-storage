@@ -33,7 +33,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudTableClient _tableStorage;
         readonly IDataSerializer _serializer;
-        readonly ActionPolicy _storagePolicy;
+        readonly Shared.Policies.ActionPolicy _storagePolicy;
 
         // Instrumentation
         readonly ExecutionCounter _countQuery;

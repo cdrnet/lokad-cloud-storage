@@ -18,6 +18,7 @@ using Lokad.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
 using Lokad.Cloud.Storage.Shared.Logging;
+using Lokad.Cloud.Storage.Shared.Policies;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -36,8 +37,8 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _serializer;
-        readonly ActionPolicy _azureServerPolicy;
-        readonly ActionPolicy _networkPolicy;
+        readonly Shared.Policies.ActionPolicy _azureServerPolicy;
+        readonly Shared.Policies.ActionPolicy _networkPolicy;
         readonly Shared.Logging.ILog _log;
 
         // Instrumentation

@@ -91,6 +91,7 @@
     <Compile Include="ServiceFabric\AssemblyLoaderTests.cs" />
     <Compile Include="ServiceFabric\RuntimeFinalizerTests.cs" />
     <Compile Include="Services\QueueServiceTests.cs" />
+    <Compile Include="Shared\Policies\ActionPolicyTests.cs" />
     <Compile Include="StandaloneTests.cs" />
     <Compile Include="Storage\BlobNameTests.cs" />
     <Compile Include="Storage\BlobCounterTests.cs" />
@@ -118,6 +119,9 @@
       <Project>{0F9244AB-3B7C-4F98-9D44-E46FBC65522C}</Project>
       <Name>Lokad.Cloud.Storage</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Shared\_ReadMe.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">

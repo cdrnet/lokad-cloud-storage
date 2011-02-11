@@ -28,7 +28,7 @@ namespace Lokad.Cloud.Management
         readonly Maybe<string> _deploymentId = Maybe.String;
         readonly Maybe<string> _subscriptionId = Maybe.String;
 
-        readonly ActionPolicy _retryPolicy;
+        readonly Storage.Shared.Policies.ActionPolicy _retryPolicy;
 
         ManagementStatus _status;
         Maybe<HostedService> _service = Maybe<HostedService>.Empty;

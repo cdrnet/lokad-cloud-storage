@@ -39,7 +39,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IBlobStorageProvider _blobStorage;
         readonly IDataSerializer _serializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
-        readonly ActionPolicy _azureServerPolicy;
+        readonly Shared.Policies.ActionPolicy _azureServerPolicy;
 
         readonly Shared.Logging.ILog _log;
 
