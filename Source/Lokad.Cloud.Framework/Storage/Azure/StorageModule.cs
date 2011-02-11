@@ -155,7 +155,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             // [abdullin]: in short this gives us MinBackOff + 2^(10)*Rand.(~0.5.Seconds())
             // at the last retry. Reflect the method for more details
-            var deltaBackoff = 0.5.Seconds();
+            var deltaBackoff = TimeSpan.FromSeconds(0.5);
             return RetryPolicies.RetryExponential(10, deltaBackoff);
         }
     }

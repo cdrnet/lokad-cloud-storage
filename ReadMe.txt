@@ -1,5 +1,5 @@
 Lokad.Cloud is an O/C mapper (object to cloud) for Windows Azure.
-Copyright (c) Lokad SAS, 2009-2010
+Copyright (c) Lokad SAS, 2009-2011
 
 Authors: Joannes Vermorel, Christoph Ruegg, Rinat Abdullin
 
@@ -17,10 +17,10 @@ Those assemblies is typically referenced in two places:
 - in the client app (eventually a web app) pushing and retrieving work (storage only).
 - in the library containing your cloud services for back-end processing (both assemblies).
 
-Both assemblies depends on Lokad.Shared.dll
-The framework also depend on Lokad.Stack.dll.
+The O/C mapper is a stand-alone library.
+The framework depends on Lokad.Stack.dll.
 
-Those dependencies are also open source, see 
+The Lokad.Stack dependency is also open source, see 
 http://code.google.com/p/lokad-shared-libraries/
 
 

@@ -3,6 +3,7 @@
 // This code is released under the terms of the new BSD licence
 #endregion
 using System;
+using Lokad.Cloud.Shared.Test;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Shared.Policies.Test
@@ -38,7 +39,7 @@ namespace Lokad.Cloud.Storage.Shared.Policies.Test
 
             var policy = ActionPolicy
                 .Handle<TimeoutException>()
-                .WaitAndRetry(Range.Create(5, i => i.Seconds()), (ex, s) => count += 1);
+                .WaitAndRetry(Range.Create(5, i => TimeSpan.FromSeconds(i)), (ex, s) => count += 1);
 
             // non-handled
             Expect<ArgumentException>(() => policy.Do(RaiseArgument));

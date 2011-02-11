@@ -7,6 +7,7 @@ using System;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.ServiceFabric.Runtime;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Application
 {

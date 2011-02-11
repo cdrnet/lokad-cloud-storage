@@ -13,7 +13,8 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Policies;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
 using Lokad.Cloud.Storage.Shared.Logging;
@@ -35,9 +36,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _serializer;
-        readonly Shared.Policies.ActionPolicy _azureServerPolicy;
-        readonly Shared.Policies.ActionPolicy _networkPolicy;
-        readonly Shared.Logging.ILog _log;
+        readonly ActionPolicy _azureServerPolicy;
+        readonly ActionPolicy _networkPolicy;
+        readonly ILog _log;
 
         // Instrumentation
         readonly ExecutionCounter _countPutBlob;
@@ -47,7 +48,8 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countUpsertBlobOrSkip;
         readonly ExecutionCounter _countDeleteBlob;
 
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, Shared.Logging.ILog log = null)
+        /// <summary>IoC constructor.</summary>
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log = null)
         {
             _blobStorage = blobStorage;
             _serializer = serializer;
@@ -355,7 +357,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 string etag;
                 var blob = GetBlob<T>(containerName, blobName, out etag);
-                return new System.Tuple<Shared.Monads.Maybe<T>, string>(blob, etag);
+                return new Tuple<Shared.Monads.Maybe<T>, string>(blob, etag);
             }).ToArray();
 
             etags = new string[blobNames.Length];

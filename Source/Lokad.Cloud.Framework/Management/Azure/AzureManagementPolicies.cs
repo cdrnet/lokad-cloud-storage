@@ -38,7 +38,7 @@ namespace Lokad.Cloud.Management.Azure
 		{
 			// quadratic backoff, capped at 5 minutes
 			var c = count + 1;
-			Thread.Sleep(Math.Min(300, c * c).Seconds());
+			Thread.Sleep(TimeSpan.FromSeconds(Math.Min(300, c * c)));
 		}
 
 		static bool TransientServerErrorExceptionFilter(Exception exception)

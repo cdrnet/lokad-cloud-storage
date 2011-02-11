@@ -53,10 +53,6 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Lokad.Shared">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Resource\Library\Lokad.Shared.dll</HintPath>
-    </Reference>
     <Reference Include="Lokad.Stack">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\Lokad.Stack.dll</HintPath>
@@ -93,6 +89,7 @@
     <Compile Include="Services\QueueServiceTests.cs" />
     <Compile Include="Shared\Monads\MaybeTests.cs" />
     <Compile Include="Shared\Policies\ActionPolicyTests.cs" />
+    <Compile Include="Shared\Range.cs" />
     <Compile Include="StandaloneTests.cs" />
     <Compile Include="Storage\BlobNameTests.cs" />
     <Compile Include="Storage\BlobCounterTests.cs" />

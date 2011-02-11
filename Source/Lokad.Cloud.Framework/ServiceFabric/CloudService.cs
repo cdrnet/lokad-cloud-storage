@@ -5,10 +5,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Lokad.Cloud.Jobs;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
-using Lokad.Threading;
 
 namespace Lokad.Cloud.ServiceFabric
 {
@@ -83,7 +83,7 @@ namespace Lokad.Cloud.ServiceFabric
         /// <summary>Indicates the frequency where the service is actually checking for its state.</summary>
         static TimeSpan StateCheckInterval
         {
-            get { return 1.Minutes(); }
+            get { return TimeSpan.FromMinutes(1); }
         }
 
         /// <summary>Name of the service (used for reporting purposes).</summary>
@@ -126,7 +126,8 @@ namespace Lokad.Cloud.ServiceFabric
             ExecutionTimeout = new TimeSpan(1, 58, 0);
 
             // overwrite settings with config in the attribute - if available
-            var settings = GetType().GetAttribute<CloudServiceSettingsAttribute>(true);
+            var settings = GetType().GetCustomAttributes(typeof(CloudServiceSettingsAttribute), true)
+                                    .FirstOrDefault() as CloudServiceSettingsAttribute;
             if (null == settings)
             {
                 return;

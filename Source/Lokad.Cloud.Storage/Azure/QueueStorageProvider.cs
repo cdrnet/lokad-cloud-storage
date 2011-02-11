@@ -9,7 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
+using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
+using Lokad.Cloud.Storage.Shared.Policies;
 using Lokad.Diagnostics;
 using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure.StorageClient;
@@ -39,9 +41,9 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IBlobStorageProvider _blobStorage;
         readonly IDataSerializer _serializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
-        readonly Shared.Policies.ActionPolicy _azureServerPolicy;
+        readonly ActionPolicy _azureServerPolicy;
 
-        readonly Shared.Logging.ILog _log;
+        readonly ILog _log;
 
         // Instrumentation
         readonly ExecutionCounter _countGetMessage;
@@ -68,7 +70,7 @@ namespace Lokad.Cloud.Storage.Azure
             IBlobStorageProvider blobStorage,
             IDataSerializer serializer,
             IRuntimeFinalizer runtimeFinalizer,
-            Shared.Logging.ILog log = null)
+            ILog log = null)
         {
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;

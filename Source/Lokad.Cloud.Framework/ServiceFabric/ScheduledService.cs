@@ -4,6 +4,7 @@
 #endregion
 
 using System;
+using System.Linq;
 using System.Runtime.Serialization;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared.Logging;
@@ -90,22 +91,23 @@ namespace Lokad.Cloud.ServiceFabric
         protected ScheduledService()
         {
             // runtime fixed settings
-            _leaseTimeout = ExecutionTimeout + 5.Minutes();
+            _leaseTimeout = ExecutionTimeout + TimeSpan.FromMinutes(5);
             _workerKey = CloudEnvironment.PartitionKey;
 
             // default setting
             _scheduledPerWorker = false;
-            _defaultTriggerPeriod = 1.Hours();
+            _defaultTriggerPeriod = TimeSpan.FromHours(1);
 
             // overwrite settings with config in the attribute - if available
-            var settings = GetType().GetAttribute<ScheduledServiceSettingsAttribute>(true);
+            var settings = GetType().GetCustomAttributes(typeof(ScheduledServiceSettingsAttribute), true)
+                                    .FirstOrDefault() as ScheduledServiceSettingsAttribute;
             if (settings != null)
             {
                 _scheduledPerWorker = settings.SchedulePerWorker;
 
                 if (settings.TriggerInterval > 0)
                 {
-                    _defaultTriggerPeriod = settings.TriggerInterval.Seconds();
+                    _defaultTriggerPeriod = TimeSpan.FromSeconds(settings.TriggerInterval);
                 }
             }
         }

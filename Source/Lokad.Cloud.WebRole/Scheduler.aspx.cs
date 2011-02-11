@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using Lokad.Cloud.Management.Api10;
+using Lokad.Cloud.Storage.Shared;
 
 namespace Lokad.Cloud.Web
 {
@@ -64,7 +65,7 @@ namespace Lokad.Cloud.Web
 		{
 			_cloudServiceScheduling.SetTriggerInterval(
 				ScheduleList.SelectedValue,
-				int.Parse(NewIntervalBox.Text).Seconds());
+				TimeSpan.FromSeconds(int.Parse(NewIntervalBox.Text)));
 
 			ScheduleView.DataBind();
 			ServiceList.DataBind();

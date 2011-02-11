@@ -44,10 +44,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\DotNetOpenAuth.dll</HintPath>
     </Reference>
-    <Reference Include="Lokad.Shared">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Resource\Library\Lokad.Shared.dll</HintPath>
-    </Reference>
     <Reference Include="Lokad.Stack">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\Lokad.Stack.dll</HintPath>

@@ -53,10 +53,6 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Lokad.Shared">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Resource\Library\Lokad.Shared.dll</HintPath>
-    </Reference>
     <Reference Include="Lokad.Stack">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\Resource\Library\Lokad.Stack.dll</HintPath>

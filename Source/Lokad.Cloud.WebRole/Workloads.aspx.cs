@@ -13,6 +13,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Xml;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared;
 
 namespace Lokad.Cloud.Web
 {

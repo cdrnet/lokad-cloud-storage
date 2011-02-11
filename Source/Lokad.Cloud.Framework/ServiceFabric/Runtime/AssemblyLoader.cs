@@ -30,7 +30,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         /// <summary>Frequency for checking for update concerning the assembly package.</summary>
         public static TimeSpan UpdateCheckFrequency
         {
-            get { return 1.Minutes(); }
+            get { return TimeSpan.FromMinutes(1); }
         }
 
         readonly IBlobStorageProvider _provider;

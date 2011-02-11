@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Diagnostics
 {

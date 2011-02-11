@@ -91,7 +91,21 @@ namespace Lokad.Cloud.Web
                 return Storage.Shared.Logging.LogLevel.Min;
 			}
 
-            return EnumUtil.Parse<Storage.Shared.Logging.LogLevel>(selectedString);
+            switch (selectedString.ToLowerInvariant())
+            {
+                case "debug":
+                    return Storage.Shared.Logging.LogLevel.Debug;
+                case "info":
+                    return Storage.Shared.Logging.LogLevel.Info;
+                case "warn":
+                    return Storage.Shared.Logging.LogLevel.Warn;
+                case "error":
+                    return Storage.Shared.Logging.LogLevel.Error;
+                case "fatal":
+                    return Storage.Shared.Logging.LogLevel.Fatal;
+            }
+
+            throw new ArgumentOutOfRangeException();
 		}
 	}
 }

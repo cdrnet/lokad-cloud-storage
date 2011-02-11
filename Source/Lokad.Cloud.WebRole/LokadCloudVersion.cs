@@ -8,6 +8,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Web
 {
@@ -25,7 +26,7 @@ namespace Lokad.Cloud.Web
 
 		readonly object _sync = new object();
 		readonly Regex _regex = new Regex(_regexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-		readonly TimeSpan _checkPeriod = 1.Days();
+		readonly TimeSpan _checkPeriod = TimeSpan.FromDays(1);
 
 		Maybe<Version> _newestVersion;
 		DateTimeOffset _lastChecked;

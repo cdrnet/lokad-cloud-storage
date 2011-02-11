@@ -6,6 +6,7 @@
 using System.IO;
 using System.Web;
 using System.Web.Mvc;
+using Lokad.Cloud.Application;
 using Lokad.Cloud.Console.WebRole.Behavior;
 using Lokad.Cloud.Console.WebRole.Controllers.ObjectModel;
 using Lokad.Cloud.Console.WebRole.Framework.Discovery;
@@ -30,7 +31,8 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
 
             return View(new AssembliesModel
                 {
-                    ApplicationAssemblies = appDefinition.Convert(ad => ad.Assemblies)
+                    ApplicationAssemblies = appDefinition.HasValue ? 
+                        appDefinition.Value.Assemblies : new CloudApplicationAssemblyInfo[0]
                 });
         }
 

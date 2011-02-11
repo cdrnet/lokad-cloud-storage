@@ -34,9 +34,6 @@
     <DocumentationFile>bin\Release\Lokad.Cloud.Storage.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Lokad.Shared">
-      <HintPath>..\..\Resource\Library\Lokad.Shared.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.WindowsAzure.StorageClient" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -80,6 +77,12 @@
     <Compile Include="Queues\MessageEnvelope.cs" />
     <Compile Include="Queues\MessageWrapper.cs" />
     <Compile Include="Queues\QueueStorageExtensions.cs" />
+    <Compile Include="Shared\Diagnostics\ExceptionCounters.cs" />
+    <Compile Include="Shared\Diagnostics\ExecutionCounter.cs" />
+    <Compile Include="Shared\Diagnostics\ExecutionStatistics.cs" />
+    <Compile Include="Shared\Diagnostics\Persistence\ConvertionExtensions.cs" />
+    <Compile Include="Shared\Diagnostics\Persistence\ExecutionData.cs" />
+    <Compile Include="Shared\FormatUtil.cs" />
     <Compile Include="Shared\Monads\Maybe.1.cs" />
     <Compile Include="Shared\Monads\Maybe.cs" />
     <Compile Include="Shared\Monads\Result.1.cs" />

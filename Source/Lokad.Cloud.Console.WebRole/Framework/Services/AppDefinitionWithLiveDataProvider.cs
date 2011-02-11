@@ -17,6 +17,7 @@ using Lokad.Cloud.Management;
 using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Services
 {

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Diagnostics;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
@@ -24,10 +25,10 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 		readonly object _sync = new object();
 
 		/// <summary>Duration to keep pinging the same cloud service if service is active.</summary>
-		readonly TimeSpan _moreOfTheSame = 60.Seconds();
+		readonly TimeSpan _moreOfTheSame = TimeSpan.FromSeconds(60);
 
 		/// <summary>Resting duration.</summary>
-		readonly TimeSpan _idleSleep = 10.Seconds();
+		readonly TimeSpan _idleSleep = TimeSpan.FromSeconds(10);
 
 		CloudService _currentService;
 		volatile bool _isRunning;

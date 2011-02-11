@@ -10,6 +10,7 @@ using System.Security;
 using System.Threading;
 using Autofac.Builder;
 using Lokad.Cloud.Storage.Shared.Logging;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
 {
@@ -169,7 +170,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 
                 // note: we DO have to wait until the shut down has finished,
                 // or the Azure Fabric will tear us apart early!
-                _stoppedWaitHandle.WaitOne(25.Seconds());
+                _stoppedWaitHandle.WaitOne(TimeSpan.FromSeconds(25));
             }
         }
 

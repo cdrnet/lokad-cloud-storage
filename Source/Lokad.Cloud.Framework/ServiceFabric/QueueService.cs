@@ -36,7 +36,8 @@ namespace Lokad.Cloud.ServiceFabric
         /// <summary>Default constructor</summary>
         protected QueueService()
         {
-            var settings = GetType().GetAttribute<QueueServiceSettingsAttribute>(true);
+            var settings = GetType().GetCustomAttributes(typeof(QueueServiceSettingsAttribute), true)
+                                    .FirstOrDefault() as QueueServiceSettingsAttribute;
 
             // default settings
             _batchSize = 1;

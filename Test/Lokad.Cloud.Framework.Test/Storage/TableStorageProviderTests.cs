@@ -9,6 +9,7 @@ using System.Data.Services.Client;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Cloud.Shared.Test;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;
 using NUnit.Framework;
@@ -429,25 +430,25 @@ namespace Lokad.Cloud.Test.Storage
         {
             var pkey = Guid.NewGuid().ToString("N");
 
-            var entities = Range.Array(10).Convert(i =>
+            var entities = Range.Array(10).Select(i =>
                 new CloudEntity<string>
                     {
                         PartitionKey = pkey,
                         RowKey = Guid.NewGuid().ToString("N"),
                         Value = "nothing"
-                    });
+                    }).ToArray();
 
             // Insert/delete entity.
             _tableStorage.Insert(TableName, entities);
 
             // partial deletion
-            _tableStorage.Delete<string>(TableName, pkey, entities.Take(5).ToArray(e => e.RowKey));
+            _tableStorage.Delete<string>(TableName, pkey, entities.Take(5).Select(e => e.RowKey));
 
             // complete deletion, but with overlap
-            _tableStorage.Delete<string>(TableName, pkey, entities.Convert(e => e.RowKey));
+            _tableStorage.Delete<string>(TableName, pkey, entities.Select(e => e.RowKey));
 
             // checking that all entities have been deleted
-            var list = _tableStorage.Get<string>(TableName, pkey, entities.Convert(e => e.RowKey));
+            var list = _tableStorage.Get<string>(TableName, pkey, entities.Select(e => e.RowKey));
             Assert.That(list.Count() == 0, "#A00");
         }
 

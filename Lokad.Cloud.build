@@ -128,7 +128,7 @@
 		</CreateItem>
 		<Copy SourceFiles="@(testSources)" DestinationFolder="$(TestPath)" />
 
-		<CreateItem Include="$(CloudSource)\*.*;ReadMe.txt;$(CloudApiSource)\Lokad.Cloud.Framework.*;$(CloudApiSource)\Lokad.Cloud.Storage.*;$(ResourcePath)\Lokad.Shared.dll;$(ResourcePath)\Lokad.Stack.dll">
+		<CreateItem Include="$(CloudSource)\*.*;ReadMe.txt;$(CloudApiSource)\Lokad.Cloud.Framework.*;$(CloudApiSource)\Lokad.Cloud.Storage.*;$(ResourcePath)\Lokad.Stack.dll">
 			<Output ItemName="cloudSources" TaskParameter="Include" />
 		</CreateItem>
 		<Copy SourceFiles="@(cloudSources)" DestinationFolder="$(CloudReadyPath)" />

@@ -68,10 +68,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
-    <Reference Include="Lokad.Shared">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Resource\Library\Lokad.Shared.dll</HintPath>
-    </Reference>
     <Reference Include="Lokad.Stack">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\Lokad.Stack.dll</HintPath>
@@ -200,6 +196,7 @@
     <Compile Include="Mock\MemoryMonitor.cs" />
     <Compile Include="Mock\MockStorageModule.cs" />
     <Compile Include="ServiceFabric\Runtime\Scheduler.cs" />
+    <Compile Include="ServiceFabric\WaitFor.cs" />
     <Compile Include="Services\AssemblyConfigurationUpdateService.cs" />
     <Compile Include="Services\MonitoringDataRetentionService.cs" />
     <Compile Include="Services\MonitoringService.cs" />

@@ -11,6 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Web;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.Shared.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Policies;
 using Lokad.Diagnostics;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -33,7 +35,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudTableClient _tableStorage;
         readonly IDataSerializer _serializer;
-        readonly Shared.Policies.ActionPolicy _storagePolicy;
+        readonly ActionPolicy _storagePolicy;
 
         // Instrumentation
         readonly ExecutionCounter _countQuery;
@@ -140,7 +142,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             var context = _tableStorage.GetDataServiceContext();
 
-            foreach (var slice in rowKeys.Slice(MaxEntityTransactionCount))
+            foreach (var slice in Slice(rowKeys, MaxEntityTransactionCount))
             {
                 // work-around the limitation of ADO.NET that does not provide a native way
                 // of query a set of specified entities directly.
@@ -533,13 +535,16 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        void DeleteInternal<T>(string tableName, string partitionKey, IEnumerable<System.Tuple<string,string>> rowKeysAndETags, bool force)
+        void DeleteInternal<T>(string tableName, string partitionKey, IEnumerable<Tuple<string,string>> rowKeysAndETags, bool force)
         {
             var context = _tableStorage.GetDataServiceContext();
 
             // CAUTION: make sure to get rid of potential duplicate in rowkeys.
             // (otherwise insertion in 'context' is likely to fail)
-            foreach (var s in rowKeysAndETags.Distinct(pair => pair.Item1).Slice(MaxEntityTransactionCount))
+            foreach (var s in Slice(rowKeysAndETags
+                                    // Similar effect than 'Distinct' based on 'RowKey'
+                                    .ToLookup(p => p.Item1, p => p).Select(g => g.First()), 
+                                    MaxEntityTransactionCount))
             {
                 var timestamp = _countDelete.Open();
 
@@ -628,6 +633,34 @@ namespace Lokad.Cloud.Storage.Azure
                 write(entity.Entity, entity.ETag);
                 context.Detach(entity.Entity);
             }
+        }
+
+        /// <summary>
+        /// Performs lazy splitting of the provided collection into collections of <paramref name="sliceLength"/>
+        /// </summary>
+        /// <typeparam name="TItem">The type of the item.</typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="sliceLength">Maximum length of the slice.</param>
+        /// <returns>lazy enumerator of the collection of arrays</returns>
+        public static IEnumerable<TItem[]> Slice<TItem>(IEnumerable<TItem> source, int sliceLength)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            if (sliceLength <= 0)
+                throw new ArgumentOutOfRangeException("sliceLength", "value must be greater than 0");
+
+            var list = new List<TItem>(sliceLength);
+            foreach (var item in source)
+            {
+                list.Add(item);
+                if (sliceLength == list.Count)
+                {
+                    yield return list.ToArray();
+                    list.Clear();
+                }
+            }
+
+            if (list.Count > 0)
+                yield return list.ToArray();
         }
     }
 }

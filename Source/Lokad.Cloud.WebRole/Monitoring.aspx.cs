@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Caching;
 using System.Web.UI.WebControls;
+using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Management.Api10;
 
@@ -15,7 +16,7 @@ namespace Lokad.Cloud.Web
 {
 	public partial class Monitoring : System.Web.UI.Page
 	{
-		readonly TimeSpan _cacheRefreshPeriod = 2.Minutes();
+		readonly TimeSpan _cacheRefreshPeriod = TimeSpan.FromMinutes(2);
 		readonly ICloudStatisticsApi _cloudStatistics = GlobalSetup.Container.Resolve<ICloudStatisticsApi>();
 
 		protected void Page_Load(object sender, EventArgs e)

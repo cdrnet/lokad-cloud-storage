@@ -4,6 +4,7 @@
 #endregion
 
 using System;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud
 {

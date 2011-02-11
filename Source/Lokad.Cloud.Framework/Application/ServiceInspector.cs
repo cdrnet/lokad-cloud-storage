@@ -84,7 +84,8 @@ namespace Lokad.Cloud.Application
                                 {
                                     var messageType = GetBaseClassGenericTypeParameters(t, typeof(QueueService<>))[0];
 
-                                    var attribute = t.GetAttribute<QueueServiceSettingsAttribute>(true);
+                                    var attribute = t.GetCustomAttributes(
+                                        typeof(QueueServiceSettingsAttribute), true).FirstOrDefault() as QueueServiceSettingsAttribute;
                                     var queueName = (attribute != null && !String.IsNullOrEmpty(attribute.QueueName))
                                         ? attribute.QueueName
                                         : TypeMapper.GetStorageName(messageType);

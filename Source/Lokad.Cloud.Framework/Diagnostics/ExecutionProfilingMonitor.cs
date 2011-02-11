@@ -6,7 +6,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Lokad.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Monads;
 using Lokad.Diagnostics.Persist;
 
 namespace Lokad.Cloud.Diagnostics
@@ -103,7 +104,7 @@ namespace Lokad.Cloud.Diagnostics
 						}
 
 						var stats = s.Value;
-						stats.Statistics = Aggregate(stats.Statistics.Append(additionalData)).ToArray();
+						stats.Statistics = Aggregate(stats.Statistics.Concat(additionalData)).ToArray();
 						return stats;
 					});
 		}

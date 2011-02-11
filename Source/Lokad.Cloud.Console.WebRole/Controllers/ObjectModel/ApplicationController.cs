@@ -27,7 +27,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers.ObjectModel
                 {
                     IsAvailable = discoveryInfo.IsAvailable,
                     ShowLastDiscoveryUpdate = discoveryInfo.IsAvailable,
-                    LastDiscoveryUpdate = (DateTimeOffset.UtcNow - discoveryInfo.Timestamp).PrettyFormat() + " (" + (discoveryInfo.FinishedTimestamp - discoveryInfo.Timestamp).TotalSeconds.Round(1) + "s)"
+                    LastDiscoveryUpdate = (DateTimeOffset.UtcNow - discoveryInfo.Timestamp).PrettyFormat() + " (" + Math.Round((discoveryInfo.FinishedTimestamp - discoveryInfo.Timestamp).TotalSeconds,1) + "s)"
                 };
 
             var controllerName = GetType().Name;

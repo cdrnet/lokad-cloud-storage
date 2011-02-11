@@ -4,6 +4,7 @@
 #endregion
 
 using Lokad.Cloud.Application;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Console.WebRole.Models.Assemblies
 {

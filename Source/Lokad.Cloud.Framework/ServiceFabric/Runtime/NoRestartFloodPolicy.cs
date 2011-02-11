@@ -21,13 +21,13 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 		/// Minimal duration between worker restart to be considered as a regular
 		/// situation (restart can happen from time to time).
 		/// </summary>
-		static TimeSpan FloodFrequencyThreshold { get { return 1.Minutes(); } }
+		static TimeSpan FloodFrequencyThreshold { get { return TimeSpan.FromMinutes(1); } }
 
 		/// <summary>
 		/// Delay to be applied before the next restart when a flooding situation is
 		/// detected.
 		/// </summary>
-		static TimeSpan DelayWhenFlooding { get { return 5.Minutes(); } }
+		static TimeSpan DelayWhenFlooding { get { return TimeSpan.FromMinutes(5); } }
 
 		volatile bool _isStopRequested;
 

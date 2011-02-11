@@ -12,6 +12,7 @@ using Lokad.Cloud.Console.WebRole.Controllers.ObjectModel;
 using Lokad.Cloud.Console.WebRole.Framework.Discovery;
 using Lokad.Cloud.Console.WebRole.Models.Logs;
 using Lokad.Cloud.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Console.WebRole.Controllers
 {
@@ -47,7 +48,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             InitializeDeploymentTenant(hostedServiceName);
 
             var entries = new CloudLogger(Providers.BlobStorage, string.Empty)
-                .GetLogsOfLevelOrHigher(EnumUtil.Parse<Storage.Shared.Logging.LogLevel>(threshold, true), skip);
+                .GetLogsOfLevelOrHigher(ParseLogLevel(threshold), skip);
 
             if (!string.IsNullOrWhiteSpace(olderThanToken))
             {
@@ -70,7 +71,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             InitializeDeploymentTenant(hostedServiceName);
 
             var entry = new CloudLogger(Providers.BlobStorage, string.Empty)
-                .GetLogsOfLevelOrHigher(EnumUtil.Parse<Storage.Shared.Logging.LogLevel>(threshold, true))
+                .GetLogsOfLevelOrHigher(ParseLogLevel(threshold))
                 .FirstOrEmpty();
 
             if (entry.HasValue && string.Compare(EntryToToken(entry.Value), newerThanToken) > 0)
@@ -114,6 +115,25 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             }
 
             return logsModel;
+        }
+
+        static Storage.Shared.Logging.LogLevel ParseLogLevel(string str)
+        {
+            switch (str.ToLowerInvariant())
+            {
+                case "debug":
+                    return Storage.Shared.Logging.LogLevel.Debug;
+                case "info":
+                    return Storage.Shared.Logging.LogLevel.Info;
+                case "warn":
+                    return Storage.Shared.Logging.LogLevel.Warn;
+                case "error":
+                    return Storage.Shared.Logging.LogLevel.Error;
+                case "fatal":
+                    return Storage.Shared.Logging.LogLevel.Fatal;
+            }
+
+            throw new ArgumentOutOfRangeException();
         }
 
         static string EntryToToken(LogEntry entry)

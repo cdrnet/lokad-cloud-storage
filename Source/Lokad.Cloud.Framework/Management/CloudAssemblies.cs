@@ -11,6 +11,7 @@ using Lokad.Cloud.Application;
 using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Management
 {
@@ -38,7 +39,14 @@ namespace Lokad.Cloud.Management
         /// </summary>
         public List<CloudApplicationAssemblyInfo> GetAssemblies()
         {
-            return GetApplicationDefinition().Convert(p => p.Assemblies.ToList(), new List<CloudApplicationAssemblyInfo>());
+            var maybe = GetApplicationDefinition();
+            if(maybe.HasValue)
+            {
+                return maybe.Value.Assemblies.ToList();
+            }
+
+            // empty list
+            return new List<CloudApplicationAssemblyInfo>();
         }
 
         /// <summary>

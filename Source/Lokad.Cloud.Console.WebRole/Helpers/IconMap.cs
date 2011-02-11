@@ -3,6 +3,8 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using Lokad.Cloud.Storage.Shared.Logging;
+
 namespace Lokad.Cloud.Console.WebRole.Helpers
 {
     public static class IconMap

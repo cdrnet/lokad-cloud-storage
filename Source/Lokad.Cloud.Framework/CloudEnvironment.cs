@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using Lokad.Cloud.Storage.Shared.Monads;
 using Microsoft.WindowsAzure.ServiceRuntime;
 
 namespace Lokad.Cloud

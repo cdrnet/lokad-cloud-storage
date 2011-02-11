@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Management.Azure.Entities;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Web
 {

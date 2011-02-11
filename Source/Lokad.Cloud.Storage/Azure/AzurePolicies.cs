@@ -9,6 +9,7 @@ using System.Data.Services.Client;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Diagnostics;
 using Microsoft.WindowsAzure.StorageClient;
 using Lokad.Cloud.Storage.Shared.Policies;
@@ -98,7 +99,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             // quadratic backoff, capped at 5 minutes
             var c = count + 1;
-            Thread.Sleep(Math.Min(300, c*c).Seconds());
+            Thread.Sleep(TimeSpan.FromSeconds(Math.Min(300, c*c)));
 
             CountOnTransientServerError.Close(timestamp);
         }
@@ -111,7 +112,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             // quadratic backoff, capped at 5 minutes
             var c = count + 1;
-            Thread.Sleep(Math.Min(300, c * c).Seconds());
+            Thread.Sleep(TimeSpan.FromSeconds(Math.Min(300, c * c)));
 
             CountOnTransientTableError.Close(timestamp);
         }
@@ -121,7 +122,7 @@ namespace Lokad.Cloud.Storage.Azure
             var timestamp = CountOnSlowInstantiation.Open();
 
             // linear backoff
-            Thread.Sleep((100 * count).Milliseconds());
+            Thread.Sleep(TimeSpan.FromMilliseconds(100 * count));
 
             CountOnSlowInstantiation.Close(timestamp);
         }

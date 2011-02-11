@@ -132,7 +132,7 @@ namespace Lokad.Cloud.Diagnostics
 			// the guarantee that the enumerators themselves are ordered alike.
 			// To do that we always select the newest value, move next, and repeat.
 
-            var enumerators = EnumUtil<Storage.Shared.Logging.LogLevel>.Values
+            var enumerators = Enum.GetValues(typeof(Storage.Shared.Logging.LogLevel)).OfType<Storage.Shared.Logging.LogLevel>()
                 .Where(l => l >= levelThreshold && l < Storage.Shared.Logging.LogLevel.Max && l > Storage.Shared.Logging.LogLevel.Min)
 				.Select(level =>
 					{
@@ -190,7 +190,7 @@ namespace Lokad.Cloud.Diagnostics
 		/// </summary>
 		public void DeleteAllLogs()
 		{
-            foreach (var level in EnumUtil<Storage.Shared.Logging.LogLevel>.Values
+            foreach (var level in Enum.GetValues(typeof(Storage.Shared.Logging.LogLevel)).OfType<Storage.Shared.Logging.LogLevel>()
                 .Where(l => l < Storage.Shared.Logging.LogLevel.Max && l > Storage.Shared.Logging.LogLevel.Min))
 			{
 				_blobStorage.DeleteContainerIfExist(LevelToContainer(level));
@@ -202,7 +202,7 @@ namespace Lokad.Cloud.Diagnostics
 		/// </summary>
 		public void DeleteOldLogs(DateTime olderThanUtc)
 		{
-            foreach (var level in EnumUtil<Storage.Shared.Logging.LogLevel>.Values
+            foreach (var level in Enum.GetValues(typeof(Storage.Shared.Logging.LogLevel)).OfType<Storage.Shared.Logging.LogLevel>()
                 .Where(l => l < Storage.Shared.Logging.LogLevel.Max && l > Storage.Shared.Logging.LogLevel.Min))
 			{
 				DeleteOldLogsOfLevel(level, olderThanUtc);

@@ -203,4 +203,30 @@ namespace Lokad.Cloud.Diagnostics
 			public long Count { get; set; }
 		}
 	}
+
+    // HACK: 'DisposableAction' ported from Lokad.Shared
+
+    /// <summary>Class that allows action to be executed, when it is disposed.</summary>
+    [Serializable]
+    public sealed class DisposableAction : IDisposable
+    {
+        readonly Action _action;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DisposableAction"/> class.
+        /// </summary>
+        /// <param name="action">The action.</param>
+        public DisposableAction(Action action)
+        {
+            _action = action;
+        }
+
+        /// <summary>
+        /// Executes the action
+        /// </summary>
+        public void Dispose()
+        {
+            _action();
+        }
+    }
 }

@@ -23,7 +23,7 @@ namespace Lokad.Cloud.Services
 		TriggerInterval = 60)] // 1 execution every 1min
 	public class GarbageCollectorService : ScheduledService
 	{
-		static TimeSpan MaxExecutionTime { get { return 10.Minutes(); } }
+		static TimeSpan MaxExecutionTime { get { return TimeSpan.FromMinutes(10); } }
 
 		protected override void StartOnSchedule()
 		{

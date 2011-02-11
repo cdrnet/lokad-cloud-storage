@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using Lokad.Cloud.Shared.Test;
 using Lokad.Cloud.Test;
 using NUnit.Framework;
 
@@ -385,8 +386,8 @@ namespace Lokad.Cloud.Storage.Test
         {
             var prefix = Guid.NewGuid().ToString("N");
 
-            var prefixed = Range.Array(10).Convert(i => prefix + Guid.NewGuid().ToString("N"));
-            var unprefixed = Range.Array(13).Convert(i => Guid.NewGuid().ToString("N"));
+            var prefixed = Range.Array(10).Select(i => prefix + Guid.NewGuid().ToString("N")).ToArray();
+            var unprefixed = Range.Array(13).Select(i => Guid.NewGuid().ToString("N")).ToArray();
 
             foreach (var n in prefixed)
             {
@@ -414,8 +415,8 @@ namespace Lokad.Cloud.Storage.Test
         {
             var prefix = Guid.NewGuid().ToString("N");
 
-            var prefixed = Range.Array(10).Convert(i => prefix + Guid.NewGuid().ToString("N"));
-            var unprefixed = Range.Array(13).Convert(i => Guid.NewGuid().ToString("N"));
+            var prefixed = Range.Array(10).Select(i => prefix + Guid.NewGuid().ToString("N")).ToArray();
+            var unprefixed = Range.Array(13).Select(i => Guid.NewGuid().ToString("N")).ToArray();
 
             foreach (var n in prefixed)
             {

@@ -3,6 +3,8 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using Lokad.Cloud.Storage.Shared.Monads;
+
 namespace Lokad.Cloud.Management
 {
 	/// <summary>Defines an interface to auto-scale your cloud app.</summary>

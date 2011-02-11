@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;
+using Lokad.Cloud.Storage.Shared.Monads;
 using NUnit.Framework;
 using System.Text;
 using System.Runtime.Serialization;
