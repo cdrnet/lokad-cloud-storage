@@ -135,8 +135,8 @@ namespace Lokad.Cloud.Storage
                     .SelectMany(f => f)
                     .ToArray();
 
-                TreatDefaultAsNull = Members.ToArray(m =>
-                    ((RankAttribute) (m.GetCustomAttributes(typeof (RankAttribute), true).First())).TreatDefaultAsNull);
+                TreatDefaultAsNull = Members.Select(m =>
+                    ((RankAttribute) (m.GetCustomAttributes(typeof (RankAttribute), true).First())).TreatDefaultAsNull).ToArray();
 
                 FirstCtor = typeof(T).GetConstructors(
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).First();

@@ -482,9 +482,8 @@ namespace Lokad.Cloud.Storage.Azure
         {
             // checking for entities that already exist
             var partitionKey = entities.First().PartitionKey;
-            var existingKeys =
-                Get<T>(tableName, partitionKey, entities.Select(e => e.RowKey))
-                    .ToSet(e => e.RowKey);
+            var existingKeys = new HashSet<string>(
+                Get<T>(tableName, partitionKey, entities.Select(e => e.RowKey)).Select(e => e.RowKey));
 
             // inserting or updating depending on the presence of the keys
             Insert(tableName, entities.Where(e => !existingKeys.Contains(e.RowKey)));

@@ -124,7 +124,7 @@ namespace Lokad.Cloud.Storage.InMemory
         /// <see cref="ITableStorageProvider.Get{T}(string,string,System.Collections.Generic.IEnumerable{string})"/>
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey, IEnumerable<string> rowKeys)
         {
-            var keys = rowKeys.ToSet();
+            var keys = new HashSet<string>(rowKeys);
             return GetInternal<T>(tableName, entry => entry.PartitionKey == partitionKey && keys.Contains(entry.RowKey));
         }
 
@@ -229,7 +229,7 @@ namespace Lokad.Cloud.Storage.InMemory
                     return;
                 }
 
-                var keys = rowKeys.ToSet();
+                var keys = new HashSet<string>(rowKeys);
                 entries.RemoveAll(entry => entry.PartitionKey == partitionKey && keys.Contains(entry.RowKey));
             }
         }
