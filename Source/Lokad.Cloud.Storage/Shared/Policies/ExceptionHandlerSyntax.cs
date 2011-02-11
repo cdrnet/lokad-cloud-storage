@@ -35,7 +35,7 @@ namespace Lokad.Cloud.Storage.Shared.Policies
         /// <returns>reusable instance of policy</returns>
         public static ActionPolicy Retry(this Syntax<ExceptionHandler> syntax, int retryCount)
         {
-            Enforce.Argument(() => syntax);
+            if(null == syntax) throw new ArgumentNullException("syntax");
 
             Func<IRetryState> state = () => new RetryStateWithCount(retryCount, DoNothing2);
             return new ActionPolicy(action => RetryPolicy.Implementation(action, syntax.Target, state));

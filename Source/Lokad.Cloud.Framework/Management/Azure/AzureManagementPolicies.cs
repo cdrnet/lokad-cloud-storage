@@ -6,6 +6,7 @@
 using System;
 using System.ServiceModel;
 using System.ServiceModel.Security;
+using System.Threading;
 using Lokad.Cloud.Storage.Shared.Policies;
 
 namespace Lokad.Cloud.Management.Azure
@@ -37,7 +38,7 @@ namespace Lokad.Cloud.Management.Azure
 		{
 			// quadratic backoff, capped at 5 minutes
 			var c = count + 1;
-			SystemUtil.Sleep(Math.Min(300, c * c).Seconds());
+			Thread.Sleep(Math.Min(300, c * c).Seconds());
 		}
 
 		static bool TransientServerErrorExceptionFilter(Exception exception)

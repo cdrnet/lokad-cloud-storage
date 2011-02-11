@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Lokad.Cloud.Storage.Shared.Policies
 {
@@ -26,7 +27,7 @@ namespace Lokad.Cloud.Storage.Shared.Policies
             {
                 var current = _enumerator.Current;
                 _onRetry(ex, current);
-                SystemUtil.Sleep(current);
+                Thread.Sleep(current);
                 return true;
             }
             return false;

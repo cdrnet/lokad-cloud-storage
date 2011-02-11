@@ -3,22 +3,12 @@
 // This code is released under the terms of the new BSD licence
 #endregion
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using NUnit.Framework;
-using Lokad.Cloud.Storage.Shared.Policies;
 
 namespace Lokad.Cloud.Storage.Shared.Policies.Test
 {
     public sealed class ActionPolicyTests
     {
-        [TearDown]
-        public void TearDown()
-        {
-            SystemUtil.Reset();
-        }
-
         static void Expect<T>(Action action) where T : Exception
         {
             try
@@ -41,32 +31,9 @@ namespace Lokad.Cloud.Storage.Shared.Policies.Test
             throw new ArgumentException();
         }
 
-        static void Nothing()
-        {
-        }
-
-        [Test]
-        public void WaitAndRetry()
-        {
-            TimeSpan slept = TimeSpan.Zero;
-            SystemUtil.SetSleep(span => slept += span);
-
-            var policy = ActionPolicy
-                .Handle<TimeoutException>()
-                .WaitAndRetry(Range.Create(5, i => i.Seconds()));
-
-            Expect<ArgumentException>(() => policy.Do(RaiseArgument));
-            Assert.AreEqual(TimeSpan.Zero, slept);
-
-            Expect<TimeoutException>(() => policy.Do(RaiseTimeout));
-            Assert.AreEqual(10.Seconds(), slept);
-        }
-
         [Test]
         public void WaitAndRetry_WithAction()
         {
-            TimeSpan slept = TimeSpan.Zero;
-            SystemUtil.SetSleep(span => slept += span);
             int count = 0;
 
             var policy = ActionPolicy
@@ -75,17 +42,14 @@ namespace Lokad.Cloud.Storage.Shared.Policies.Test
 
             // non-handled
             Expect<ArgumentException>(() => policy.Do(RaiseArgument));
-            Assert.AreEqual(TimeSpan.Zero, slept);
             Assert.AreEqual(0, count);
 
             // handled succeeds
             Raise<TimeoutException>(5, policy);
-            Assert.AreEqual(10.Seconds(), slept);
             Assert.AreEqual(5, count);
 
             // handled fails
             Expect<TimeoutException>(6, policy);
-            Assert.AreEqual(20.Seconds(), slept);
             Assert.AreEqual(10, count);
         }
 

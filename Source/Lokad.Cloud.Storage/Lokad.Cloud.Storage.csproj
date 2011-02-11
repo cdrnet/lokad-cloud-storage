@@ -93,6 +93,7 @@
     <Compile Include="Shared\Logging\ILogExtensions.cs" />
     <Compile Include="Shared\Logging\ILogProvider.cs" />
     <Compile Include="Shared\Logging\LogLevel.cs" />
+    <Compile Include="Shared\Syntax.cs" />
     <Compile Include="SideEffectFreeAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tables\CloudEntity.cs" />
