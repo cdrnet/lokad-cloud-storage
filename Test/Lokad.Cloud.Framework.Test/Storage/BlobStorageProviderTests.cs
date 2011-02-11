@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using Lokad.Cloud.Shared.Test;
+using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Test;
 using NUnit.Framework;
 
@@ -209,11 +210,11 @@ namespace Lokad.Cloud.Storage.Test
 
             int ignored;
 
-            array = array.AsParallel().WithDegreeOfParallelism(array.Length).Select(
+            array = array.SelectInParallel(
                 k => _blobStorage.UpdateIfNotModified(
                     ContainerName, BlobName,
                     i => i.HasValue ? i.Value + 1 : 1,
-                    out ignored)).ToArray();
+                    out ignored), array.Length);
 
             Assert.IsTrue(array.Any(x => x), "#A00 write should have happened at least once.");
             Assert.IsTrue(array.Any(x => !x), "#A01 conflict should have happened at least once.");
@@ -275,11 +276,11 @@ namespace Lokad.Cloud.Storage.Test
             _blobStorage.PutBlob(ContainerName, BlobName, 0);
 
             var array = new Shared.Monads.Maybe<int>[8];
-            array = array.AsParallel().WithDegreeOfParallelism(array.Length).Select(
+            array = array.SelectInParallel(
                 k => _blobStorage.UpsertBlobOrSkip<int>(
                     ContainerName, BlobName,
                     () => 1,
-                    i => i + 1)).ToArray();
+                    i => i + 1), array.Length);
 
             Assert.IsFalse(array.Any(x => !x.HasValue), "No skips");
 

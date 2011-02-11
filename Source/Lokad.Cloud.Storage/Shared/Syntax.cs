@@ -3,10 +3,7 @@
 // This code is released under the terms of the new BSD licence
 #endregion
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
 
 namespace Lokad.Cloud.Storage.Shared
 {

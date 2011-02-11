@@ -1,12 +1,11 @@
-﻿#region Copyright (c) Lokad 2009-2011
-// This code is released under the terms of the new BSD licence.
-// URL: http://www.lokad.com/
+﻿#region (c)2009-2011 Lokad - New BSD license
+// Company: http://www.lokad.com
+// This code is released under the terms of the new BSD licence
 #endregion
-
 using System;
 using System.Threading;
 
-namespace Lokad.Cloud.ServiceFabric
+namespace Lokad.Cloud.Storage.Shared
 {
     // HACK: imported back from Lokad.Shared
 

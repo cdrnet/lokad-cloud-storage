@@ -353,12 +353,12 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>As many parallel requests than there are blob names.</summary>
         public Shared.Monads.Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
         {
-            var tempResult = blobNames.AsParallel().WithDegreeOfParallelism(blobNames.Length).Select(blobName =>
+            var tempResult = blobNames.SelectInParallel(blobName =>
             {
                 string etag;
                 var blob = GetBlob<T>(containerName, blobName, out etag);
                 return new Tuple<Shared.Monads.Maybe<T>, string>(blob, etag);
-            }).ToArray();
+            }, blobNames.Length);
 
             etags = new string[blobNames.Length];
             var result = new Shared.Monads.Maybe<T>[blobNames.Length];

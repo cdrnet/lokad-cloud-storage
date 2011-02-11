@@ -5,8 +5,10 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using Lokad.Cloud.Shared.Test;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Storage
@@ -52,23 +54,25 @@ namespace Lokad.Cloud.Test.Storage
             provider.CreateContainerIfNotExist(ContainerName);
 
             //creating thread parameters
-            var count = new BlobCounter(provider, ContainerName, "SomeBlobName");
-            count.Reset(0);
+            var counter = new BlobCounter(provider, ContainerName, "SomeBlobName");
+            counter.Reset(0);
 
             var random = new Random();
             const int threadsCount = 4;
-            var increments = Range.Array(threadsCount).Select(e => Range.Array(5).Select(i => random.Next(20) - 10));
-            var localSums = increments.AsParallel().WithDegreeOfParallelism(threadsCount).Select(e =>
+            var increments = Range.Array(threadsCount).Select(e => Range.Array(5).Select(i => random.Next(20)).ToArray()).ToArray();
+            var localSums = increments.SelectInParallel(
+                    e =>
                 {
-                    var counter = new BlobCounter(provider, ContainerName, "SomeBlobName");
+                    var c = new BlobCounter(provider, ContainerName, "SomeBlobName");
                     foreach (var increment in e)
                     {
-                        counter.Increment(increment);
+                        c.Increment(increment);
                     }
                     return e.Sum();
-                }).ToArray();
+                }, threadsCount);
 
-            Assert.AreEqual(localSums.Sum(), count.GetValue(), "values should be equal, BlobCounter supposed to be thread-safe");
+            Assert.AreEqual(increments.Sum(i => i.Sum()), localSums.Sum(), "Broken invariant.");
+            Assert.AreEqual(localSums.Sum(), counter.GetValue(), "Values should be equal, BlobCounter supposed to be thread-safe");
         }
     }
 }

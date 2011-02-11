@@ -9,6 +9,7 @@ using System.Linq;
 using Lokad.Cloud.Jobs;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared;
 
 namespace Lokad.Cloud.ServiceFabric
 {
