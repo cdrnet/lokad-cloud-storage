@@ -22,10 +22,6 @@ namespace Lokad.Cloud.Storage.Shared.Policies
         {
         }
 
-        static void DoNothing2(Exception ex, TimeSpan sleep)
-        {
-        }
-
         /// <summary>
         /// Builds <see cref="Policies.ActionPolicy"/> that will retry exception handling
         /// for a couple of times before giving up.

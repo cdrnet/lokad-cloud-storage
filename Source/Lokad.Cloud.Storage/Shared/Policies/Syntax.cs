@@ -2,7 +2,7 @@
 // Company: http://www.lokad.com
 // This code is released under the terms of the new BSD licence
 #endregion
-using System;
+
 using System.ComponentModel;
 
 namespace Lokad.Cloud.Storage.Shared.Policies
@@ -53,18 +53,6 @@ namespace Lokad.Cloud.Storage.Shared.Policies
         }
 
         /// <summary>
-        /// Gets the <see cref="T:System.Type"/> of the current instance.
-        /// </summary>
-        /// <returns>
-        /// The <see cref="T:System.Type"/> instance that represents the exact runtime type of the current instance.
-        /// </returns>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public new Type GetType()
-        {
-            return base.GetType();
-        }
-
-        /// <summary>
         /// Creates the syntax for the specified target
         /// </summary>
         /// <typeparam name="TTarget">The type of the target.</typeparam>
@@ -100,11 +88,6 @@ namespace Lokad.Cloud.Storage.Shared.Policies
         public TTarget Target
         {
             get { return _inner; }
-        }
-
-        internal static Syntax<TTarget> For(TTarget item)
-        {
-            return new Syntax<TTarget>(item);
         }
     }
 }
