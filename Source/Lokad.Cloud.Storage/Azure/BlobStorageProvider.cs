@@ -16,6 +16,7 @@ using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Monads;
 using Lokad.Cloud.Storage.Shared.Policies;
+using Lokad.Cloud.Storage.Shared.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
 using Lokad.Cloud.Storage.Shared.Logging;

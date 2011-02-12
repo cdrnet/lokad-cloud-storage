@@ -212,6 +212,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Diagnostics\ReadMe.txt" />
+    <Content Include="Jobs\_ReadMe.txt" />
     <Content Include="Management\Azure\ReadMe.txt" />
     <Content Include="Management\ReadMe.txt" />
     <Content Include="ServiceFabric\ReadMe.txt" />
