@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using Lokad.Cloud.Shared.Test;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.Shared.Threading;
 using Lokad.Cloud.Test;
 using NUnit.Framework;
 

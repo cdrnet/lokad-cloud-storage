@@ -9,6 +9,7 @@ using System.Threading;
 using Lokad.Cloud.Shared.Test;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.Shared.Threading;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Storage

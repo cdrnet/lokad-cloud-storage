@@ -2,11 +2,12 @@
 // Company: http://www.lokad.com
 // This code is released under the terms of the new BSD licence
 #endregion
+
 using System;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Lokad.Cloud.Storage.Shared
+namespace Lokad.Cloud.Storage.Shared.Threading
 {
     ///<summary>
     /// Quick alternatives to PLinq with minimal overhead and simple implementations.
