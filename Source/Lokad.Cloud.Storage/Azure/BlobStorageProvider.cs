@@ -304,7 +304,7 @@ namespace Lokad.Cloud.Storage.Azure
                         blobName, containerName);
                 }
 
-                return deserialized.ToMaybe();
+                return deserialized.IsSuccess ? new Maybe<object>(deserialized.Value) : Maybe<object>.Empty;
             }
         }
 
@@ -348,7 +348,8 @@ namespace Lokad.Cloud.Storage.Azure
                 }
 
                 stream.Seek(0, SeekOrigin.Begin);
-                return formatter.TryUnpackXml(stream).ToMaybe();
+                var unpacked = formatter.TryUnpackXml(stream);
+                return unpacked.IsSuccess ? unpacked.Value : Maybe<XElement>.Empty;
             }
         }
 
@@ -419,7 +420,7 @@ namespace Lokad.Cloud.Storage.Azure
                             blobName, containerName);
                     }
 
-                    return deserialized.ToMaybe();
+                    return deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
                 }
             }
             catch (StorageClientException ex)
@@ -693,7 +694,7 @@ namespace Lokad.Cloud.Storage.Azure
                                 blobName, containerName);
                         }
 
-                        input = deserialized.ToMaybe();
+                        input = deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
                     }
                 }
                 catch (StorageClientException ex)
@@ -1001,7 +1002,7 @@ namespace Lokad.Cloud.Storage.Azure
                             blobName, containerName);
                     }
 
-                    input = deserialized.ToMaybe();
+                    input = deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
                 }
             }
             catch (StorageClientException ex)

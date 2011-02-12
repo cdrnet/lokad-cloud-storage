@@ -97,12 +97,5 @@ namespace Lokad.Cloud.Storage.Shared.Monads.Tests
 
             Assert.AreEqual(Maybe10.Value, i);
         }
-
-        [Test]
-        [ExpectedException(typeof(InvalidOperationException))]
-        public void Exposing1()
-        {
-            MaybeEmpty.ExposeException("Fail");
-        }
     }
 }

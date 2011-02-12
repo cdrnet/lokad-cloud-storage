@@ -137,22 +137,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		}
 
 		/// <summary>
-		/// Throws the exception if maybe does not have value.
-		/// </summary>
-		/// <returns>actual value</returns>
-		/// <exception cref="InvalidOperationException">if maybe does not have value</exception>
-		public T ExposeException(string message)
-		{
-			if (message == null) throw new ArgumentNullException(@"message");
-			if (!_hasValue)
-			{
-				throw new InvalidOperationException(message);
-			}
-
-			return _value;
-		}
-
-		/// <summary>
 		/// Converts this instance to <see cref="Maybe{T}"/>, 
 		/// while applying <paramref name="converter"/> if there is a value.
 		/// </summary>
@@ -193,7 +177,7 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		/// <summary>
 		/// Determines whether the specified <see cref="Maybe{T}"/> is equal to the current <see cref="Maybe{T}"/>.
 		/// </summary>
-		/// <param name="maybe">The <see cref="Maybe"/> to compare with.</param>
+		/// <param name="maybe">The <see cref="Maybe{T}"/> to compare with.</param>
 		/// <returns>true if the objects are equal</returns>
 		public bool Equals(Maybe<T> maybe)
 		{

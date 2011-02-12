@@ -58,10 +58,10 @@ namespace Lokad.Cloud.Web
 						if (now.Subtract(_checkPeriod) > _lastChecked)
 						{
 							_lastChecked = now;
-							var newestVersion = RequestNewestVersionInfo().ToMaybe(v => v);
-							if(newestVersion.HasValue)
+							var newestVersion = RequestNewestVersionInfo();
+							if(newestVersion.IsSuccess)
 							{
-								_newestVersion = newestVersion;
+								_newestVersion = newestVersion.Value;
 							}
 						}
 					}

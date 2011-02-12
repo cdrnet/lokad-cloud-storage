@@ -134,54 +134,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		}
 
 		/// <summary>
-		/// Applies the specified <paramref name="action"/>
-		/// to this <see cref="Result{T}"/>, if it has value.
-		/// </summary>
-		/// <param name="action">The action to apply.</param>
-		/// <returns>returns same instance for inlining</returns>
-		/// <exception cref="ArgumentNullException">if <paramref name="action"/> is null</exception>
-		public Result<TValue,TError> Apply(Action<TValue> action)
-		{
-			if (action == null) throw new ArgumentNullException("action");
-			if (_isSuccess)
-				action(_value);
-
-			return this;
-		}
-
-		/// <summary>
-		/// Handles the specified handler.
-		/// </summary>
-		/// <param name="handler">The handler.</param>
-		/// <returns>same instance for the inlining</returns>
-		public Result<TValue, TError> Handle(Action<TError> handler)
-		{
-			if (handler == null) throw new ArgumentNullException("handler");
-
-			if (!_isSuccess)
-				handler(_error);
-
-			return this;
-		}
-
-		/// <summary>
-		/// Converts value of this instance
-		/// using the provided <paramref name="converter"/>
-		/// </summary>
-		/// <typeparam name="TTarget">The type of the target.</typeparam>
-		/// <param name="converter">The converter.</param>
-		/// <returns>Converted result</returns>
-		/// <exception cref="ArgumentNullException"> if <paramref name="converter"/> is null</exception>
-		public Result<TTarget, TError> Convert<TTarget>(Func<TValue, TTarget> converter)
-		{
-			if (converter == null) throw new ArgumentNullException("converter");
-			if (!_isSuccess)
-				return Result<TTarget, TError>.CreateError(_error);
-
-			return converter(_value);
-		}
-
-		/// <summary>
 		/// Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>.
 		/// </summary>
 		/// <param name="obj">The <see cref="T:System.Object"/> to compare with the current <see cref="T:System.Object"/>.</param>
@@ -198,7 +150,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 			if (obj.GetType() != typeof (Result<TValue, TError>)) return false;
 			return Equals((Result<TValue, TError>) obj);
 		}
-
 
 		/// <summary>
 		/// Serves as a hash function for a particular type.
@@ -217,66 +168,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 // ReSharper restore CompareNonConstrainedGenericWithNull
 				return result;
 			}
-		}
-
-		/// <summary>
-		/// Combines this <see cref="Result{T}"/> with the result returned
-		/// by <paramref name="converter"/>.
-		/// </summary>
-		/// <typeparam name="TTarget">The type of the target.</typeparam>
-		/// <param name="converter">The converter.</param>
-		/// <returns>Combined result.</returns>
-		public Result<TTarget, TError> Combine<TTarget>(Func<TValue, Result<TTarget, TError>> converter)
-		{
-			if (converter == null) throw new ArgumentNullException("converter");
-			if (!_isSuccess)
-				return Result<TTarget, TError>.CreateError(_error);
-
-			return converter(_value);
-		}
-
-		/// <summary>
-		/// Converts this <see cref="Result{T}"/> to <see cref="Maybe{T}"/>, 
-		/// using the <paramref name="converter"/> to perform the value conversion.
-		/// </summary>
-		/// <typeparam name="TTarget">The type of the target.</typeparam>
-		/// <param name="converter">The reflector.</param>
-		/// <returns><see cref="Maybe{T}"/> that represents the original value behind the <see cref="Result{T}"/> after the conversion</returns>
-		public Maybe<TTarget> ToMaybe<TTarget>(Func<TValue, TTarget> converter)
-		{
-			if (converter == null) throw new ArgumentNullException("converter");
-			if (!_isSuccess)
-				return Maybe<TTarget>.Empty;
-
-			return converter(_value);
-		}
-
-		/// <summary>
-		/// Converts this <see cref="Result{T}"/> to <see cref="Maybe{T}"/>, 
-		/// with the original value reference, if there is any.
-		/// </summary>
-		/// <returns><see cref="Maybe{T}"/> that represents the original value behind the <see cref="Result{T}"/>.</returns>
-		public Maybe<TValue> ToMaybe()
-		{
-			if (!_isSuccess)
-				return Maybe<TValue>.Empty;
-
-			return _value;
-		}
-
-		/// <summary>
-		/// Exposes result failure as the exception (providing compatibility, with the exception -expecting code).
-		/// </summary>
-		/// <param name="exception">The function to generate exception, provided the error string.</param>
-		/// <returns>result value</returns>
-		public TValue ExposeException(Func<TError, Exception> exception)
-		{
-			if (exception == null) throw new ArgumentNullException("exception");
-			if (!IsSuccess)
-				throw exception(Error);
-
-			// abdullin: we can return value here, since failure chain ends here
-			return Value;
 		}
 
 		/// <summary>

@@ -22,27 +22,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		}
 
 		/// <summary>
-		/// Error message associated with this failure
-		/// </summary>
-		[Obsolete("Use Error instead")]
-		public string ErrorMessage
-		{
-			get { return _error; }
-		}
-
-		/// <summary>  Creates failure result </summary>
-		/// <param name="errorFormatString">format string for the error message</param>
-		/// <param name="args">The arguments.</param>
-		/// <returns>result that is a failure</returns>
-		/// <exception cref="ArgumentNullException">if format string is null</exception>
-		public static Result<T> CreateError(string errorFormatString, params object[] args)
-		{
-			if (errorFormatString == null) throw new ArgumentNullException("errorFormatString");
-
-			return CreateError(string.Format(errorFormatString, args));
-		}
-
-		/// <summary>
 		/// Creates the success result.
 		/// </summary>
 		/// <param name="value">The value.</param>
@@ -55,23 +34,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 			// ReSharper restore CompareNonConstrainedGenericWithNull
 
 			return new Result<T>(true, value, default(string));
-		}
-
-		/// <summary>
-		/// Converts value of this instance
-		/// using the provided <paramref name="converter"/>
-		/// </summary>
-		/// <typeparam name="TTarget">The type of the target.</typeparam>
-		/// <param name="converter">The converter.</param>
-		/// <returns>Converted result</returns>
-		/// <exception cref="ArgumentNullException"> if <paramref name="converter"/> is null</exception>
-		public Result<TTarget> Convert<TTarget>(Func<T, TTarget> converter)
-		{
-			if (converter == null) throw new ArgumentNullException("converter");
-			if (!_isSuccess)
-				return Result<TTarget>.CreateError(_error);
-
-			return converter(_value);
 		}
 
 		/// <summary>
@@ -102,21 +64,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 			return new Result<T>(true, value, null);
 		}
 
-
-		/// <summary>
-		/// Combines this <see cref="Result{T}"/> with the result returned
-		/// by <paramref name="converter"/>.
-		/// </summary>
-		/// <typeparam name="TTarget">The type of the target.</typeparam>
-		/// <param name="converter">The converter.</param>
-		/// <returns>Combined result.</returns>
-		public Result<TTarget> Combine<TTarget>(Func<T, Result<TTarget>> converter)
-		{
-			if (!_isSuccess)
-				return Result<TTarget>.CreateError(_error);
-
-			return converter(_value);
-		}
 
 		/// <summary>
 		/// Determines whether the specified <see cref="T:System.Object"/> is equal to the current <see cref="T:System.Object"/>.
@@ -168,37 +115,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		}
 
 		/// <summary>
-		/// Applies the specified <paramref name="action"/>
-		/// to this <see cref="Result{T}"/>, if it has value.
-		/// </summary>
-		/// <param name="action">The action to apply.</param>
-		/// <returns>returns same instance for inlining</returns>
-		/// <exception cref="ArgumentNullException">if <paramref name="action"/> is null</exception>
-		public Result<T> Apply(Action<T> action)
-		{
-			if (action == null) throw new ArgumentNullException("action");
-			if (_isSuccess)
-				action(_value);
-
-			return this;
-		}
-
-		/// <summary>
-		/// Handles the specified handler.
-		/// </summary>
-		/// <param name="handler">The handler.</param>
-		/// <returns>same instance for the inlining</returns>
-		public Result<T> Handle(Action<string> handler)
-		{
-			if (handler == null) throw new ArgumentNullException("handler");
-
-			if (!_isSuccess)
-				handler(_error);
-
-			return this;
-		}
-
-		/// <summary>
 		/// Gets a value indicating whether this result is valid.
 		/// </summary>
 		/// <value><c>true</c> if this result is valid; otherwise, <c>false</c>.</value>
@@ -236,52 +152,7 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		}
 
 		/// <summary>
-		/// Converts this <see cref="Result{T}"/> to <see cref="Maybe{T}"/>, 
-		/// using the <paramref name="converter"/> to perform the value conversion.
-		/// </summary>
-		/// <typeparam name="TTarget">The type of the target.</typeparam>
-		/// <param name="converter">The reflector.</param>
-		/// <returns><see cref="Maybe{T}"/> that represents the original value behind the <see cref="Result{T}"/> after the conversion</returns>
-		public Maybe<TTarget> ToMaybe<TTarget>(Func<T, TTarget> converter)
-		{
-			if (converter == null) throw new ArgumentNullException("converter");
-			if (!_isSuccess)
-				return Maybe<TTarget>.Empty;
-
-			return converter(_value);
-		}
-
-		/// <summary>
-		/// Converts this <see cref="Result{T}"/> to <see cref="Maybe{T}"/>, 
-		/// with the original value reference, if there is any.
-		/// </summary>
-		/// <returns><see cref="Maybe{T}"/> that represents the original value behind the <see cref="Result{T}"/>.</returns>
-		public Maybe<T> ToMaybe()
-		{
-			if (!_isSuccess)
-				return Maybe<T>.Empty;
-
-			return _value;
-		}
-
-		/// <summary>
-		/// Exposes result failure as the exception (providing compatibility, with the exception -expecting code).
-		/// </summary>
-		/// <param name="exception">The function to generate exception, provided the error string.</param>
-		/// <returns>result value</returns>
-		public T ExposeException(Func<string, Exception> exception)
-		{
-			if (exception == null) throw new ArgumentNullException("exception");
-			if (!IsSuccess)
-				throw exception(Error);
-
-			// abdullin: we can return value here, since failure chain ends here
-			return Value;
-		}
-
-
-		/// <summary>
-		/// Performs an implicit conversion from <see cref="System.String"/> to <see cref="Lokad.Result&lt;T&gt;"/>.
+		/// Performs an implicit conversion from <see cref="System.String"/> to <see cref="Result{T}"/>.
 		/// </summary>
 		/// <param name="error">The error.</param>
 		/// <returns>The result of the conversion.</returns>

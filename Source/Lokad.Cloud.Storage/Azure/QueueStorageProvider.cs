@@ -15,6 +15,7 @@ using Lokad.Cloud.Storage.Shared.Policies;
 using Lokad.Diagnostics;
 using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure.StorageClient;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -639,7 +640,8 @@ namespace Lokad.Cloud.Storage.Azure
                 {
                     using (var stream = new MemoryStream(data))
                     {
-                        dataXml = intermediateSerializer.TryUnpackXml(stream).ToMaybe();
+                        var unpacked = intermediateSerializer.TryUnpackXml(stream);
+                        dataXml = unpacked.IsSuccess ? unpacked.Value : Maybe<XElement>.Empty;
                     }
                 }
 

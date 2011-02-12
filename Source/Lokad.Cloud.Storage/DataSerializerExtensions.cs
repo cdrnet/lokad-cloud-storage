@@ -8,12 +8,13 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Storage
 {
     internal static class DataSerializerExtensions
     {
-        public static Shared.Monads.Result<T, Exception> TryDeserializeAs<T>(this IDataSerializer serializer, Stream source)
+        public static Result<T, Exception> TryDeserializeAs<T>(this IDataSerializer serializer, Stream source)
         {
             var position = source.Position;
             try
@@ -21,22 +22,22 @@ namespace Lokad.Cloud.Storage
                 var result = serializer.Deserialize(source, typeof(T));
                 if (result == null)
                 {
-                    return Shared.Monads.Result<T, Exception>.CreateError(new SerializationException("Serializer returned null"));
+                    return Result<T, Exception>.CreateError(new SerializationException("Serializer returned null"));
                 }
 
                 if (!(result is T))
                 {
-                    return Shared.Monads.Result<T, Exception>.CreateError(new InvalidCastException(
+                    return Result<T, Exception>.CreateError(new InvalidCastException(
                         String.Format("Source was expected to be of type {0} but was of type {1}.",
                             typeof (T).Name,
                             result.GetType().Name)));
                 }
 
-                return Shared.Monads.Result<T, Exception>.CreateSuccess((T)result);
+                return Result<T, Exception>.CreateSuccess((T)result);
             }
             catch (Exception e)
             {
-                return Shared.Monads.Result<T, Exception>.CreateError(e);
+                return Result<T, Exception>.CreateError(e);
             }
             finally
             {
@@ -44,7 +45,7 @@ namespace Lokad.Cloud.Storage
             }
         }
 
-        public static Shared.Monads.Result<object, Exception> TryDeserialize(this IDataSerializer serializer, Stream source, Type type)
+        public static Result<object, Exception> TryDeserialize(this IDataSerializer serializer, Stream source, Type type)
         {
             var position = source.Position;
             try
@@ -52,23 +53,23 @@ namespace Lokad.Cloud.Storage
                 var result = serializer.Deserialize(source, type);
                 if (result == null)
                 {
-                    return Shared.Monads.Result<object, Exception>.CreateError(new SerializationException("Serializer returned null"));
+                    return Result<object, Exception>.CreateError(new SerializationException("Serializer returned null"));
                 }
 
                 var actualType = result.GetType();
                 if (!type.IsAssignableFrom(actualType))
                 {
-                    return Shared.Monads.Result<object, Exception>.CreateError(new InvalidCastException(
+                    return Result<object, Exception>.CreateError(new InvalidCastException(
                         String.Format("Source was expected to be of type {0} but was of type {1}.",
                             type.Name,
                             actualType.Name)));
                 }
 
-                return Shared.Monads.Result<object, Exception>.CreateSuccess(result);
+                return Result<object, Exception>.CreateSuccess(result);
             }
             catch (Exception e)
             {
-                return Shared.Monads.Result<object, Exception>.CreateError(e);
+                return Result<object, Exception>.CreateError(e);
             }
             finally
             {
@@ -76,7 +77,7 @@ namespace Lokad.Cloud.Storage
             }
         }
 
-        public static Shared.Monads.Result<T, Exception> TryDeserializeAs<T>(this IDataSerializer serializer, byte[] source)
+        public static Result<T, Exception> TryDeserializeAs<T>(this IDataSerializer serializer, byte[] source)
         {
             using (var stream = new MemoryStream(source))
             {
@@ -84,7 +85,7 @@ namespace Lokad.Cloud.Storage
             }
         }
 
-        public static Shared.Monads.Result<XElement, Exception> TryUnpackXml(this IIntermediateDataSerializer serializer, Stream source)
+        public static Result<XElement, Exception> TryUnpackXml(this IIntermediateDataSerializer serializer, Stream source)
         {
             var position = source.Position;
             try
@@ -92,14 +93,14 @@ namespace Lokad.Cloud.Storage
                 var result = serializer.UnpackXml(source);
                 if (result == null)
                 {
-                    return Shared.Monads.Result<XElement, Exception>.CreateError(new SerializationException("Serializer returned null"));
+                    return Result<XElement, Exception>.CreateError(new SerializationException("Serializer returned null"));
                 }
 
-                return Shared.Monads.Result<XElement, Exception>.CreateSuccess(result);
+                return Result<XElement, Exception>.CreateSuccess(result);
             }
             catch (Exception e)
             {
-                return Shared.Monads.Result<XElement, Exception>.CreateError(e);
+                return Result<XElement, Exception>.CreateError(e);
             }
             finally
             {
