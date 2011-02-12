@@ -10,14 +10,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads.Tests
     {
         // ReSharper disable InconsistentNaming
         [Test]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void Nullables_are_detected()
-        {
-            const object o = null;
-            Maybe.From(o);
-        }
-
-        [Test]
         [ExpectedException(typeof(InvalidOperationException))]
         public void Empty_protects_value()
         {
@@ -65,7 +57,7 @@ namespace Lokad.Cloud.Storage.Shared.Monads.Tests
         [Test]
         public void Convert()
         {
-            Assert.AreEqual(Maybe.From("10"), Maybe10.Convert(i => i.ToString()));
+            Assert.AreEqual(new Maybe<string>("10"), Maybe10.Convert(i => i.ToString()));
             Assert.AreEqual(Maybe<string>.Empty, MaybeEmpty.Convert(i => i.ToString()));
 
             Assert.AreEqual("10", Maybe10.Convert(i => i.ToString(), () => "none"));
@@ -75,23 +67,18 @@ namespace Lokad.Cloud.Storage.Shared.Monads.Tests
             Assert.AreEqual("none", MaybeEmpty.Convert(i => i.ToString(), "none"));
         }
 
-        static Maybe<string> SayHi(int value)
-        {
-            if (value > 3) return Maybe<string>.Empty;
-            return "Hi x " + value;
-        }
 
         [Test]
         public void Equals()
         {
-            Assert.IsTrue(Maybe10 == Maybe.From(10));
+            Assert.IsTrue(Maybe10 == new Maybe<int>(10));
             Assert.IsTrue(Maybe10 != MaybeEmpty);
         }
 
         [Test]
         public void Check_GetHashCode()
         {
-            Assert.AreEqual(Maybe10.GetHashCode(), Maybe.From(10).GetHashCode());
+            Assert.AreEqual(Maybe10.GetHashCode(), (new Maybe<int>(10)).GetHashCode());
         }
 
         static void Throw()
@@ -116,44 +103,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads.Tests
         public void Exposing1()
         {
             MaybeEmpty.ExposeException("Fail");
-        }
-
-        // HACK: tests commented out, because of the Lokad.Shared import
-
-        //[Test, ExpectedException(typeof(KeyInvalidException))]
-        //public void Exposing2()
-        //{
-        //    MaybeEmpty.ExposeException(Errors.KeyInvalid);
-        //}
-
-        //[Test]
-        //public void Exposing_Valid()
-        //{
-        //    Maybe10
-        //        .ExposeException("Fail")
-        //        .ShouldBeEqualTo(10);
-
-        //    Maybe10
-        //        .ExposeException(Errors.KeyInvalid)
-        //        .ShouldBeEqualTo(10);
-        //}
-
-        //[Test]
-        //public void Equations()
-        //{
-        //    Maybe<DateTime> m1 = SystemUtil.UtcNow;
-        //    Maybe<DateTime> m2 = Maybe<DateTime>.Empty;
-
-        //    Assert.IsTrue(m1.EqualsTo(m1));
-        //    Assert.IsTrue(m2.EqualsTo(m2));
-        //    Assert.IsFalse(m1.EqualsTo(m2));
-        //    Assert.IsFalse(m2.EqualsTo(m1));
-
-        //}
-
-        enum SomeFailure
-        {
-            None, Fail
         }
     }
 }

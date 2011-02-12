@@ -26,8 +26,8 @@ namespace Lokad.Cloud.Management
 
         readonly bool _enabled;
         readonly Maybe<X509Certificate2> _certificate = Maybe<X509Certificate2>.Empty;
-        readonly Maybe<string> _deploymentId = Maybe.String;
-        readonly Maybe<string> _subscriptionId = Maybe.String;
+        readonly Maybe<string> _deploymentId = Maybe<string>.Empty;
+        readonly Maybe<string> _subscriptionId = Maybe<string>.Empty;
 
         readonly Storage.Shared.Policies.ActionPolicy _retryPolicy;
 
@@ -48,8 +48,8 @@ namespace Lokad.Cloud.Management
 
             // try get settings and certificate
             _deploymentId = CloudEnvironment.AzureDeploymentId;
-            _subscriptionId = settings.SelfManagementSubscriptionId ?? Maybe.String;
-            var certificateThumbprint = settings.SelfManagementCertificateThumbprint ?? Maybe.String;
+            _subscriptionId = settings.SelfManagementSubscriptionId ?? Maybe<string>.Empty;
+            var certificateThumbprint = settings.SelfManagementCertificateThumbprint ?? Maybe<string>.Empty;
             if (certificateThumbprint.HasValue)
             {
                 _certificate = CloudEnvironment.GetCertificate(certificateThumbprint.Value);
@@ -304,8 +304,8 @@ namespace Lokad.Cloud.Management
                 return false;
             }
 
-            var selfServiceAndDeployment = deployments.FirstOrEmpty(pair => pair.Item1.PrivateID == _deploymentId.Value);
-            if (!selfServiceAndDeployment.HasValue)
+            var selfServiceAndDeployment = deployments.FirstOrDefault(pair => pair.Item1.PrivateID == _deploymentId.Value);
+            if (null == selfServiceAndDeployment)
             {
                 _log.WarnFormat("Azure Self-Management: no hosted service deployment matches {0}", _deploymentId.Value);
                 _status = ManagementStatus.DeploymentNotFound;
@@ -313,8 +313,8 @@ namespace Lokad.Cloud.Management
             }
 
             _status = ManagementStatus.Available;
-            _service = selfServiceAndDeployment.Value.Item2;
-            _deployment = selfServiceAndDeployment.Value.Item1;
+            _service = selfServiceAndDeployment.Item2;
+            _deployment = selfServiceAndDeployment.Item1;
             return true;
         }
 

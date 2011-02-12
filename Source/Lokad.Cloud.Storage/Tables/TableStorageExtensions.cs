@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Lokad.Cloud.Storage.Shared.Monads;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedMethodReturnValue.Global
@@ -17,9 +18,10 @@ namespace Lokad.Cloud.Storage
     {
         /// <summary>Gets the specified cloud entity if it exists.</summary>
         /// <typeparam name="T"></typeparam>
-        public static Shared.Monads.Maybe<CloudEntity<T>> Get<T>(this ITableStorageProvider provider, string tableName, string partitionName, string rowKey)
+        public static Maybe<CloudEntity<T>> Get<T>(this ITableStorageProvider provider, string tableName, string partitionName, string rowKey)
         {
-            return Shared.Monads.Maybe.FirstOrEmpty(provider.Get<T>(tableName, partitionName, new[] { rowKey }));
+            var entity = provider.Get<T>(tableName, partitionName, new[] {rowKey}).FirstOrDefault();
+            return null != entity ? new Maybe<CloudEntity<T>>(entity) : Maybe<CloudEntity<T>>.Empty; 
         }
 
         /// <summary>Gets a strong typed wrapper around the table storage provider.</summary>

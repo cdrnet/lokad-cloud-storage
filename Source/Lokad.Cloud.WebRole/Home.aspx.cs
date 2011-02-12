@@ -99,11 +99,12 @@ namespace Lokad.Cloud.Web
 			var instanceCount = provisioning.WorkerInstanceCount;
 			if (!instanceCount.HasValue)
 			{
+			    var aic = CloudEnvironment.AzureWorkerInstanceCount;
+
 				// RoleEnvironment always returns 0 if it fails to evaluate it,
 				// which is if the role defines no (internal) endpoints.
 				// So we fall back to Empty and thus "unknown" in this case.
-				instanceCount = CloudEnvironment.AzureWorkerInstanceCount
-					.Combine(c => c > 0 ? c : Maybe<int>.Empty);
+				instanceCount = aic.HasValue && aic.Value > 0 ? aic.Value : Maybe<int>.Empty;
 			}
 			AzureWorkerInstancesLabel.Text = instanceCount.Convert(c => c.ToString(), "unknown");
 			if (!Page.IsPostBack)

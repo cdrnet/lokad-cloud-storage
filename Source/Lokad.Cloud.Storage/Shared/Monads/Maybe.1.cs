@@ -137,22 +137,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		}
 
 		/// <summary>
-		/// Exposes the specified exception if maybe does not have value.
-		/// </summary>
-		/// <param name="exception">The exception.</param>
-		/// <returns>actual value</returns>
-		/// <exception cref="Exception">if maybe does not have value</exception>
-		public T ExposeException(Func<Exception> exception)
-		{
-			if (!_hasValue)
-			{
-				throw exception();
-			}
-
-			return _value;
-		}
-
-		/// <summary>
 		/// Throws the exception if maybe does not have value.
 		/// </summary>
 		/// <returns>actual value</returns>
@@ -166,34 +150,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 			}
 
 			return _value;
-		}
-
-		/// <summary>
-		/// Throws the exception if maybe does not have value.
-		/// </summary>
-		/// <returns>actual value</returns>
-		/// <exception cref="InvalidOperationException">if maybe does not have value</exception>
-		public T ExposeException(string message, params object[] args)
-		{
-			if (message == null) throw new ArgumentNullException(@"message");
-			if (!_hasValue)
-			{
-				var text = string.Format(message, args);
-				throw new InvalidOperationException(text);
-			}
-
-			return _value;
-		}
-
-		/// <summary>
-		/// Combines this optional with the pipeline function
-		/// </summary>
-		/// <typeparam name="TTarget">The type of the target.</typeparam>
-		/// <param name="combinator">The combinator (pipeline funcion).</param>
-		/// <returns>optional result</returns>
-		public Maybe<TTarget> Combine<TTarget>(Func<T, Maybe<TTarget>> combinator)
-		{
-			return _hasValue ? combinator(_value) : Maybe<TTarget>.Empty;
 		}
 
 		/// <summary>
@@ -332,33 +288,6 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 			if (!item.HasValue) throw new ArgumentException("May be must have value");
 
 			return item.Value;
-		}
-
-
-		/// <summary>
-		/// Converts maybe into result, using the specified error as the failure
-		/// descriptor
-		/// </summary>
-		/// <typeparam name="TError">The type of the failure.</typeparam>
-		/// <param name="error">The error.</param>
-		/// <returns>result describing current maybe</returns>
-		public Result<T, TError> Join<TError>(TError error)
-		{
-			if (_hasValue)
-				return _value;
-			return error;
-		}
-
-		/// <summary>
-		/// Converts maybe into result, using the specified error as the failure
-		/// descriptor
-		/// </summary>
-		/// <returns>result describing current maybe</returns>
-		public Result<T> JoinMessage(string error)
-		{
-			if (_hasValue)
-				return _value;
-			return error;
 		}
 
 		/// <summary>

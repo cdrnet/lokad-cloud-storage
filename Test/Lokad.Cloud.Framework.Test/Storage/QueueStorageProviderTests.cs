@@ -7,7 +7,6 @@ using System;
 using System.Linq;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;
-using Lokad.Cloud.Storage.Shared.Monads;
 using NUnit.Framework;
 using System.Text;
 using System.Runtime.Serialization;
@@ -275,16 +274,16 @@ namespace Lokad.Cloud.Test.Storage
             Assert.IsTrue(deleted, "#A05");
 
             // get now should fail
-            var retrieved3 = _queueStorage.Get<MyMessage>(QueueName, 1).FirstOrEmpty();
-            Assert.IsFalse(retrieved3.HasValue, "#A06");
+            var retrieved3 = _queueStorage.Get<MyMessage>(QueueName, 1).FirstOrDefault();
+            Assert.IsNull(retrieved3, "#A06");
 
             // abandon does not put it to the queue again
             var abandoned3 = _queueStorage.Abandon(retrieved2);
             Assert.IsFalse(abandoned3, "#A07");
 
             // get now should still fail
-            var retrieved4 = _queueStorage.Get<MyMessage>(QueueName, 1).FirstOrEmpty();
-            Assert.IsFalse(retrieved4.HasValue, "#A07");
+            var retrieved4 = _queueStorage.Get<MyMessage>(QueueName, 1).FirstOrDefault();
+            Assert.IsNull(retrieved4, "#A07");
         }
 
         [Test]

@@ -84,7 +84,6 @@
     <Compile Include="Shared\Diagnostics\Persistence\ExecutionData.cs" />
     <Compile Include="Shared\FormatUtil.cs" />
     <Compile Include="Shared\Monads\Maybe.1.cs" />
-    <Compile Include="Shared\Monads\Maybe.cs" />
     <Compile Include="Shared\Monads\Result.1.cs" />
     <Compile Include="Shared\Monads\Result.2.cs" />
     <Compile Include="Shared\Monads\Result.cs" />
@@ -102,7 +101,7 @@
     <Compile Include="Shared\Logging\ILogExtensions.cs" />
     <Compile Include="Shared\Logging\ILogProvider.cs" />
     <Compile Include="Shared\Logging\LogLevel.cs" />
-    <Compile Include="Shared\Syntax.cs" />
+    <Compile Include="Shared\Policies\Syntax.cs" />
     <Compile Include="Shared\WaitFor.cs" />
     <Compile Include="SideEffectFreeAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

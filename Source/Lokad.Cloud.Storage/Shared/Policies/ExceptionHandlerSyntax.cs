@@ -76,7 +76,6 @@ namespace Lokad.Cloud.Storage.Shared.Policies
         /// the exception could be handled by the <paramref name="syntax"/> being 
         /// built and <paramref name="sleepDurations"/> is providing the sleep intervals.
         /// </para>
-        /// <para>See <see cref="Range"/> for methods to create long intervals on-the-fly</para>
         /// </summary>
         /// <param name="syntax">The syntax.</param>
         /// <param name="sleepDurations">The sleep durations.</param>
@@ -93,50 +92,5 @@ namespace Lokad.Cloud.Storage.Shared.Policies
             Func<IRetryState> state = () => new RetryStateWithSleep(sleepDurations, onRetry);
             return new ActionPolicy(action => RetryPolicy.Implementation(action, syntax.Target, state));
         }
-
-        /// <summary> <para>Builds the policy that will keep retrying as long as 
-        /// the exception could be handled by the <paramref name="syntax"/> being 
-        /// built and <paramref name="sleepDurations"/> is providing the sleep intervals.
-        /// </para>
-        /// <para>See <see cref="Range"/> for methods to create long intervals on-the-fly</para>
-        /// </summary>
-        /// <param name="syntax">The syntax.</param>
-        /// <param name="sleepDurations">The sleep durations.</param>
-        /// <returns>new policy instance</returns>
-        public static ActionPolicy WaitAndRetry(this Syntax<ExceptionHandler> syntax, IEnumerable<TimeSpan> sleepDurations)
-        {
-            if(null == syntax) throw new ArgumentNullException("syntax");
-            if(null == sleepDurations) throw new ArgumentNullException("sleepDurations");
-
-            Func<IRetryState> state = () => new RetryStateWithSleep(sleepDurations, DoNothing2);
-            return new ActionPolicy(action => RetryPolicy.Implementation(action, syntax.Target, state));
-        }
-
-        ///// <summary>
-        /////  <para>Builds the policy that will "break the circuit" after <paramref name="countBeforeBreaking"/>
-        ///// exceptions that could be handled by the <paramref name="syntax"/> being built. The circuit 
-        ///// stays broken for the <paramref name="duration"/>. Any attempt to
-        ///// invoke method within the policy, while the circuit is broken, will immediately re-throw
-        ///// the last exception.  </para>
-        ///// <para>If the action fails within the policy after the block period, then the breaker 
-        ///// is blocked again for the next <paramref name="duration"/>.
-        ///// It will be reset, otherwise.</para> 
-        ///// </summary>
-        ///// <param name="syntax">The syntax.</param>
-        ///// <param name="duration">How much time the breaker will stay open before resetting</param>
-        ///// <param name="countBeforeBreaking">How many exceptions are needed to break the circuit</param>
-        ///// <returns>shared policy instance</returns>
-        ///// <remarks>(see "ReleaseIT!" for the details)</remarks>
-        //public static ActionPolicyWithState CircuitBreaker(this Syntax<ExceptionHandler> syntax, TimeSpan duration,
-        //    int countBeforeBreaking)
-        //{
-        //    if(null == syntax) throw new ArgumentNullException("syntax");
-        //    if(countBeforeBreaking <= 0) throw new ArgumentOutOfRangeException("countBeforeBreaking");
-        //    if(default(TimeSpan).Equals(duration)) throw new ArgumentOutOfRangeException("duration");
-
-        //    var state = new CircuitBreakerState(duration, countBeforeBreaking);
-        //    var syncLock = new CircuitBreakerStateLock(state);
-        //    return new ActionPolicyWithState(action => CircuitBreakerPolicy.Implementation(action, syntax.Target, syncLock));
-        //}
     }
 }

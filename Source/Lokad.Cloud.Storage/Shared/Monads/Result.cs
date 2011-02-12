@@ -16,16 +16,5 @@ namespace Lokad.Cloud.Storage.Shared.Monads
 		{
 			return Result<TValue>.CreateSuccess(value);
 		}
-
-		/// <summary> Creates success result </summary>
-		/// <typeparam name="TValue">The type of the result.</typeparam>
-		/// <param name="value">The item.</param>
-		/// <returns>new result instance</returns>
-		/// <seealso cref="Result{T}.CreateSuccess"/>
-		[Obsolete("Use CreateSuccess instead")]
-		public static Result<TValue> Success<TValue>(TValue value)
-		{
-			return CreateSuccess(value);
-		}
 	}
 }

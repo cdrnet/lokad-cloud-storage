@@ -57,12 +57,12 @@ namespace Lokad.Cloud
 		/// </summary>
 		public static Maybe<string> AzureCurrentInstanceId
 		{
-			get { return _runtimeAvailable ? RoleEnvironment.CurrentRoleInstance.Id : Maybe.String; }
+			get { return _runtimeAvailable ? RoleEnvironment.CurrentRoleInstance.Id : Maybe<string>.Empty; }
 		}
 
 		public static Maybe<string> AzureDeploymentId
 		{
-			get { return _runtimeAvailable ? RoleEnvironment.DeploymentId : Maybe.String; }
+			get { return _runtimeAvailable ? RoleEnvironment.DeploymentId : Maybe<string>.Empty; }
 		}
 
 		public static Maybe<int> AzureWorkerInstanceCount

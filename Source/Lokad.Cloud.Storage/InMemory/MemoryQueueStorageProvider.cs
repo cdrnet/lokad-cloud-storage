@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.Shared.Monads;
 using Tu = System.Tuple<string, object, System.Collections.Generic.List<byte[]>>;
 
 namespace Lokad.Cloud.Storage.InMemory
@@ -236,30 +237,29 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Shared.Monads.Maybe<PersistedMessage> GetPersisted(string storeName, string key)
+        public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
         {
             var intermediateDataSerializer = DataSerializer as IIntermediateDataSerializer;
             var xmlProvider = intermediateDataSerializer != null
-                ? Shared.Monads.Maybe.From(intermediateDataSerializer)
-                : Shared.Monads.Maybe<IIntermediateDataSerializer>.Empty;
+                ? new Maybe<IIntermediateDataSerializer>(intermediateDataSerializer)
+                : Maybe<IIntermediateDataSerializer>.Empty;
 
             lock (_sync)
             {
-                var tuple = Shared.Monads.Maybe.FirstOrEmpty(_persistedMessages, x => x.Item1 == storeName && x.Item2 == key);
-                if(tuple.HasValue)
+                var tuple = _persistedMessages.FirstOrDefault(x => x.Item1 == storeName && x.Item2 == key);
+                if(null != tuple)
                 {
-                    var x = tuple.Value;
                     return new PersistedMessage
                         {
-                            QueueName = x.Item3,
-                            StoreName = x.Item1,
-                            Key = x.Item2,
+                            QueueName = tuple.Item3,
+                            StoreName = tuple.Item1,
+                            Key = tuple.Item2,
                             IsDataAvailable = true,
-                            DataXml = xmlProvider.Convert(s => s.UnpackXml(new MemoryStream(x.Item4)))
+                            DataXml = xmlProvider.Convert(s => s.UnpackXml(new MemoryStream(tuple.Item4)))
                         };
                 }
                 
-                return Shared.Monads.Maybe<PersistedMessage>.Empty;
+                return Maybe<PersistedMessage>.Empty;
             }
         }
 
@@ -319,9 +319,9 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        public Shared.Monads.Maybe<TimeSpan> GetApproximateLatency(string queueName)
+        public Maybe<TimeSpan> GetApproximateLatency(string queueName)
         {
-            return Shared.Monads.Maybe<TimeSpan>.Empty;
+            return Maybe<TimeSpan>.Empty;
         }
     }
 }

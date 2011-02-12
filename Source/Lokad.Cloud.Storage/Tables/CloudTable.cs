@@ -42,9 +42,10 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <seealso cref="ITableStorageProvider.Get{T}(string, string)"/>
-        public Shared.Monads.Maybe<CloudEntity<T>> Get(string partitionName, string rowKey)
+        public Maybe<CloudEntity<T>> Get(string partitionName, string rowKey)
         {
-            return Shared.Monads.Maybe.FirstOrEmpty(_provider.Get<T>(_tableName, partitionName, new[] { rowKey }));
+            var entity = _provider.Get<T>(_tableName, partitionName, new[] {rowKey}).FirstOrDefault();
+            return null != entity ? new Maybe<CloudEntity<T>>(entity) : Maybe<CloudEntity<T>>.Empty;
         }
 
         /// <seealso cref="ITableStorageProvider.Get{T}(string)"/>

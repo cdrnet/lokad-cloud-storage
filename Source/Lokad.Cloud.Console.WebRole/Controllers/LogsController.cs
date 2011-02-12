@@ -72,11 +72,11 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
 
             var entry = new CloudLogger(Providers.BlobStorage, string.Empty)
                 .GetLogsOfLevelOrHigher(ParseLogLevel(threshold))
-                .FirstOrEmpty();
+                .FirstOrDefault();
 
-            if (entry.HasValue && string.Compare(EntryToToken(entry.Value), newerThanToken) > 0)
+            if (null != entry && string.Compare(EntryToToken(entry), newerThanToken) > 0)
             {
-                return Json(new { HasMore = true, NewestToken = EntryToToken(entry.Value) }, JsonRequestBehavior.AllowGet);
+                return Json(new { HasMore = true, NewestToken = EntryToToken(entry) }, JsonRequestBehavior.AllowGet);
             }
 
             return Json(new { HasMore = false }, JsonRequestBehavior.AllowGet);

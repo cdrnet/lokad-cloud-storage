@@ -50,7 +50,7 @@ namespace Lokad.Cloud.Management
                                 TriggerInterval = state.TriggerInterval,
                                 LastExecuted = state.LastExecuted,
                                 WorkerScoped = state.SchedulePerWorker,
-                                LeasedBy = Maybe.String,
+                                LeasedBy = Maybe<string>.Empty,
                                 LeasedSince = Maybe<DateTimeOffset>.Empty,
                                 LeasedUntil = Maybe<DateTimeOffset>.Empty
                             };
@@ -81,7 +81,7 @@ namespace Lokad.Cloud.Management
                 TriggerInterval = state.TriggerInterval,
                 LastExecuted = state.LastExecuted,
                 WorkerScoped = state.SchedulePerWorker,
-                LeasedBy = Maybe.String,
+                LeasedBy = Maybe<string>.Empty,
                 LeasedSince = Maybe<DateTimeOffset>.Empty,
                 LeasedUntil = Maybe<DateTimeOffset>.Empty
             };

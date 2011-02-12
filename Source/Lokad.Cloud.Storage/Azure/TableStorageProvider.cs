@@ -12,8 +12,8 @@ using System.Text;
 using System.Web;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Monads;
 using Lokad.Cloud.Storage.Shared.Policies;
-using Lokad.Diagnostics;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -88,7 +88,7 @@ namespace Lokad.Cloud.Storage.Azure
             if(null == tableName) throw new ArgumentNullException("tableName");
 
             var context = _tableStorage.GetDataServiceContext();
-            return GetInternal<T>(context, tableName, Shared.Monads.Maybe.String);
+            return GetInternal<T>(context, tableName, Maybe<string>.Empty);
         }
 
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey)
@@ -168,7 +168,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        private IEnumerable<CloudEntity<T>> GetInternal<T>(TableServiceContext context, string tableName, Shared.Monads.Maybe<string> filter)
+        private IEnumerable<CloudEntity<T>> GetInternal<T>(TableServiceContext context, string tableName, Maybe<string> filter)
         {
             string continuationRowKey = null;
             string continuationPartitionKey = null;
@@ -176,7 +176,6 @@ namespace Lokad.Cloud.Storage.Azure
 
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
-            Debug.Assert(context.Entities.Count == 0);
 
             do
             {
@@ -259,7 +258,7 @@ namespace Lokad.Cloud.Storage.Azure
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
-            var fatEntities = entities.Select(e => System.Tuple.Create(FatEntity.Convert(e, _serializer), e));
+            var fatEntities = entities.Select(e => Tuple.Create(FatEntity.Convert(e, _serializer), e));
 
             var noBatchMode = false;
 
@@ -380,7 +379,7 @@ namespace Lokad.Cloud.Storage.Azure
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
-            var fatEntities = entities.Select(e => System.Tuple.Create(FatEntity.Convert(e, _serializer), e));
+            var fatEntities = entities.Select(e => Tuple.Create(FatEntity.Convert(e, _serializer), e));
 
             var noBatchMode = false;
 
@@ -523,7 +522,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         public void Delete<T>(string tableName, string partitionKey, IEnumerable<string> rowKeys)
         {
-            DeleteInternal<T>(tableName, partitionKey, rowKeys.Select(k => System.Tuple.Create(k, "*")), true);
+            DeleteInternal<T>(tableName, partitionKey, rowKeys.Select(k => Tuple.Create(k, "*")), true);
         }
 
         public void Delete<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
@@ -531,7 +530,7 @@ namespace Lokad.Cloud.Storage.Azure
             foreach (var g in entities.GroupBy(e => e.PartitionKey))
             {
                 DeleteInternal<T>(tableName, 
-                    g.Key, g.Select(e => System.Tuple.Create(e.RowKey, MapETag(e.ETag, force))), force);
+                    g.Key, g.Select(e => Tuple.Create(e.RowKey, MapETag(e.ETag, force))), force);
             }
         }
 
@@ -601,7 +600,7 @@ namespace Lokad.Cloud.Storage.Azure
                     }
 
                     slice = Get<T>(tableName, partitionKey, slice.Select(p => p.Item1))
-                        .Select(e => System.Tuple.Create(e.RowKey, MapETag(e.ETag, force))).ToArray();
+                        .Select(e => Tuple.Create(e.RowKey, MapETag(e.ETag, force))).ToArray();
 
                     // entities with same name will be added again
                     context = _tableStorage.GetDataServiceContext();
