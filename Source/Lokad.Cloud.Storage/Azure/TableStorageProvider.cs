@@ -12,7 +12,6 @@ using System.Text;
 using System.Web;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Monads;
 using Lokad.Cloud.Storage.Shared.Policies;
 using Microsoft.WindowsAzure.StorageClient;
 

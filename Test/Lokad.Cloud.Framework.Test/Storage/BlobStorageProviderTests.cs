@@ -184,50 +184,6 @@ namespace Lokad.Cloud.Storage.Test
         /// This test does not check the behavior in case of concurrency stress.
         /// </remarks>
         [Test]
-        [Obsolete]
-        public void UpdateIfNotModifiedNoStress()
-        {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
-            int ignored;
-            var isUpdated = _blobStorage.UpdateIfNotModified(ContainerName, 
-                BlobName, i => i.HasValue ? i.Value + 1 : 1, out ignored);
-            Assert.IsTrue(isUpdated, "#A00");
-
-            var val = _blobStorage.GetBlob<int>(ContainerName, BlobName);
-            Assert.AreEqual(2, val.Value, "#A01");
-        }
-
-        /// <remarks>
-        /// Loose check of the behavior under concurrency stress.
-        /// </remarks>
-        [Test]
-        [Obsolete]
-        public virtual void UpdateIfNotModifiedWithStress()
-        {
-            _blobStorage.PutBlob(ContainerName, BlobName, 0);
-
-            var array = new bool[8];
-
-            int ignored;
-
-            array = array.SelectInParallel(
-                k => _blobStorage.UpdateIfNotModified(
-                    ContainerName, BlobName,
-                    i => i.HasValue ? i.Value + 1 : 1,
-                    out ignored), array.Length);
-
-            Assert.IsTrue(array.Any(x => x), "#A00 write should have happened at least once.");
-            Assert.IsTrue(array.Any(x => !x), "#A01 conflict should have happened at least once.");
-
-            var count = _blobStorage.GetBlob<int>(ContainerName, BlobName).Value;
-
-            Assert.AreEqual(count, array.Count(x => x), "#A02 number of writes should match counter value.");
-        }
-
-        /// <remarks>
-        /// This test does not check the behavior in case of concurrency stress.
-        /// </remarks>
-        [Test]
         public void UpsertBlockOrSkipNoStress()
         {
             var blobName = "test" + Guid.NewGuid().ToString("N");
@@ -238,7 +194,7 @@ namespace Lokad.Cloud.Storage.Test
 // ReSharper disable AccessToModifiedClosure
 
             // skip insert
-            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip(ContainerName, blobName, () => Shared.Monads.Maybe<int>.Empty, x => ++updated).HasValue);
+            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip(ContainerName, blobName, () => Maybe<int>.Empty, x => ++updated).HasValue);
             Assert.AreEqual(0, inserted);
             Assert.AreEqual(10, updated);
             Assert.IsFalse(_blobStorage.GetBlob<int>(ContainerName, blobName).HasValue);
@@ -250,7 +206,7 @@ namespace Lokad.Cloud.Storage.Test
             Assert.AreEqual(1, _blobStorage.GetBlob<int>(ContainerName, blobName).Value);
 
             // skip update
-            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => Shared.Monads.Maybe<int>.Empty).HasValue);
+            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => Maybe<int>.Empty).HasValue);
             Assert.AreEqual(1, inserted);
             Assert.AreEqual(10, updated);
             Assert.AreEqual(1, _blobStorage.GetBlob<int>(ContainerName, blobName).Value);
@@ -275,7 +231,7 @@ namespace Lokad.Cloud.Storage.Test
         {
             _blobStorage.PutBlob(ContainerName, BlobName, 0);
 
-            var array = new Shared.Monads.Maybe<int>[8];
+            var array = new Maybe<int>[8];
             array = array.SelectInParallel(
                 k => _blobStorage.UpsertBlobOrSkip<int>(
                     ContainerName, BlobName,

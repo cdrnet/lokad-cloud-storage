@@ -15,7 +15,6 @@ using Lokad.Cloud.Storage.Shared.Policies;
 using Lokad.Diagnostics;
 using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure.StorageClient;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -605,7 +604,7 @@ namespace Lokad.Cloud.Storage.Azure
             return _blobStorage.ListBlobNames(blobPrefix).Select(blobReference => blobReference.Key);
         }
 
-        public Shared.Monads.Maybe<PersistedMessage> GetPersisted(string storeName, string key)
+        public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
         {
             // 1. GET PERSISTED MESSAGE BLOB
 
@@ -613,12 +612,12 @@ namespace Lokad.Cloud.Storage.Azure
             var blob = _blobStorage.GetBlob(blobReference);
             if (!blob.HasValue)
             {
-                return Shared.Monads.Maybe<PersistedMessage>.Empty;
+                return Maybe<PersistedMessage>.Empty;
             }
 
             var persistedMessage = blob.Value;
             var data = persistedMessage.Data;
-            var dataXml = Shared.Monads.Maybe<XElement>.Empty;
+            var dataXml = Maybe<XElement>.Empty;
 
             // 2. IF WRAPPED, UNWRAP; UNPACK XML IF SUPPORTED
 
@@ -916,7 +915,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>
         /// Gets the approximate age of the top message of this queue.
         /// </summary>
-        public Shared.Monads.Maybe<TimeSpan> GetApproximateLatency(string queueName)
+        public Maybe<TimeSpan> GetApproximateLatency(string queueName)
         {
             var queue = _queueStorage.GetQueueReference(queueName);
             CloudQueueMessage rawMessage;
@@ -930,7 +929,7 @@ namespace Lokad.Cloud.Storage.Azure
                 if (ex.ErrorCode == StorageErrorCode.ResourceNotFound
                     || ex.ExtendedErrorInformation.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
                 {
-                    return Shared.Monads.Maybe<TimeSpan>.Empty;
+                    return Maybe<TimeSpan>.Empty;
                 }
 
                 throw;
@@ -938,7 +937,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             if(rawMessage == null || !rawMessage.InsertionTime.HasValue)
             {
-                return Shared.Monads.Maybe<TimeSpan>.Empty;
+                return Maybe<TimeSpan>.Empty;
             }
 
             var latency = DateTimeOffset.UtcNow - rawMessage.InsertionTime.Value;

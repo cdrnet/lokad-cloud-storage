@@ -11,7 +11,7 @@ using Lokad.Cloud.Application;
 using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
-using Lokad.Cloud.Storage.Shared.Monads;
+using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Management
 {

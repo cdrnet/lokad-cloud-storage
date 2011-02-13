@@ -108,6 +108,7 @@
     <Compile Include="Tables\TableStorageExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Shared\Monads\_ReadMe.txt" />
     <Content Include="Shared\_ReadMe.txt" />
   </ItemGroup>
   <ItemGroup />

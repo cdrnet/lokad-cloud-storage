@@ -3,7 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Storage.Shared.Monads;
+using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Management
 {

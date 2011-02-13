@@ -14,8 +14,8 @@ using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Management.Azure;
 using Lokad.Cloud.Management.Azure.Entities;
 using Lokad.Cloud.Management.Azure.InputParameters;
+using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared.Logging;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Management
 {

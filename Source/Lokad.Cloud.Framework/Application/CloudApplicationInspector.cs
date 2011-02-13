@@ -7,7 +7,6 @@ using System;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.ServiceFabric.Runtime;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Application
 {
@@ -26,7 +25,7 @@ namespace Lokad.Cloud.Application
         public Maybe<CloudApplicationDefinition> Inspect()
         {
             var definitionBlob = _blobs.GetBlob<CloudApplicationDefinition>(ContainerName, ApplicationDefinitionBlobName);
-            Storage.Shared.Monads.Maybe<byte[]> packageBlob;
+            Maybe<byte[]> packageBlob;
             string packageETag;
 
             if (definitionBlob.HasValue)

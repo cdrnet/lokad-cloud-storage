@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Cloud.Storage.Shared.Monads;
 using Tu = System.Tuple<string, object, System.Collections.Generic.List<byte[]>>;
 
 namespace Lokad.Cloud.Storage.InMemory

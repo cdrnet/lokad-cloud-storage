@@ -19,12 +19,6 @@ namespace Lokad.Cloud.Storage.InMemory.Test
         {
         }
 
-        [Obsolete]
-        public override void UpdateIfNotModifiedWithStress()
-        {
-            // Test invalid with memory blob storage because of its atomic implementation.
-        }
-
         [Test]
         public void BlobsGetCreatedMonoThread()
         {

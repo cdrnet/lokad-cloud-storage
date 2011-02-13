@@ -14,7 +14,6 @@ using System.Threading;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Monads;
 using Lokad.Cloud.Storage.Shared.Policies;
 using Lokad.Cloud.Storage.Shared.Threading;
 using Microsoft.WindowsAzure.StorageClient;
@@ -46,7 +45,6 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countPutBlob;
         readonly ExecutionCounter _countGetBlob;
         readonly ExecutionCounter _countGetBlobIfModified;
-        readonly ExecutionCounter _countUpdateIfNotModified;
         readonly ExecutionCounter _countUpsertBlobOrSkip;
         readonly ExecutionCounter _countDeleteBlob;
 
@@ -65,7 +63,6 @@ namespace Lokad.Cloud.Storage.Azure
                     _countPutBlob = new ExecutionCounter("BlobStorageProvider.PutBlob", 0, 0),
                     _countGetBlob = new ExecutionCounter("BlobStorageProvider.GetBlob", 0, 0),
                     _countGetBlobIfModified = new ExecutionCounter("BlobStorageProvider.GetBlobIfModified", 0, 0),
-                    _countUpdateIfNotModified = new ExecutionCounter("BlobStorageProvider.UpdateIfNotModified", 0, 0),
                     _countUpsertBlobOrSkip = new ExecutionCounter("BlobStorageProvider.UpdateBlob", 0, 0),
                     _countDeleteBlob = new ExecutionCounter("BlobStorageProvider.DeleteBlob", 0, 0),
                 });
@@ -911,144 +908,6 @@ namespace Lokad.Cloud.Storage.Azure
             finally
             {
                 response.Close();
-            }
-        }
-
-
-
-        // // // // TO BE REMOVED: // // // //
-
-        [Obsolete]
-        bool IBlobStorageProvider.CreateContainer(string containerName)
-        {
-            return CreateContainerIfNotExist(containerName);
-        }
-
-        [Obsolete]
-        bool IBlobStorageProvider.DeleteContainer(string containerName)
-        {
-            return DeleteContainerIfExist(containerName);
-        }
-
-        [Obsolete]
-        bool IBlobStorageProvider.DeleteBlob(string containerName, string blobName)
-        {
-            return DeleteBlobIfExist(containerName, blobName);
-        }
-
-        [Obsolete]
-        IEnumerable<string> IBlobStorageProvider.List(string containerName, string prefix)
-        {
-            return ListBlobNames(containerName, prefix);
-        }
-
-        [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater)
-        {
-            return ((IBlobStorageProvider)this).UpdateIfNotModified<T>(containerName, blobName, x => Result.CreateSuccess(updater(x)));
-        }
-
-        [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, Result<T>> updater)
-        {
-            Result<T> ignored;
-            return ((IBlobStorageProvider)this).UpdateIfNotModified(containerName, blobName, updater, out ignored);
-        }
-
-        [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(string containerName, string blobName, Func<Maybe<T>, T> updater, out T result)
-        {
-            Result<T> rresult;
-            var flag = ((IBlobStorageProvider)this).UpdateIfNotModified(containerName, blobName, x => Result.CreateSuccess(updater(x)), out rresult);
-
-            result = rresult.Value;
-            return flag;
-        }
-
-        [Obsolete]
-        bool IBlobStorageProvider.UpdateIfNotModified<T>(
-            string containerName, string blobName, 
-            Func<Maybe<T>, Result<T>> updater, out Result<T> result)
-        {
-            var timestamp = _countUpdateIfNotModified.Open();
-
-            var container = _blobStorage.GetContainerReference(containerName);
-            CloudBlockBlob blob = null;
-
-            Maybe<T> input;
-            string originalEtag = null;
-            try
-            {
-                blob = container.GetBlockBlobReference(blobName);
-
-                using (var stream = new MemoryStream())
-                {
-                    _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
-                    {
-                        stream.Seek(0, SeekOrigin.Begin);
-                        blob.DownloadToStream(stream);
-                        VerifyContentHash(blob, stream, containerName, blobName);
-                    }));
-
-                    originalEtag = blob.Properties.ETag;
-
-                    stream.Seek(0, SeekOrigin.Begin);
-
-                    var deserialized = _serializer.TryDeserializeAs<T>(stream);
-                    if (!deserialized.IsSuccess && _log != null)
-                    {
-                        _log.WarnFormat(deserialized.Error,
-                            "Cloud Storage: A blob was retrieved for UpdateIfNotModified but failed to deserialize. Blob {0} in container {1}.",
-                            blobName, containerName);
-                    }
-
-                    input = deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
-                }
-            }
-            catch (StorageClientException ex)
-            {
-                // creating the container when missing
-                if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                    || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                        || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
-                {
-                    input = Maybe<T>.Empty;
-
-                    // caution: the container might have been freshly deleted
-                    // (multiple retries are needed in such a situation)
-                    AzurePolicies.SlowInstantiation.Do(() =>
-                        _azureServerPolicy.Get(container.CreateIfNotExist));
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            // updating the item
-            result = updater(input);
-
-            if (!result.IsSuccess)
-            {
-                return false;
-            }
-
-            using (var wstream = new MemoryStream())
-            {
-                _serializer.Serialize(result.Value, wstream);
-                wstream.Seek(0, SeekOrigin.Begin);
-
-                var success = string.IsNullOrEmpty(originalEtag) ?
-                    // no etag, then we should not overwrite a blob created meantime
-                    UploadBlobContent(blob, wstream, false, null).HasValue :
-                    // existing etag, then we should not overwrite a different etag
-                    UploadBlobContent(blob, wstream, true, originalEtag).HasValue;
-
-                if (success)
-                {
-                    _countUpdateIfNotModified.Close(timestamp);
-                }
-                return success;
             }
         }
     }

@@ -70,7 +70,7 @@ namespace Lokad.Cloud.Storage
         /// If there is no such blob, the returned object
         /// has its property HasValue set to <c>false</c>.
         /// </returns>
-        Shared.Monads.Maybe<T> GetBlob<T>(string containerName, string blobName);
+        Maybe<T> GetBlob<T>(string containerName, string blobName);
 
         /// <summary>Gets a blob.</summary>
         /// <typeparam name="T">Blob type.</typeparam>
@@ -83,7 +83,7 @@ namespace Lokad.Cloud.Storage
         /// If there is no such blob, the returned object
         /// has its property HasValue set to <c>false</c>.
         /// </returns>
-        Shared.Monads.Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag);
+        Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag);
 
         /// <summary>Gets a blob.</summary>
         /// <param name="containerName">Name of the container.</param>
@@ -99,7 +99,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks>This method should only be used when the caller does not know the type of the
         /// object stored in the blob at compile time, but it can only be determined at run time.
         /// In all other cases, you should use the generic overloads of the method.</remarks>
-        Shared.Monads.Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag);
+        Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag);
 
         /// <summary>
         /// Gets a blob in intermediate XML representation for inspection and recovery,
@@ -114,7 +114,7 @@ namespace Lokad.Cloud.Storage
         /// If there is no such blob or the formatter supports no XML representation,
         /// the returned object has its property HasValue set to <c>false</c>.
         /// </returns>
-        Shared.Monads.Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag);
+        Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag);
 
         /// <summary>
         /// Gets a range of blobs.
@@ -125,7 +125,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="etags">Etag identifiers for all returned blobs.</param>
         /// <returns>For each requested blob, an element in the array is returned in the same order.
         /// If a specific blob was not found, the corresponding <b>etags</b> array element is <c>null</c>.</returns>
-        Shared.Monads.Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags);
+        Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags);
 
         /// <summary>Gets a blob only if the etag has changed meantime.</summary>
         /// <typeparam name="T">Type of the blob.</typeparam>
@@ -139,7 +139,7 @@ namespace Lokad.Cloud.Storage
         /// If the blob has not been modified or if there is no such blob,
         /// then the returned object has its property HasValue set to <c>false</c>.
         /// </returns>
-        Shared.Monads.Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag);
+        Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag);
 
         /// <summary>
         /// Gets the current etag of the blob, or <c>null</c> if the blob does not exists.
@@ -208,7 +208,7 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist.</returns>
-        Shared.Monads.Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update);
+        Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update);
 
         /// <summary>
         /// Updates a blob if it already exists.
@@ -223,7 +223,7 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or no change was applied.</returns>
-        Shared.Monads.Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Shared.Monads.Maybe<T>> update);
+        Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update);
 
         /// <summary>
         /// Updates a blob if it already exists.
@@ -238,7 +238,7 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or was deleted.</returns>
-        Shared.Monads.Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Shared.Monads.Maybe<T>> update);
+        Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update);
 
         /// <summary>
         /// Inserts or updates a blob depending on whether it already exists or not.
@@ -275,8 +275,7 @@ namespace Lokad.Cloud.Storage
         /// </para>
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then no change was applied.</returns>
-        Shared.Monads.Maybe<T> UpsertBlobOrSkip<T>(
-            string containerName, string blobName, Func<Shared.Monads.Maybe<T>> insert, Func<T, Shared.Monads.Maybe<T>> update);
+        Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
 
         /// <summary>
         /// Inserts or updates a blob depending on whether it already exists or not.
@@ -295,11 +294,10 @@ namespace Lokad.Cloud.Storage
         /// </para>
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then the blob has been deleted.</returns>
-        Shared.Monads.Maybe<T> UpsertBlobOrDelete<T>(
-            string containerName, string blobName, Func<Shared.Monads.Maybe<T>> insert, Func<T, Shared.Monads.Maybe<T>> update);
+        Maybe<T> UpsertBlobOrDelete<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
 
         /// <summary>Requests a new lease on the blob and returns its new lease ID</summary>
-        Shared.Monads.Result<string> TryAcquireLease(string containerName, string blobName);
+        Result<string> TryAcquireLease(string containerName, string blobName);
 
         /// <summary>Releases the lease of the blob if the provided lease ID matches.</summary>
         bool TryReleaseLease(string containerName, string blobName, string leaseId);
@@ -307,32 +305,5 @@ namespace Lokad.Cloud.Storage
         /// <summary>Renews the lease of the blob if the provided lease ID matches.</summary>
         bool TryRenewLease(string containerName, string blobName, string leaseId);
 
-
-
-        // // // // TO BE REMOVED: // // // //
-
-        [Obsolete("Use CreateContainerIfNotExist instead. This method will be removed in future versions.")]
-        bool CreateContainer(string containerName);
-
-        [Obsolete("Use DeleteContainerIfExist instead. This method will be removed in future versions.")]
-        bool DeleteContainer(string containerName);
-
-        [Obsolete("User ListBlobNames instead, or ListBlobs if you're interested in the blobs instead of just their names. This method will be removed in future versions.", false)]
-        IEnumerable<string> List(string containerName, string prefix);
-
-        [Obsolete("Use DeleteBlobIfExist instead. This method will be removed in future versions.")]
-        bool DeleteBlob(string containerName, string blobName);
-
-        [Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
-        bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Shared.Monads.Maybe<T>, Shared.Monads.Result<T>> updater, out Shared.Monads.Result<T> result);
-
-        [Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
-        bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Shared.Monads.Maybe<T>, T> updater, out T result);
-
-        [Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
-        bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Shared.Monads.Maybe<T>, Shared.Monads.Result<T>> updater);
-
-        [Obsolete("The naming of this method is misleading and a likely cause for bugs. Use one of the alternatives instead (also BlobStorageExtensions). This method will be removed in future versions.", false)]
-        bool UpdateIfNotModified<T>(string containerName, string blobName, Func<Shared.Monads.Maybe<T>, T> updater);
     }
 }
