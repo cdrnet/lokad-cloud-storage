@@ -11,7 +11,6 @@ using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric;
 using Lokad.Cloud.Services;
 using Lokad.Cloud.Storage;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 // TODO: blobs are sequentially enumerated, performance issue
 // if there are more than a few dozen services

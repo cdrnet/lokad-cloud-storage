@@ -8,7 +8,6 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Storage
 {
