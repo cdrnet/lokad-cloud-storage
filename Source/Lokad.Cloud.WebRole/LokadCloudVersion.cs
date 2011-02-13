@@ -8,7 +8,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Lokad.Cloud.Storage.Shared.Monads;
+using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Web
 {

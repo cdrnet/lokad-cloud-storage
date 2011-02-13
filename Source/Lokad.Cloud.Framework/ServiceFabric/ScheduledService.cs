@@ -183,7 +183,7 @@ namespace Lokad.Cloud.ServiceFabric
                         if (now.Subtract(state.TriggerInterval) < state.LastExecuted)
                         {
                             // was recently executed somewhere; skip
-                            return Storage.Shared.Monads.Maybe<ScheduledServiceState>.Empty;
+                            return Maybe<ScheduledServiceState>.Empty;
                         }
 
                         if (state.Lease != null)
@@ -191,7 +191,7 @@ namespace Lokad.Cloud.ServiceFabric
                             if (state.Lease.Timeout > now)
                             {
                                 // update needed but blocked by lease; skip
-                                return Storage.Shared.Monads.Maybe<ScheduledServiceState>.Empty;
+                                return Maybe<ScheduledServiceState>.Empty;
                             }
 
                             Log.WarnFormat(
@@ -247,7 +247,7 @@ namespace Lokad.Cloud.ServiceFabric
                         if (state.Lease == null || state.Lease.Owner != _workerKey)
                         {
                             // skip
-                            return Storage.Shared.Monads.Maybe<ScheduledServiceState>.Empty;
+                            return Maybe<ScheduledServiceState>.Empty;
                         }
 
                         // remove lease

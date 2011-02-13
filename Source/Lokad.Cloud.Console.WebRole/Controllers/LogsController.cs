@@ -12,7 +12,6 @@ using Lokad.Cloud.Console.WebRole.Controllers.ObjectModel;
 using Lokad.Cloud.Console.WebRole.Framework.Discovery;
 using Lokad.Cloud.Console.WebRole.Models.Logs;
 using Lokad.Cloud.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Console.WebRole.Controllers
 {

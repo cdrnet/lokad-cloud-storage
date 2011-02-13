@@ -9,8 +9,8 @@ using System.Reflection;
 using System.Security;
 using System.Threading;
 using Autofac.Builder;
+using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared.Logging;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
 {

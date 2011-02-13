@@ -5,7 +5,7 @@
 
 using System;
 using System.Runtime.Serialization;
-using Lokad.Cloud.Storage.Shared.Monads;
+using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Management.Api10
 {

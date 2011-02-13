@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Lokad.Cloud.Storage.Shared.Monads;
 
 namespace Lokad.Cloud.Storage
 {

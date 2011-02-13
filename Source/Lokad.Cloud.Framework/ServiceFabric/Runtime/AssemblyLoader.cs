@@ -70,7 +70,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             package.LoadAssemblies();
         }
 
-        public Storage.Shared.Monads.Maybe<byte[]> LoadConfiguration()
+        public Maybe<byte[]> LoadConfiguration()
         {
             return _provider.GetBlob<byte[]>(ContainerName, ConfigurationBlobName, out _lastConfigurationEtag);
         }

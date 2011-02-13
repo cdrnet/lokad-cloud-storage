@@ -127,7 +127,7 @@ namespace Lokad.Cloud.Storage
         /// </summary>
         /// <param name="storeName">Name of the message persistence store.</param>
         /// <param name="key">Unique key of the persisted message as returned by ListPersisted.</param>
-        Shared.Monads.Maybe<PersistedMessage> GetPersisted(string storeName, string key);
+        Maybe<PersistedMessage> GetPersisted(string storeName, string key);
 
         /// <summary>
         /// Delete a persisted message.
@@ -151,7 +151,7 @@ namespace Lokad.Cloud.Storage
         int GetApproximateCount(string queueName);
 
         /// <summary>Gets the approximate age of the top message of this queue.</summary>
-        Shared.Monads.Maybe<TimeSpan> GetApproximateLatency(string queueName);
+        Maybe<TimeSpan> GetApproximateLatency(string queueName);
     }
 
     /// <summary>
@@ -176,7 +176,7 @@ namespace Lokad.Cloud.Storage
         public string Reason { get; internal set; }
 
         /// <summary>XML representation of the message, if possible and supported by the serializer</summary>
-        public Shared.Monads.Maybe<XElement> DataXml { get; internal set; }
+        public Maybe<XElement> DataXml { get; internal set; }
 
         /// <summary>True if the raw message data is available and can be restored.</summary>
         /// <remarks>Can be true even if DataXML is not available.</remarks>
