@@ -81,6 +81,7 @@
     <Compile Include="Shared\Diagnostics\Persistence\ConvertionExtensions.cs" />
     <Compile Include="Shared\Diagnostics\Persistence\ExecutionData.cs" />
     <Compile Include="Shared\FormatUtil.cs" />
+    <Compile Include="Shared\Logging\NullLog.cs" />
     <Compile Include="Shared\Monads\Maybe.1.cs" />
     <Compile Include="Shared\Monads\Result.1.cs" />
     <Compile Include="Shared\Monads\Result.2.cs" />
