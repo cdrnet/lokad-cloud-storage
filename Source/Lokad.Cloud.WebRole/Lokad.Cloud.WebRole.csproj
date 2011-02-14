@@ -44,9 +44,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\DotNetOpenAuth.dll</HintPath>
     </Reference>
-    <Reference Include="Lokad.Stack">
+    <Reference Include="Autofac">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Resource\Library\Lokad.Stack.dll</HintPath>
+      <HintPath>..\..\Resource\Library\Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.ServiceModel.Web">
       <SpecificVersion>False</SpecificVersion>

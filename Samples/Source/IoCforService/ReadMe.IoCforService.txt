@@ -17,7 +17,7 @@ file needed for the service.
 <?xml version="1.0" encoding="utf-8" ?>
 <configuration>
 	<configSections>
-		<section name="autofac" type="Autofac.Configuration.SectionHandler, Lokad.Stack" requirePermission="false"/>
+		<section name="autofac" type="Autofac.Configuration.SectionHandler, Autofac" requirePermission="false"/>
 	</configSections>
 	<autofac>
 		<modules>

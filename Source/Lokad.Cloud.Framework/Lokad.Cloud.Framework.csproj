@@ -68,9 +68,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
-    <Reference Include="Lokad.Stack">
+    <Reference Include="Autofac">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Resource\Library\Lokad.Stack.dll</HintPath>
+      <HintPath>..\..\Resource\Library\Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.WindowsAzure.Diagnostics">
       <SpecificVersion>False</SpecificVersion>

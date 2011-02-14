@@ -3,6 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using Autofac;
 using Autofac.Builder;
 
 namespace Lokad.Cloud

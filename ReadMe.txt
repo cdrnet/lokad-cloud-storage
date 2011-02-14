@@ -18,10 +18,10 @@ Those assemblies is typically referenced in two places:
 - in the library containing your cloud services for back-end processing (both assemblies).
 
 The O/C mapper is a stand-alone library.
-The framework depends on Lokad.Stack.dll.
+The framework depends on Autofac v1.
 
-The Lokad.Stack dependency is also open source, see 
-http://code.google.com/p/lokad-shared-libraries/
+The Autofac dependency is also open source, see 
+http://code.google.com/p/autofac/
 
 
 GETTING STARTED
