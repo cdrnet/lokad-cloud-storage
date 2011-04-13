@@ -9,7 +9,7 @@ namespace Lokad.Cloud.Storage
     /// </summary>
     /// <typeparam name="T">underlying type</typeparam>
     [Serializable]
-    public sealed class Maybe<T> : IEquatable<Maybe<T>>
+    public class Maybe<T> : IEquatable<Maybe<T>>
     {
         readonly T _value;
         readonly bool _hasValue;

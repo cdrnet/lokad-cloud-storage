@@ -10,7 +10,7 @@ namespace Lokad.Cloud.Storage
     /// <typeparam name="TValue">The type of the value.</typeparam>
     /// <typeparam name="TError">The type of the error.</typeparam>
     /// <remarks>It is to be moved up-stream if found useful in other projects.</remarks>
-    public sealed class Result<TValue, TError> : IEquatable<Result<TValue, TError>>
+    public class Result<TValue, TError> : IEquatable<Result<TValue, TError>>
     {
         readonly bool _isSuccess;
         readonly TValue _value;

@@ -55,10 +55,6 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Lokad.Stack">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Resource\Library\Lokad.Stack.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.WindowsAzure.Diagnostics">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Resource\Library\Microsoft.WindowsAzure.Diagnostics.dll</HintPath>

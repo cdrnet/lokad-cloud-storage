@@ -8,7 +8,7 @@ namespace Lokad.Cloud.Storage
     /// Helper class that allows to pass out method call results without using exceptions
     /// </summary>
     /// <typeparam name="T">type of the associated data</typeparam>
-    public sealed class Result<T> : IEquatable<Result<T>>
+    public class Result<T> : IEquatable<Result<T>>
     {
         readonly bool _isSuccess;
         readonly T _value;
