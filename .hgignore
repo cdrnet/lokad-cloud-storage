@@ -2,3 +2,9 @@ syntax: glob
 
 Thumbs.db
 .git
+glob:*/bin/*
+glob:*/obj/*
+glob:Build/*
+glob:*.suo
+glob:*ReSharper*
+glob:*.user
