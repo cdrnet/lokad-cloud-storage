@@ -6,6 +6,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Autofac;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;

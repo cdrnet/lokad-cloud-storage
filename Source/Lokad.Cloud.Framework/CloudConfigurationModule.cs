@@ -60,7 +60,7 @@ namespace Lokad.Cloud
 				return;
 			}
 
-			builder.Register(new RoleConfigurationSettings
+			builder.Register(c => new RoleConfigurationSettings
 				{
 					DataConnectionString = DataConnectionString,
 					SelfManagementSubscriptionId = SelfManagementSubscriptionId,

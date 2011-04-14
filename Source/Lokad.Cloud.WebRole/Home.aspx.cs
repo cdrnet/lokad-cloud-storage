@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using Autofac;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Management.Azure.Entities;
 using Lokad.Cloud.Storage;

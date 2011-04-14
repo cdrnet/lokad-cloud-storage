@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using Autofac;
 using Lokad.Cloud.Management.Api10;
 
 namespace Lokad.Cloud.Web

@@ -6,6 +6,7 @@
 using System;
 using System.Linq;
 using System.Threading;
+using Autofac;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.ServiceFabric.Runtime;
 using NUnit.Framework;

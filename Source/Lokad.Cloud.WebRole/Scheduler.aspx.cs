@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using Autofac;
 using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Storage.Shared;
 

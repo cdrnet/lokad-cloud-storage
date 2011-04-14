@@ -3,6 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using Autofac;
 using Autofac.Builder;
 
 namespace Lokad.Cloud
@@ -27,8 +28,8 @@ namespace Lokad.Cloud
             builder.RegisterModule(new Management.ManagementModule());
             builder.RegisterModule(new Storage.Azure.StorageModule());
 
-            builder.Register<Jobs.JobManager>();
-            builder.Register<ServiceFabric.RuntimeFinalizer>().As<IRuntimeFinalizer>().ContainerScoped();
+            builder.RegisterType<Jobs.JobManager>();
+            builder.RegisterType<ServiceFabric.RuntimeFinalizer>().As<IRuntimeFinalizer>().InstancePerLifetimeScope();
         }
     }
 }

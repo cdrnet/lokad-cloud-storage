@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Web.UI.WebControls;
+using Autofac;
 using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Storage.Shared.Logging;
 

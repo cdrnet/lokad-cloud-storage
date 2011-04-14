@@ -17,28 +17,28 @@ namespace Lokad.Cloud.Diagnostics
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(CloudLogger);
-            builder.Register(CloudLogger).As<Storage.Shared.Logging.ILog>().DefaultOnly();
-            builder.Register(CloudLogProvider).As<Storage.Shared.Logging.ILogProvider>().DefaultOnly();
+            builder.Register(CloudLogger).As<Storage.Shared.Logging.ILog>().PreserveExistingDefaults();
+            builder.Register(CloudLogProvider).As<Storage.Shared.Logging.ILogProvider>().PreserveExistingDefaults();
 
             // Cloud Monitoring
-            builder.Register<BlobDiagnosticsRepository>().As<ICloudDiagnosticsRepository>().DefaultOnly();
-            builder.Register<ServiceMonitor>().As<IServiceMonitor>();
-            builder.Register<DiagnosticsAcquisition>()
-                .OnActivating(ActivatingHandler.InjectUnsetProperties)
-                .FactoryScoped();
+            builder.RegisterType<BlobDiagnosticsRepository>().As<ICloudDiagnosticsRepository>().PreserveExistingDefaults();
+            builder.RegisterType<ServiceMonitor>().As<IServiceMonitor>();
+            builder.RegisterType<DiagnosticsAcquisition>()
+                .PropertiesAutowired(true)
+                .InstancePerDependency();
         }
 
-        static CloudLogger CloudLogger(IContext c)
+        static CloudLogger CloudLogger(IComponentContext c)
         {
             return new CloudLogger(BlobStorageForDiagnostics(c), string.Empty);
         }
 
-        static CloudLogProvider CloudLogProvider(IContext c)
+        static CloudLogProvider CloudLogProvider(IComponentContext c)
         {
             return new CloudLogProvider(BlobStorageForDiagnostics(c));
         }
 
-        static IBlobStorageProvider BlobStorageForDiagnostics(IContext c)
+        static IBlobStorageProvider BlobStorageForDiagnostics(IComponentContext c)
         {
             // No log is provided here (WithLog method) since the providers
             // used for logging obviously can't log themselves (cyclic dependency)

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.Serialization;
+using Autofac;
 using Lokad.Cloud.Storage.Azure;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Test;
