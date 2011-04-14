@@ -183,7 +183,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             // Register the cloud services in the IoC Builder so we can support dependencies
             foreach (var type in serviceTypes)
             {
-                applicationBuilder.RegisterInstance(type)
+                applicationBuilder.RegisterType(type)
                     .OnActivating(e =>
                         {
                             e.Context.InjectUnsetProperties(e.Instance);
