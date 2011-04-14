@@ -29,7 +29,7 @@ namespace Lokad.Cloud.Storage.Shared.Threading
         }
 
         /// <summary>
-        /// Executes the spcified function within the current thread, aborting it
+        /// Executes the specified function within the current thread, aborting it
         /// if it does not complete within the specified timeout interval. 
         /// </summary>
         /// <param name="function">The function.</param>
@@ -59,11 +59,16 @@ namespace Lokad.Cloud.Storage.Shared.Threading
                     {
                         Monitor.Wait(sync, _timeout);
                     }
+                }
 
-                    if (!isCompleted)
-                    {
-                        watchedThread.Abort();
-                    }
+                // CAUTION: the call to Abort() can be blocking in rare situations
+                // http://msdn.microsoft.com/en-us/library/ty8d3wta.aspx
+                // Hence, it should not be called with the 'lock' as it could deadlock
+                // with the 'finally' block below.
+
+                if (!isCompleted)
+                {
+                    watchedThread.Abort();
                 }
             };
 
@@ -90,7 +95,7 @@ namespace Lokad.Cloud.Storage.Shared.Threading
         }
 
         /// <summary>
-        /// Executes the spcified function within the current thread, aborting it
+        /// Executes the specified function within the current thread, aborting it
         /// if it does not complete within the specified timeout interval.
         /// </summary>
         /// <param name="timeout">The timeout.</param>
