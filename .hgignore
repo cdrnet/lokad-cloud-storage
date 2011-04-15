@@ -2,6 +2,12 @@ syntax: glob
 
 Thumbs.db
 .git
+_ReSharper.Lokad.Cloud/*
+*.suo
+*.user
+*/bin/Debug/*
+*/obj/Debug/*
+*/bin/Release/*
 */obj/Release/*
 Test/Lokad.Cloud.Framework.Test/App.config
 Samples/Source/PingPong/PingPongClient/app.config
