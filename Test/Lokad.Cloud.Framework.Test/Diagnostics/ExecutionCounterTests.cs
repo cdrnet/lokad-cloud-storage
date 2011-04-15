@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using Autofac;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Test;

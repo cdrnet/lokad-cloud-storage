@@ -161,7 +161,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         {
             var applicationBuilder = new ContainerBuilder();
             applicationBuilder.RegisterModule(new CloudModule());
-            applicationBuilder.Register(_settings);
+            applicationBuilder.RegisterInstance(_settings);
 
             // Load Application Assemblies into the AppDomain
             var loader = new AssemblyLoader(_runtimeProviders);
@@ -183,8 +183,8 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             // Register the cloud services in the IoC Builder so we can support dependencies
             foreach (var type in serviceTypes)
             {
-                applicationBuilder.Register(type)
-                    .OnActivating((s, e) =>
+                applicationBuilder.RegisterType(type)
+                    .OnActivating(e =>
                         {
                             e.Context.InjectUnsetProperties(e.Instance);
 
@@ -194,7 +194,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
                                 initializable.Initialize();
                             }
                         })
-                    .FactoryScoped()
+                    .InstancePerDependency()
                     .ExternallyOwned();
 
                 // ExternallyOwned: to prevent the container from disposing the

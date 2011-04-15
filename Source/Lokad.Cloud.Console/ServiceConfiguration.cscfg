@@ -8,7 +8,8 @@
 			<Setting name="SubscriptionId" value="YOUR SUBSCRIPTION ID" />
 		</ConfigurationSettings>
 		<Certificates>
-			<Certificate name="ManagementCertificate" thumbprint="YOUR CERTIFICATE THUMBPRINT" thumbprintAlgorithm="sha1" />
+      <!-- Replace 170141183460469231731687303715884105727 with you certificate thumbprint -->
+			<Certificate name="ManagementCertificate" thumbprint="170141183460469231731687303715884105727" thumbprintAlgorithm="sha1" />
 		</Certificates>
 	</Role>
 </ServiceConfiguration>

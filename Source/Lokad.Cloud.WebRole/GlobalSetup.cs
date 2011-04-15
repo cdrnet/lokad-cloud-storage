@@ -33,8 +33,8 @@ namespace Lokad.Cloud.Web
 			}
 
 			// Web specific
-			builder.Register<LokadCloudVersion>().SingletonScoped();
-			builder.Register<LokadCloudUserRoles>().FactoryScoped();
+			builder.RegisterType<LokadCloudVersion>().SingleInstance();
+			builder.RegisterType<LokadCloudUserRoles>().InstancePerDependency();
 
 			Container = builder.Build();
 		}

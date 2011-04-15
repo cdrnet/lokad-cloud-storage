@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using Autofac;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Diagnostics.Rsm;
 using Lokad.Cloud.Storage;

@@ -9,6 +9,7 @@ using System.Data.Services.Client;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Autofac;
 using Lokad.Cloud.Shared.Test;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;

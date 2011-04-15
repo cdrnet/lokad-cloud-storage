@@ -4,6 +4,8 @@
 #endregion
 
 using Autofac;
+using Autofac.Core;
+using Autofac.Core.Registration;
 
 namespace Lokad.Cloud.Storage
 {

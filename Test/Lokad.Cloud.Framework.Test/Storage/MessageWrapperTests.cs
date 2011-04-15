@@ -4,6 +4,7 @@
 #endregion
 
 using System.IO;
+using Autofac;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared;
 using NUnit.Framework;

@@ -3,6 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using Autofac;
 using Autofac.Builder;
 using Lokad.Cloud.Management.Api10;
 
@@ -15,11 +16,11 @@ namespace Lokad.Cloud.Management
 	{
 		protected override void Load(ContainerBuilder builder)
 		{
-			builder.Register<CloudConfiguration>().As<ICloudConfigurationApi>().FactoryScoped();
-			builder.Register<CloudAssemblies>().As<ICloudAssembliesApi>().FactoryScoped();
-			builder.Register<CloudServices>().As<ICloudServicesApi>().FactoryScoped();
-			builder.Register<CloudServiceScheduling>().As<ICloudServiceSchedulingApi>().FactoryScoped();
-			builder.Register<CloudStatistics>().As<ICloudStatisticsApi>().FactoryScoped();
+			builder.RegisterType<CloudConfiguration>().As<ICloudConfigurationApi>().InstancePerDependency();
+			builder.RegisterType<CloudAssemblies>().As<ICloudAssembliesApi>().InstancePerDependency();
+			builder.RegisterType<CloudServices>().As<ICloudServicesApi>().InstancePerDependency();
+			builder.RegisterType<CloudServiceScheduling>().As<ICloudServiceSchedulingApi>().InstancePerDependency();
+			builder.RegisterType<CloudStatistics>().As<ICloudStatisticsApi>().InstancePerDependency();
 
 			// in some cases (like standalone mock storage) the RoleConfigurationSettings
 			// will not be available. That's ok, since in this case Provisioning is not
@@ -28,7 +29,7 @@ namespace Lokad.Cloud.Management
                     c.Resolve<ICloudConfigurationSettings>(), 
                     c.Resolve<Storage.Shared.Logging.ILog>()))
 				.As<CloudProvisioning, IProvisioningProvider, ICloudProvisioningApi>()
-				.SingletonScoped();
+				.SingleInstance();
 		}
 	}
 }

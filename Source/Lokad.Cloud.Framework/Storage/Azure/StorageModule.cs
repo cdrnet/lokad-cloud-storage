@@ -12,7 +12,6 @@ using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
-using Module=Autofac.Builder.Module;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -25,7 +24,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.Register<CloudFormatter>().As<IDataSerializer>().DefaultOnly();
+            builder.RegisterType<CloudFormatter>().As<IDataSerializer>().PreserveExistingDefaults();
 
             builder.Register(StorageAccountFromSettings);
             builder.Register(QueueClient);
@@ -41,7 +40,7 @@ namespace Lokad.Cloud.Storage.Azure
             builder.Register(CloudInfrastructureProviders);
         }
 
-        private static CloudStorageAccount StorageAccountFromSettings(IContext c)
+        private static CloudStorageAccount StorageAccountFromSettings(IComponentContext c)
         {
             var settings = c.Resolve<ICloudConfigurationSettings>();
             CloudStorageAccount account;
@@ -57,21 +56,21 @@ namespace Lokad.Cloud.Storage.Azure
             throw new InvalidOperationException("Failed to get valid connection string");
         }
 
-        static RuntimeProviders RuntimeProviders(IContext c)
+        static RuntimeProviders RuntimeProviders(IComponentContext c)
         {
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
                 .BuildRuntimeProviders();
         }
 
-        static CloudInfrastructureProviders CloudInfrastructureProviders(IContext c)
+        static CloudInfrastructureProviders CloudInfrastructureProviders(IComponentContext c)
         {
             return new CloudInfrastructureProviders(
                 c.Resolve<CloudStorageProviders>(),
                 c.ResolveOptional<IProvisioningProvider>());
         }
 
-        static CloudStorageProviders CloudStorageProviders(IContext c)
+        static CloudStorageProviders CloudStorageProviders(IComponentContext c)
         {
             return new CloudStorageProviders(
                 c.Resolve<IBlobStorageProvider>(),
@@ -81,7 +80,7 @@ namespace Lokad.Cloud.Storage.Azure
                 c.ResolveOptional<Storage.Shared.Logging.ILog>());
         }
 
-        static ITableStorageProvider TableStorageProvider(IContext c)
+        static ITableStorageProvider TableStorageProvider(IComponentContext c)
         {
             IDataSerializer formatter;
             if (!c.TryResolve(out formatter))
@@ -94,7 +93,7 @@ namespace Lokad.Cloud.Storage.Azure
                 formatter);
         }
 
-        static IQueueStorageProvider QueueStorageProvider(IContext c)
+        static IQueueStorageProvider QueueStorageProvider(IComponentContext c)
         {
             IDataSerializer formatter;
             if (!c.TryResolve(out formatter))
@@ -113,7 +112,7 @@ namespace Lokad.Cloud.Storage.Azure
                 c.ResolveOptional<Storage.Shared.Logging.ILog>());
         }
 
-        static IBlobStorageProvider BlobStorageProvider(IContext c)
+        static IBlobStorageProvider BlobStorageProvider(IComponentContext c)
         {
             IDataSerializer formatter;
             if (!c.TryResolve(out formatter))
@@ -127,7 +126,7 @@ namespace Lokad.Cloud.Storage.Azure
                 c.ResolveOptional<Storage.Shared.Logging.ILog>());
         }
 
-        static CloudTableClient TableClient(IContext c)
+        static CloudTableClient TableClient(IComponentContext c)
         {
             var account = c.Resolve<CloudStorageAccount>();
             var storage = account.CreateCloudTableClient();
@@ -135,7 +134,7 @@ namespace Lokad.Cloud.Storage.Azure
             return storage;
         }
 
-        static CloudBlobClient BlobClient(IContext c)
+        static CloudBlobClient BlobClient(IComponentContext c)
         {
             var account = c.Resolve<CloudStorageAccount>();
             var storage = account.CreateCloudBlobClient();
@@ -143,7 +142,7 @@ namespace Lokad.Cloud.Storage.Azure
             return storage;
         }
 
-        static CloudQueueClient QueueClient(IContext c)
+        static CloudQueueClient QueueClient(IComponentContext c)
         {
             var account = c.Resolve<CloudStorageAccount>();
             var queueService = account.CreateCloudQueueClient();

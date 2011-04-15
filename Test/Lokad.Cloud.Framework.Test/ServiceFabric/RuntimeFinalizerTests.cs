@@ -4,6 +4,7 @@
 #endregion
 
 using System;
+using Autofac;
 using Lokad.Cloud.ServiceFabric;
 using NUnit.Framework;
 
