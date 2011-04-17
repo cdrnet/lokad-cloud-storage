@@ -11,6 +11,7 @@
     <AssemblyName>Lokad.Cloud.Console</AssemblyName>
     <StartDevelopmentStorage>True</StartDevelopmentStorage>
     <Name>Lokad.Cloud.Console</Name>
+    <CloudExtensionsTaskPath>$(SolutionDir)Resource\Build\Microsoft.CloudService.MSBuildTasks.dll</CloudExtensionsTaskPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
