@@ -94,6 +94,7 @@
     <Content Include="Logs.aspx" />
     <Content Include="ReadMe.txt" />
     <Content Include="Web.config" />
+    <None Include="_ReadMe.txt" />
     <None Include="Web.template.config" />
   </ItemGroup>
   <ItemGroup>
