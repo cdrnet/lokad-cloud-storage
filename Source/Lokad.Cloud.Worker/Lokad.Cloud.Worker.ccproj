@@ -10,7 +10,7 @@
     <RootNamespace>Lokad.Cloud.DeployWorker</RootNamespace>
     <AssemblyName>Lokad.Cloud.DeployWorker</AssemblyName>
     <StartDevelopmentStorage>True</StartDevelopmentStorage>
-    <Name>Lokad.Cloud.DeployWorker</Name>
+    <Name>Lokad.Cloud.Worker</Name>
     <CloudExtensionsTaskPath>$(SolutionDir)Resource\Build\Microsoft.CloudService.MSBuildTasks.dll</CloudExtensionsTaskPath>
     <CloudExtensionsDir>..\..\Resource\Build\</CloudExtensionsDir>
   </PropertyGroup>

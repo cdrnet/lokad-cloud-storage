@@ -62,7 +62,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lokad.Cloud.Console.WebRole
 EndProject
 Project("{CC5FD16D-436D-48AD-A40C-5A424C6E3E79}") = "Lokad.Cloud.Console", "Source\Lokad.Cloud.Console\Lokad.Cloud.Console.ccproj", "{D1895B57-0570-4D5A-8B2D-17461D9E018A}"
 EndProject
-Project("{CC5FD16D-436D-48AD-A40C-5A424C6E3E79}") = "Lokad.Cloud.DeployWorker", "Source\Lokad.Cloud.DeployWorker\Lokad.Cloud.DeployWorker.ccproj", "{D15DA935-5655-4056-A57E-0B0815073EFA}"
+Project("{CC5FD16D-436D-48AD-A40C-5A424C6E3E79}") = "Lokad.Cloud.Worker", "Source\Lokad.Cloud.Worker\Lokad.Cloud.Worker.ccproj", "{D15DA935-5655-4056-A57E-0B0815073EFA}"
 EndProject
 Project("{CC5FD16D-436D-48AD-A40C-5A424C6E3E79}") = "Lokad.Cloud.DeployWeb", "Source\Lokad.Cloud.DeployWeb\Lokad.Cloud.DeployWeb.ccproj", "{91517E30-0A44-48A8-A114-B16A8F352D67}"
 EndProject
