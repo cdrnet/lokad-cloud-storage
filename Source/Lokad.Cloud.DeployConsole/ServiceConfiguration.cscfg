@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<ServiceConfiguration serviceName="Lokad.Cloud.Console" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration">
+<ServiceConfiguration serviceName="Lokad.Cloud.DeployConsole" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration">
 	<Role name="Lokad.Cloud.Console.WebRole">
 		<Instances count="1" />
 		<ConfigurationSettings>

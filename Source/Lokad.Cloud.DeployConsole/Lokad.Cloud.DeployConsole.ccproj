@@ -10,7 +10,7 @@
     <RootNamespace>Lokad.Cloud.Console</RootNamespace>
     <AssemblyName>Lokad.Cloud.Console</AssemblyName>
     <StartDevelopmentStorage>True</StartDevelopmentStorage>
-    <Name>Lokad.Cloud.Console</Name>
+    <Name>Lokad.Cloud.DeployConsole</Name>
     <CloudExtensionsTaskPath>$(SolutionDir)Resource\Build\Microsoft.CloudService.MSBuildTasks.dll</CloudExtensionsTaskPath>
     <CloudExtensionsDir>..\..\Resource\Build\</CloudExtensionsDir>
   </PropertyGroup>
