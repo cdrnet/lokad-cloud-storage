@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ServiceDefinition name="Lokad.Cloud.Worker" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition">
+<ServiceDefinition name="Lokad.Cloud.DeployWorker" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition">
   <!-- Full trust is needed for binary serialization -->
   <WorkerRole name="Lokad.Cloud.WorkerRole" enableNativeCodeExecution="true" vmsize="ExtraSmall">
     <LocalResources>

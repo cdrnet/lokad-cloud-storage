@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ServiceConfiguration serviceName="Lokad.Cloud.Worker" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="1" osVersion="*">
+<ServiceConfiguration serviceName="Lokad.Cloud.DeployWorker" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="1" osVersion="*">
   <Role name="Lokad.Cloud.WorkerRole">
     <ConfigurationSettings>
       <Setting name="DataConnectionString" value="DefaultEndpointsProtocol=https;AccountName=YOUR ACCOUNT NAME;AccountKey=YOUR ACCOUNT KEY" />
