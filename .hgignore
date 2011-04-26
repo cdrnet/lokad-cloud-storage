@@ -16,3 +16,4 @@ Samples/Source/PingPong/PingPongClient/app.config
 *.WebRole/bin/*
 Source/Lokad.Cloud.WebRole/Web.config
 Lokad.Cloud.sln.docstates
+Samples/_ReSharper.Lokad.Cloud.Samples/*
