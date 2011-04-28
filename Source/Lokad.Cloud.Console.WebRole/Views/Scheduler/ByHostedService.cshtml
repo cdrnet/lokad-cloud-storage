@@ -16,7 +16,7 @@
 	@foreach (var item in Model.Schedules) {
 		<tr>
 			<td>@item.ServiceName</td>
-			<td>@(item.WorkerScoped ? "untracked" : Lokad.FormatUtil.TimeOffsetUtc(item.LastExecuted.UtcDateTime))</td>
+			<td>@(item.WorkerScoped ? "untracked" : FormatUtil.TimeOffsetUtc(item.LastExecuted.UtcDateTime))</td>
 			<td>@item.TriggerInterval</td>
 			<td>@(item.WorkerScoped ? "Worker" : "Cloud")</td>
 			<td>@PresentationHelpers.PrettyFormatLease(item)</td>

@@ -64,7 +64,7 @@ namespace Lokad.Cloud.Application
                 var package = reader.ReadPackage(packageBytes, false);
                 package.LoadAssemblies();
 
-                var serviceTypes = AppDomain.CurrentDomain.GetAssemblies()
+                var serviceTypes = AppDomain.CurrentDomain.ReflectionOnlyGetAssemblies()
                     .Select(a => a.GetExportedTypes()).SelectMany(x => x)
                     .Where(t => t.IsSubclassOf(typeof(CloudService)) && !t.IsAbstract && !t.IsGenericType)
                     .ToList();

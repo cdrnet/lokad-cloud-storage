@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Lokad.Cloud.Management.Azure;
 using Lokad.Cloud.Management.Azure.Entities;
-using Lokad.Cloud.Storage;
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
