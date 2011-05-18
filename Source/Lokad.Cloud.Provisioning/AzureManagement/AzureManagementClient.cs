@@ -6,20 +6,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-using Lokad.Cloud.Provisioning.Discovery;
-
 using Microsoft.WindowsAzure.StorageClient;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.AzureManagement
 {
-    public class AzureManagement
+    public class AzureManagementClient
     {
         public string SubscriptionId { get; set; }
         public X509Certificate2 Certificate { get; set; }
         public ShouldRetry ShouldRetryQuery { get; set; }
         public ShouldRetry ShouldRetryCommand { get; set; }
 
-        public AzureManagement(string subscriptionId, X509Certificate2 certificate)
+        public AzureManagementClient(string subscriptionId, X509Certificate2 certificate)
         {
             SubscriptionId = subscriptionId;
             Certificate = certificate;

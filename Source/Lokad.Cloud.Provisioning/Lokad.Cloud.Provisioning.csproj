@@ -39,6 +39,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Xml" />
@@ -50,15 +51,17 @@
     <Compile Include="..\VersionAssemblyInfo.cs">
       <Link>Properties\VersionAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="AzureManagement.cs" />
-    <Compile Include="Discovery\DeploymentInfo.cs" />
-    <Compile Include="Discovery\DeploymentSlot.cs" />
-    <Compile Include="Discovery\DeploymentStatus.cs" />
-    <Compile Include="Discovery\HostedServiceInfo.cs" />
-    <Compile Include="HttpClientExtensions.cs" />
+    <Compile Include="AzureManagement\AzureManagementClient.cs" />
+    <Compile Include="AzureProvisioning.cs" />
+    <Compile Include="AzureManagement\DeploymentInfo.cs" />
+    <Compile Include="AzureManagement\DeploymentSlot.cs" />
+    <Compile Include="AzureManagement\DeploymentStatus.cs" />
+    <Compile Include="AzureManagement\HostedServiceInfo.cs" />
+    <Compile Include="AzureManagement\HttpClientExtensions.cs" />
+    <Compile Include="LokadCloudProvisioning.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Discovery\RoleInfo.cs" />
-    <Compile Include="XContainerExtensions.cs" />
+    <Compile Include="AzureManagement\RoleInfo.cs" />
+    <Compile Include="AzureManagement\XExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.AzureManagement
 {
-    internal static class XContainerExtensions
+    internal static class XExtensions
     {
         private static readonly XNamespace _AzureNS = @"http://schemas.microsoft.com/windowsazure";
         private static readonly XNamespace _ServiceConfigNS = @"http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration";
@@ -27,7 +27,7 @@ namespace Lokad.Cloud.Provisioning
 
         public static string AzureBase64Value(this XContainer element, string elementName)
         {
-            return Base64Decode(element.Element(_AzureNS + elementName).Value);
+            return Encoding.UTF8.GetString(Convert.FromBase64String(element.Element(_AzureNS + elementName).Value));
         }
 
         public static XElement ServiceConfigElement(this XContainer element, string elementName)
@@ -48,12 +48,6 @@ namespace Lokad.Cloud.Provisioning
         public static string AttributeValue(this XElement element, string attributeName)
         {
             return element.Attribute(attributeName).Value;
-        }
-
-        private static string Base64Decode(string value)
-        {
-            var bytes = Convert.FromBase64String(value);
-            return Encoding.UTF8.GetString(bytes);
         }
     }
 }
