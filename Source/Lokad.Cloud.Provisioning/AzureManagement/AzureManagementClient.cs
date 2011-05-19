@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -21,6 +22,9 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
         {
             SubscriptionId = subscriptionId;
             Certificate = certificate;
+
+            ShouldRetryQuery = ErrorHandling.RetryOnServerErrors;
+            ShouldRetryCommand = ErrorHandling.RetryOnServerErrors;
         }
 
         //public void Configure(ICloudConfigurationSettings settings)
@@ -68,11 +72,11 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
                     {
                         ServiceName = xmlService.AzureValue("ServiceName"),
                         Description = xmlProperties.AzureValue("Description"),
-                        ServiceLabel = xmlProperties.AzureBase64Value("Label"),
+                        ServiceLabel = xmlProperties.AzureEncodedValue("Label"),
 
                         Deployments = xmlService.AzureElements("Deployments", "Deployment").Select(d =>
                             {
-                                var config = XDocument.Parse(d.AzureBase64Value("Configuration"));
+                                var config = d.AzureConfiguration();
                                 var instanceCountPerRole = d.AzureElements("RoleInstanceList", "RoleInstance")
                                     .GroupBy(ri => ri.AzureValue("RoleName"))
                                     .ToDictionary(g => g.Key, g => g.Count());
@@ -80,7 +84,7 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
                                 return new DeploymentInfo
                                     {
                                         DeploymentName = d.AzureValue("Name"),
-                                        DeploymentLabel = d.AzureBase64Value("Label"),
+                                        DeploymentLabel = d.AzureEncodedValue("Label"),
                                         Slot = (DeploymentSlot)Enum.Parse(typeof(DeploymentSlot), d.AzureValue("DeploymentSlot")),
                                         PrivateId = d.AzureValue("PrivateID"),
                                         Status = (DeploymentStatus)Enum.Parse(typeof(DeploymentStatus), d.AzureValue("Status")),
@@ -140,7 +144,41 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
             return client.GetXmlAsync<XDocument>(
                 string.Format("services/hostedservices/{0}/deployments/{1}", serviceName, deploymentName),
                 cancellationToken, ShouldRetryQuery,
-                (xml, tcs) => tcs.TrySetResult(XDocument.Parse(xml.AzureElement("Deployment").AzureBase64Value("Configuration"))));
+                (xml, tcs) => tcs.TrySetResult(xml.AzureElement("Deployment").AzureConfiguration()));
+        }
+
+        public Task<XDocument> GetDeploymentConfiguration(HttpClient client, string serviceName, DeploymentSlot deploymentSlot, CancellationToken cancellationToken)
+        {
+            return client.GetXmlAsync<XDocument>(
+                string.Format("services/hostedservices/{0}/deploymentslots/{1}", serviceName, deploymentSlot.ToString().ToLower()),
+                cancellationToken, ShouldRetryQuery,
+                (xml, tcs) => tcs.TrySetResult(xml.AzureElement("Deployment").AzureConfiguration()));
+        }
+
+        public Task<HttpStatusCode> UpdateDeploymentConfiguration(HttpClient client, string serviceName, string deploymentName, XDocument configuration, CancellationToken cancellationToken)
+        {
+            return client.PostXmlAsync<HttpStatusCode>(
+                string.Format("services/hostedservices/{0}/deployments/{1}/?comp=config", serviceName, deploymentName),
+                new XDocument(AzureXml.Element("ChangeConfiguration", AzureXml.Configuration(configuration))),
+                cancellationToken, ShouldRetryCommand,
+                (response, tcs) =>
+                    {
+                        response.EnsureSuccessStatusCode();
+                        tcs.TrySetResult(response.StatusCode);
+                    });
+        }
+
+        public Task<HttpStatusCode> UpdateDeploymentConfiguration(HttpClient client, string serviceName, DeploymentSlot deploymentSlot, XDocument configuration, CancellationToken cancellationToken)
+        {
+            return client.PostXmlAsync<HttpStatusCode>(
+                string.Format("services/hostedservices/{0}/deploymentslots/{1}/?comp=config", serviceName, deploymentSlot),
+                new XDocument(AzureXml.Element("ChangeConfiguration", AzureXml.Configuration(configuration))),
+                cancellationToken, ShouldRetryCommand,
+                (response, tcs) =>
+                    {
+                        response.EnsureSuccessStatusCode();
+                        tcs.TrySetResult(response.StatusCode);
+                    });
         }
     }
 }

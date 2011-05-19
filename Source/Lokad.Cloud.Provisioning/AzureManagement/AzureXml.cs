@@ -5,10 +5,14 @@ using System.Xml.Linq;
 
 namespace Lokad.Cloud.Provisioning.AzureManagement
 {
-    internal static class XExtensions
+    internal static class AzureXml
     {
         private static readonly XNamespace _AzureNS = @"http://schemas.microsoft.com/windowsazure";
-        private static readonly XNamespace _ServiceConfigNS = @"http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration";
+
+        public static XElement Element(string name, params object[] content)
+        {
+            return new XElement(_AzureNS + name, content);
+        }
 
         public static XElement AzureElement(this XContainer element, string elementName)
         {
@@ -25,29 +29,25 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
             return element.Element(_AzureNS + elementName).Value;
         }
 
-        public static string AzureBase64Value(this XContainer element, string elementName)
+        public static string AzureEncodedValue(this XContainer element, string elementName)
         {
             return Encoding.UTF8.GetString(Convert.FromBase64String(element.Element(_AzureNS + elementName).Value));
-        }
-
-        public static XElement ServiceConfigElement(this XContainer element, string elementName)
-        {
-            return element.Element(_ServiceConfigNS + elementName);
-        }
-
-        public static IEnumerable<XElement> ServiceConfigElements(this XContainer element, string parentElementName, string itemElementName)
-        {
-            return element.Element(_ServiceConfigNS + parentElementName).Elements(_ServiceConfigNS + itemElementName);
-        }
-
-        public static string ServiceConfigValue(this XContainer element, string elementName)
-        {
-            return element.Element(_ServiceConfigNS + elementName).Value;
         }
 
         public static string AttributeValue(this XElement element, string attributeName)
         {
             return element.Attribute(attributeName).Value;
+        }
+
+        public static XElement Configuration(XDocument config)
+        {
+            return new XElement(_AzureNS + "Configuration", Convert.ToBase64String(Encoding.UTF8.GetBytes(config.ToString(SaveOptions.OmitDuplicateNamespaces))));
+        }
+
+        public static XDocument AzureConfiguration(this XContainer element)
+        {
+            // Even though the XML is declared as UTF-16 it is actually encoded in UTF-8
+            return XDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(element.Element(_AzureNS + "Configuration").Value)));
         }
     }
 }
