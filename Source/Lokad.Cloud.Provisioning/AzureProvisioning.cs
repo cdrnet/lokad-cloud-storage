@@ -66,5 +66,15 @@ namespace Lokad.Cloud.Provisioning
 
             return completionSource.Task;
         }
+
+        public Task UpdateLokadCloudWorkerCount(string serviceName, DeploymentSlot deploymentSlot, int instanceCount, CancellationToken cancellationToken)
+        {
+            return UpdateRoleInstanceCount(serviceName, "Lokad.Cloud.WorkerRole", deploymentSlot, instanceCount, cancellationToken);
+        }
+
+        public Task UpdateLokadCloudWorkerCount(string serviceName, string deploymentName, int instanceCount, CancellationToken cancellationToken)
+        {
+            return UpdateRoleInstanceCount(serviceName, "Lokad.Cloud.WorkerRole", deploymentName, instanceCount, cancellationToken);
+        }
     }
 }
