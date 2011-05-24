@@ -34,9 +34,6 @@
     <Reference Include="Microsoft.Net.Http, Version=0.3.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\HttpClient.0.3.0\lib\40\Microsoft.Net.Http.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.WindowsAzure.StorageClient, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\Resource\Library\Microsoft.WindowsAzure.StorageClient.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -51,10 +48,12 @@
     <Compile Include="..\VersionAssemblyInfo.cs">
       <Link>Properties\VersionAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="AzureDiscovery.cs" />
     <Compile Include="AzureManagement\AzureManagementClient.cs" />
     <Compile Include="AzureManagement\AzureXml.cs" />
     <Compile Include="AzureManagement\ErrorHandling.cs" />
     <Compile Include="AzureManagement\ServiceConfigXml.cs" />
+    <Compile Include="AzureManagement\ShouldRetry.cs" />
     <Compile Include="AzureManagement\TaskExtensions.cs" />
     <Compile Include="AzureProvisioning.cs" />
     <Compile Include="AzureManagement\DeploymentInfo.cs" />

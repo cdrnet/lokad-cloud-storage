@@ -6,8 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-using Microsoft.WindowsAzure.StorageClient;
-
 namespace Lokad.Cloud.Provisioning.AzureManagement
 {
     internal static class HttpClientExtensions
