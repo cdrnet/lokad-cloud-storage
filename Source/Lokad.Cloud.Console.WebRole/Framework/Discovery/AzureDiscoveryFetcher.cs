@@ -31,40 +31,18 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         {
             var started = DateTimeOffset.UtcNow;
             var completionSource = new TaskCompletionSource<AzureDiscoveryInfo>();
+            var cancellationToken = CancellationToken.None;
 
-            _discovery.DiscoverHostedServices(CancellationToken.None).ContinueWith(task =>
-                {
-                    if (!task.IsCompleted)
+            _discovery.DiscoverHostedServices(cancellationToken).ContinuePropagateWith(
+                completionSource, cancellationToken, task => completionSource.TrySetResult(new AzureDiscoveryInfo
                     {
-                        // TODO (ruegg, 2011-05-19): Weird semantics (for compatibility), fix
-                        completionSource.TrySetResult(new AzureDiscoveryInfo
-                            {
-                                IsAvailable = false,
-                                Timestamp = started,
-                                FinishedTimestamp = DateTimeOffset.UtcNow
-                            });
-
-                        if (task.IsFaulted)
-                        {
-                            // Ensure the Task doesn't throw at finalization
-                            var exception = task.Exception.GetBaseException();
-
-                            // TODO (ruegg, 2011-05-19): report error to the user
-                        }
-
-                        return;
-                    }
-
-                    completionSource.TrySetResult(new AzureDiscoveryInfo
-                        {
-                            IsAvailable = true,
-                            Timestamp = started,
-                            FinishedTimestamp = DateTimeOffset.UtcNow,
-                            LokadCloudDeployments = task.Result
-                                .Where(h => h.Deployments.Any(d => d.Roles.Exists(r => r.RoleName == "Lokad.Cloud.WorkerRole")))
-                                .Select(MapHostedService).OrderBy(h => h.ServiceName).ToList()
-                        });
-                });
+                        IsAvailable = true,
+                        Timestamp = started,
+                        FinishedTimestamp = DateTimeOffset.UtcNow,
+                        LokadCloudDeployments = task.Result
+                            .Where(h => h.Deployments.Any(d => d.Roles.Exists(r => r.RoleName == "Lokad.Cloud.WorkerRole")))
+                            .Select(MapHostedService).OrderBy(h => h.ServiceName).ToList()
+                    }));
 
             return completionSource.Task;
         }
