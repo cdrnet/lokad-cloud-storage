@@ -5,6 +5,8 @@ Thumbs.db
 _ReSharper.Lokad.Cloud/*
 *.suo
 *.user
+*.docstates
+*.build.csdef
 */bin/Debug/*
 */obj/Debug/*
 */bin/Release/*
@@ -13,3 +15,4 @@ Test/Lokad.Cloud.Framework.Test/App.config
 Samples/Source/PingPong/PingPongClient/app.config
 *.WebRole/bin/*
 Source/Lokad.Cloud.WebRole/Web.config
+Lokad.Cloud.sln.docstates

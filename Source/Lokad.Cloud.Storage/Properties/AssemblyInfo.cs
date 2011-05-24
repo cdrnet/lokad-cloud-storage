@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 [assembly: AssemblyTitle("Lokad.Cloud.Storage")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyCopyright("Copyright © Lokad 2010")]
+[assembly: AssemblyCopyright("Copyright © Lokad 2011")]
 [assembly: AssemblyTrademark("")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
