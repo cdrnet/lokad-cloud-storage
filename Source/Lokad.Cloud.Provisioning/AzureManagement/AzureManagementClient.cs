@@ -23,8 +23,8 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
             SubscriptionId = subscriptionId;
             Certificate = certificate;
 
-            ShouldRetryQuery = ErrorHandling.RetryOnServerErrors;
-            ShouldRetryCommand = ErrorHandling.RetryOnServerErrors;
+            ShouldRetryQuery = ErrorHandling.RetryOnTransientErrors;
+            ShouldRetryCommand = ErrorHandling.RetryOnTransientErrors;
         }
 
         //public void Configure(ICloudConfigurationSettings settings)

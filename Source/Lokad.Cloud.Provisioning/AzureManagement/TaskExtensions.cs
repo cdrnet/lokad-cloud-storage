@@ -17,7 +17,7 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
 
                         if (cancellationToken.IsCancellationRequested && baseException is HttpException)
                         {
-                            // If cancelled: HttpExceptions are expected, hence we ignore them and cancel.
+                            // If cancelled: HttpExceptions are assumed to be caused by the cancellation, hence we ignore them and cancel.
                             completionSource.TrySetCanceled();
                         }
                         else
