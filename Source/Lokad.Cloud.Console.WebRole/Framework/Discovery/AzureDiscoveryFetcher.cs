@@ -4,14 +4,12 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using Lokad.Cloud.Management.Azure;
-using Lokad.Cloud.Management.Azure.Entities;
+using Lokad.Cloud.Provisioning;
+using Lokad.Cloud.Provisioning.AzureManagement;
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
@@ -20,73 +18,74 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
     {
         private readonly X509Certificate2 _certificate;
         private readonly string _subscriptionId;
-        private readonly ManagementClient _client;
+        private readonly AzureDiscovery _discovery;
 
         public AzureDiscoveryFetcher()
         {
             _subscriptionId = CloudConfiguration.SubscriptionId;
             _certificate = CloudConfiguration.GetManagementCertificate();
-            _client = new ManagementClient(_certificate);
+            _discovery = new AzureDiscovery(_subscriptionId, _certificate);
         }
 
         public Task<AzureDiscoveryInfo> FetchAsync()
         {
-            return Task.Factory.StartNew(() =>
+            var started = DateTimeOffset.UtcNow;
+            var completionSource = new TaskCompletionSource<AzureDiscoveryInfo>();
+
+            _discovery.DiscoverHostedServices(CancellationToken.None).ContinueWith(task =>
                 {
-                    var started = DateTimeOffset.UtcNow;
-                    var proxy = _client.CreateChannel();
-                    try
+                    if (!task.IsCompleted)
                     {
-                        return new AzureDiscoveryInfo
+                        // TODO (ruegg, 2011-05-19): Weird semantics (for compatibility), fix
+                        completionSource.TrySetResult(new AzureDiscoveryInfo
                             {
-                                LokadCloudDeployments = FetchLokadCloudHostedServices(proxy)
-                                    .Select(MapHostedService).OrderBy(hs => hs.ServiceName).ToList(),
-                                IsAvailable = true,
+                                IsAvailable = false,
                                 Timestamp = started,
                                 FinishedTimestamp = DateTimeOffset.UtcNow
-                            };
+                            });
+
+                        if (task.IsFaulted)
+                        {
+                            // Ensure the Task doesn't throw at finalization
+                            var exception = task.Exception.GetBaseException();
+
+                            // TODO (ruegg, 2011-05-19): report error to the user
+                        }
+
+                        return;
                     }
-                    finally
-                    {
-                        _client.CloseChannel(proxy);
-                    }
+
+                    completionSource.TrySetResult(new AzureDiscoveryInfo
+                        {
+                            IsAvailable = true,
+                            Timestamp = started,
+                            FinishedTimestamp = DateTimeOffset.UtcNow,
+                            LokadCloudDeployments = task.Result
+                                .Where(h => h.Deployments.Any(d => d.Roles.Exists(r => r.RoleName == "Lokad.Cloud.WorkerRole")))
+                                .Select(MapHostedService).OrderBy(h => h.ServiceName).ToList()
+                        });
                 });
+
+            return completionSource.Task;
         }
 
-        private IEnumerable<HostedService> FetchLokadCloudHostedServices(IAzureServiceManagement proxy)
+        private static LokadCloudHostedService MapHostedService(HostedServiceInfo hostedService)
         {
-            return proxy
-                .ListHostedServices(_subscriptionId)
-                .AsParallel()
-                .Select(service => proxy.GetHostedServiceWithDetails(_subscriptionId, service.ServiceName, true))
-                .Where(hs => hs.Deployments.Any(d => d.RoleInstanceList.Exists(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")));
-        }
-
-        private static LokadCloudHostedService MapHostedService(HostedService hostedService)
-        {
-            var lokadCloudDeployments = hostedService.Deployments.Select(d =>
+            var lokadCloudDeployments = hostedService.Deployments.Select(deployment =>
                 {
-                    var config = XElement.Parse(Base64Decode(hostedService.Deployments.First().Configuration));
-
-                    var nn = config.Name.NamespaceName;
-                    var xmlWorkerRole = config.Elements().Single(x => x.Attribute("name").Value == "Lokad.Cloud.WorkerRole");
-                    var xmlConfigSettings = xmlWorkerRole.Element(XName.Get("ConfigurationSettings", nn));
-                    var xmlDataConnectionString = xmlConfigSettings.Elements().Single(x => x.Attribute("name").Value == "DataConnectionString").Attribute("value").Value;
-
-                    var storageAccount = CloudStorageAccount.Parse(xmlDataConnectionString);
+                    var workerRole = deployment.Roles.Single(r => r.RoleName == "Lokad.Cloud.WorkerRole");
+                    var storageAccount = CloudStorageAccount.Parse(workerRole.Settings["DataConnectionString"]);
                     var accountAndKey = storageAccount.Credentials as StorageCredentialsAccountAndKey;
 
                     return new LokadCloudDeployment
                         {
-                            DeploymentName = d.Name,
-                            DeploymentLabel = Base64Decode(d.Label),
-                            Status = d.Status.ToString(),
-                            Slot = d.DeploymentSlot.ToString(),
-                            InstanceCount = d.RoleInstanceList.Count(ri => ri.RoleName == "Lokad.Cloud.WorkerRole"),
-                            IsRunning = d.Status == DeploymentStatus.Running,
-                            IsTransitioning =
-                                d.Status != DeploymentStatus.Running && d.Status != DeploymentStatus.Suspended,
-                            Configuration = config,
+                            DeploymentName = deployment.DeploymentName,
+                            DeploymentLabel = deployment.DeploymentLabel,
+                            Status = deployment.Status.ToString(),
+                            Slot = deployment.Slot.ToString(),
+                            InstanceCount = workerRole.ActualInstanceCount,
+                            IsRunning = deployment.Status == DeploymentStatus.Running,
+                            IsTransitioning = deployment.Status != DeploymentStatus.Running && deployment.Status != DeploymentStatus.Suspended,
                             StorageAccount = storageAccount,
                             StorageAccountName = storageAccount.Credentials.AccountName,
                             StorageAccountKeyPrefix = accountAndKey != null ? accountAndKey.Credentials.ExportBase64EncodedKey().Substring(0, 4) : null,
@@ -96,20 +95,13 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
             return new LokadCloudHostedService
                 {
                     ServiceName = hostedService.ServiceName,
-                    ServiceLabel = Base64Decode(hostedService.HostedServiceProperties.Label),
-                    Description = hostedService.HostedServiceProperties.Description,
+                    ServiceLabel = hostedService.ServiceLabel,
+                    Description = hostedService.Description,
                     Deployments = lokadCloudDeployments,
-                    Configuration = lokadCloudDeployments[0].Configuration,
                     StorageAccount = lokadCloudDeployments[0].StorageAccount,
                     StorageAccountName = lokadCloudDeployments[0].StorageAccountName,
                     StorageAccountKeyPrefix = lokadCloudDeployments[0].StorageAccountKeyPrefix,
                 };
-        }
-
-        private static string Base64Decode(string value)
-        {
-            var bytes = Convert.FromBase64String(value);
-            return Encoding.UTF8.GetString(bytes);
         }
     }
 }

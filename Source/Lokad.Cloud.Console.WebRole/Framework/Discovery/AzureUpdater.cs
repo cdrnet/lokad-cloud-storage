@@ -47,7 +47,7 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
                         // Ensure the Task doesn't throw at finalization
                         var exception = t.Exception.GetBaseException();
 
-                        // TODO (ruegg, 2011-05-19): report error to the user 
+                        // TODO (ruegg, 2011-05-19): report error to the user
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
 
