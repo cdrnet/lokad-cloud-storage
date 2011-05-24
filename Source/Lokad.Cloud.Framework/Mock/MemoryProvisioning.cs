@@ -6,6 +6,11 @@ namespace Lokad.Cloud.Mock
 {
     public class MemoryProvisioning : IProvisioningProvider
     {
+        public bool IsAvailable
+        {
+            get { return false; }
+        }
+
         public Task SetWorkerInstanceCount(int count, CancellationToken cancellationToken)
         {
             return Task.Factory.StartNew(() => { });

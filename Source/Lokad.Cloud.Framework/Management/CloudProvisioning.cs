@@ -50,6 +50,11 @@ namespace Lokad.Cloud.Management
             _currentDeployment.Discover(CancellationToken.None);
         }
 
+        public bool IsAvailable
+        {
+            get { return _provisioning != null; }
+        }
+
         /// <remarks>
         /// Logs exceptions, hence failing to handle a task fault at the calling side
         /// will not cause an unhandled exception at finalization

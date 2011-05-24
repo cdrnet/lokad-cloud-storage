@@ -12,6 +12,8 @@ namespace Lokad.Cloud.Management
     /// <remarks>The implementation relies on the Management API on Windows Azure.</remarks>
     public interface IProvisioningProvider
     {
+        bool IsAvailable { get; }
+
         /// <summary>Defines the number of regular VM instances to get allocated
         /// for the cloud app.</summary>
         /// <param name="count"></param>
