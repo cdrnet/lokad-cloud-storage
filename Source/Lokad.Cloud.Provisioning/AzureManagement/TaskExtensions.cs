@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace Lokad.Cloud.Provisioning.AzureManagement
 {
-    internal static class TaskExtensions
+    public static class TaskExtensions
     {
-        public static void ContinueWithPropagate<TCompletion, TTask>(this Task<TTask> task, TaskCompletionSource<TCompletion> completionSource, CancellationToken cancellationToken, Action<Task<TTask>> handleCompleted)
+        public static void ContinuePropagateWith<TCompletion, TTask>(this Task<TTask> task, TaskCompletionSource<TCompletion> completionSource, CancellationToken cancellationToken, Action<Task<TTask>> handleCompleted)
         {
             task.ContinueWith(t =>
                 {

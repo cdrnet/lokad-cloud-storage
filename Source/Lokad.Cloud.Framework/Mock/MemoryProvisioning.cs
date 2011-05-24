@@ -1,22 +1,19 @@
-﻿using Lokad.Cloud.Management;
-using Lokad.Cloud.Storage;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using Lokad.Cloud.Management;
 
 namespace Lokad.Cloud.Mock
 {
-	public class MemoryProvisioning : IProvisioningProvider
-	{
-		public bool IsAvailable
-		{
-			get { return false; }
-		}
+    public class MemoryProvisioning : IProvisioningProvider
+    {
+        public Task SetWorkerInstanceCount(int count, CancellationToken cancellationToken)
+        {
+            return Task.Factory.StartNew(() => { });
+        }
 
-		public void SetWorkerInstanceCount(int count)
-		{
-		}
-
-		public Maybe<int> GetWorkerInstanceCount()
-		{
-			return Maybe<int>.Empty;
-		}
-	}
+        public Task<int> GetWorkerInstanceCount(CancellationToken cancellationToken)
+        {
+            return Task.Factory.StartNew(() => 1);
+        }
+    }
 }

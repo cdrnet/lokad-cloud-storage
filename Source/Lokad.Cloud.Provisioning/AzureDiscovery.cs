@@ -1,4 +1,6 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,6 +30,42 @@ namespace Lokad.Cloud.Provisioning
         public Task<HostedServiceInfo[]> DiscoverHostedServices(CancellationToken cancellationToken)
         {
             return Client.DiscoverHostedServices(Client.CreateHttpClient(), cancellationToken);
+        }
+
+        public Task<DeploymentReference> DiscoverDeployment(string deploymentPrivateId, CancellationToken cancellationToken)
+        {
+            var completionSource = new TaskCompletionSource<DeploymentReference>();
+            DoDiscoverDeploymentAsync(deploymentPrivateId, completionSource, cancellationToken);
+            return completionSource.Task;
+        }
+
+        public void DoDiscoverDeploymentAsync(string deploymentPrivateId, TaskCompletionSource<DeploymentReference> completionSource, CancellationToken cancellationToken)
+        {
+            DiscoverHostedServices(cancellationToken).ContinuePropagateWith(completionSource, cancellationToken, task =>
+            {
+                foreach (var hostedService in task.Result)
+                {
+                    var deployment = hostedService.Deployments.FirstOrDefault(di => di.PrivateId == deploymentPrivateId);
+                    if (deployment != null)
+                    {
+                        completionSource.TrySetResult(new DeploymentReference
+                        {
+                            HostedServiceName = hostedService.ServiceName,
+                            DeploymentName = deployment.DeploymentName,
+                            DeploymentPrivateId = deployment.PrivateId
+                        });
+
+                        return;
+                    }
+                }
+
+                completionSource.TrySetException(new KeyNotFoundException());
+            });
+
+            //completionSource.Task.ContinueWith(task =>
+            //{
+            //    _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Deployment discovery failed.");
+            //}, TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 }

@@ -3,9 +3,9 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 
-namespace Lokad.Cloud.Provisioning.AzureManagement
+namespace Lokad.Cloud.Provisioning
 {
-    public static class ErrorHandling
+    public static class ProvisioningErrorHandling
     {
         private static Random _random = new Random();
 

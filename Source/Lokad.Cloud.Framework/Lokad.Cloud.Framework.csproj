@@ -137,7 +137,6 @@
     <Compile Include="Jobs\JobManager.cs" />
     <Compile Include="Management\Api10\ICloudAssembliesApi.cs" />
     <Compile Include="Management\Api10\ICloudConfigurationApi.cs" />
-    <Compile Include="Management\Api10\ICloudProvisioningApi.cs" />
     <Compile Include="Management\Api10\ICloudServicesApi.cs" />
     <Compile Include="Management\Api10\ICloudServiceSchedulingApi.cs" />
     <Compile Include="Management\Api10\ICloudStatisticsApi.cs" />
@@ -233,6 +232,10 @@
     <Content Include="ServiceFabric\Runtime\ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Lokad.Cloud.Provisioning\Lokad.Cloud.Provisioning.csproj">
+      <Project>{B3CA9DCB-04DB-4442-AC0C-6E1F70854DA1}</Project>
+      <Name>Lokad.Cloud.Provisioning</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Lokad.Cloud.Storage\Lokad.Cloud.Storage.csproj">
       <Project>{0F9244AB-3B7C-4F98-9D44-E46FBC65522C}</Project>
       <Name>Lokad.Cloud.Storage</Name>
