@@ -11,10 +11,11 @@ using System.Runtime.Serialization;
 using System.Xml.Linq;
 
 using Lokad.Cloud.Storage.Events;
-using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.SystemObservers;
+
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure

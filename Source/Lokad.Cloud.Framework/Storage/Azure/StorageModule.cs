@@ -9,11 +9,12 @@ using System.Linq;
 using System.Net;
 using Autofac;
 using Lokad.Cloud.Storage.Events;
-using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage.Shared.Logging;
+using Lokad.Cloud.Storage.SystemObservers;
+
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Storage.Azure

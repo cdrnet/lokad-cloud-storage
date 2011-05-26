@@ -12,13 +12,13 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Xml.Linq;
-using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
+using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared.Threading;
+using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
-using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -656,9 +656,18 @@ namespace Lokad.Cloud.Storage.Azure
 
             Maybe<T> output;
 
-            TimeSpan retryInterval;
-            for (int retryCount = 0; _policies.ShouldRetryOptimisticConcurrency(retryCount, null, out retryInterval); retryCount++)
+            var optimisticPolicy = _policies.OptimisticConcurrency();
+            TimeSpan retryInterval = TimeSpan.Zero;
+            int retryCount = 0;
+            do
             {
+                // 0. IN CASE OF RETRIAL, WAIT UNTIL NEXT TRIAL (retry policy)
+
+                if (retryInterval > TimeSpan.Zero)
+                {
+                    Thread.Sleep(retryInterval);
+                }
+
                 // 1. DOWNLOAD EXISTING INPUT BLOB, IF IT EXISTS
 
                 Maybe<T> input;
@@ -744,14 +753,7 @@ namespace Lokad.Cloud.Storage.Azure
                         return output;
                     }
                 }
-
-                // 5. WAIT UNTIL NEXT TRIAL (retry policy)
-
-                if (retryInterval > TimeSpan.Zero)
-                {
-                    Thread.Sleep(retryInterval);
-                }
-            }
+            } while (optimisticPolicy(retryCount++, null, out retryInterval));
 
             throw new TimeoutException("Failed to resolve optimistic concurrency errors within a limited number of retrials");
         }

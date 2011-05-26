@@ -10,8 +10,8 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Lokad.Cloud.Storage.Events;
-using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared.Policies;
+using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -71,101 +71,113 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>
         /// Retry policy for optimistic concurrency retrials.
         /// </summary>
-        /// <remarks>Fitting the <see cref="ShouldRetry"/> delegate.</remarks>
-        public bool ShouldRetryOptimisticConcurrency(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        public ShouldRetry OptimisticConcurrency()
         {
-            if (currentRetryCount >= 30)
-            {
-                retryInterval = TimeSpan.Zero;
-                return false;
-            }
-
-            if (_systemObserver != null)
-            {
-                _systemObserver.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount));
-            }
-
             var random = new Random();
-            retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
-            return true;
+
+            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+                {
+                    if (currentRetryCount >= 30)
+                    {
+                        retryInterval = TimeSpan.Zero;
+                        return false;
+                    }
+
+                    retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
+
+                    if (_systemObserver != null)
+                    {
+                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval));
+                    }
+
+                    return true;
+                };
         }
 
         /// <summary>
         /// Retry policy which is applied to all Azure storage clients.
         /// </summary>
-        /// <remarks>Fitting the <see cref="ShouldRetry"/> delegate.</remarks>
-        public bool ShouldRetryInAzureStorageClient(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        public ShouldRetry ForAzureStorageClient()
         {
             // [abdullin]: in short this gives us MinBackOff + 2^(10)*Rand.(~0.5.Seconds()) at the last retry.
 
             // TODO (ruegg, 2011-05-26): This policy might actually be counterproductive and interfere with the other policies. Investigate.
 
-            if (currentRetryCount >= 10)
-            {
-                retryInterval = TimeSpan.Zero;
-                return false;
-            }
-
-            if (_systemObserver != null)
-            {
-                _systemObserver.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount));
-            }
-
             var random = new Random();
-
             double deltaBackoff = TimeSpan.FromSeconds(0.5).TotalMilliseconds;
             double minBackoff = RetryPolicies.DefaultMinBackoff.TotalMilliseconds;
             double maxBackoff = RetryPolicies.DefaultMaxBackoff.TotalMilliseconds;
 
-            retryInterval = TimeSpan.FromMilliseconds(Math.Min(
-                maxBackoff,
-                minBackoff + ((Math.Pow(2.0, currentRetryCount) - 1.0) * random.Next((int)(deltaBackoff * 0.8), (int)(deltaBackoff * 1.2)))));
-            return true;
+            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+                {
+                    if (currentRetryCount >= 10)
+                    {
+                        retryInterval = TimeSpan.Zero;
+                        return false;
+                    }
+
+                    retryInterval = TimeSpan.FromMilliseconds(Math.Min(
+                        maxBackoff,
+                        minBackoff + ((Math.Pow(2.0, currentRetryCount) - 1.0) * random.Next((int)(deltaBackoff * 0.8), (int)(deltaBackoff * 1.2)))));
+
+                    if (_systemObserver != null)
+                    {
+                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval));
+                    }
+
+                    return true;
+                };
         }
 
         void OnTransientServerErrorRetry(Exception exception, int count)
         {
-            if (_systemObserver != null)
-            {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientServerError", count));
-            }
-
             // quadratic backoff, capped at 5 minutes
             var c = count + 1;
-            Thread.Sleep(TimeSpan.FromSeconds(Math.Min(300, c*c)));
+            var retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
+
+            if (_systemObserver != null)
+            {
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientServerError", count, retryInterval));
+            }
+
+            Thread.Sleep(retryInterval);
         }
 
         void OnTransientTableErrorRetry(Exception exception, int count)
         {
-            if (_systemObserver != null)
-            {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientTableError", count));
-            }
-
             // quadratic backoff, capped at 5 minutes
             var c = count + 1;
-            Thread.Sleep(TimeSpan.FromSeconds(Math.Min(300, c * c)));
+            var retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
+
+            if (_systemObserver != null)
+            {
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientTableError", count, retryInterval));
+            }
+
+            Thread.Sleep(retryInterval);
         }
 
         void OnSlowInstantiationRetry(Exception exception, int count)
         {
+            // linear backoff
+            var retryInterval = TimeSpan.FromMilliseconds(100 * count);
+
             if (_systemObserver != null)
             {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "SlowInstantiation", count));
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "SlowInstantiation", count, retryInterval));
             }
 
-            // linear backoff
-            Thread.Sleep(TimeSpan.FromMilliseconds(100 * count));
+            Thread.Sleep(retryInterval);
         }
 
         void OnNetworkCorruption(Exception exception, int count)
         {
+            // no backoff, retry immediately
+
             if (_systemObserver != null)
             {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "NetworkCorruption", count));
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "NetworkCorruption", count, TimeSpan.Zero));
             }
-
-            // no backoff, retry immediately
         }
 
         static bool IsErrorCodeMatch(StorageException exception, params StorageErrorCode[] codes)

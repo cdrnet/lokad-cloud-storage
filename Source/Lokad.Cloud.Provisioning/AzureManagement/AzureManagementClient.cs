@@ -13,8 +13,8 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
     {
         public string SubscriptionId { get; set; }
         public X509Certificate2 Certificate { get; set; }
-        public ShouldRetry ShouldRetryQuery { get; set; }
-        public ShouldRetry ShouldRetryCommand { get; set; }
+        public RetryPolicy ShouldRetryQuery { get; set; }
+        public RetryPolicy ShouldRetryCommand { get; set; }
 
         public AzureManagementClient(string subscriptionId, X509Certificate2 certificate)
         {

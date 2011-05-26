@@ -7,8 +7,9 @@ using System;
 using System.ComponentModel;
 using System.Net;
 using Lokad.Cloud.Storage.Events;
-using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.SystemObservers;
+
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -201,7 +202,7 @@ namespace Lokad.Cloud.Storage
         {
             var policies = new Azure.AzurePolicies(SystemObserver);
             var blobClient = _storageAccount.CreateCloudBlobClient();
-            blobClient.RetryPolicy = () => policies.ShouldRetryInAzureStorageClient;
+            blobClient.RetryPolicy = policies.ForAzureStorageClient;
             return blobClient;
         }
 
@@ -209,7 +210,7 @@ namespace Lokad.Cloud.Storage
         {
             var policies = new Azure.AzurePolicies(SystemObserver);
             var tableClient = _storageAccount.CreateCloudTableClient();
-            tableClient.RetryPolicy = () => policies.ShouldRetryInAzureStorageClient;
+            tableClient.RetryPolicy = policies.ForAzureStorageClient;
             return tableClient;
         }
 
@@ -217,7 +218,7 @@ namespace Lokad.Cloud.Storage
         {
             var policies = new Azure.AzurePolicies(SystemObserver);
             var queueClient = _storageAccount.CreateCloudQueueClient();
-            queueClient.RetryPolicy = () => policies.ShouldRetryInAzureStorageClient;
+            queueClient.RetryPolicy = policies.ForAzureStorageClient;
             return queueClient;
         }
     }

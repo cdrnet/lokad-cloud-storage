@@ -3,26 +3,27 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 
+using Lokad.Cloud.Provisioning.AzureManagement;
+
 namespace Lokad.Cloud.Provisioning
 {
     public static class ProvisioningErrorHandling
     {
-        private static Random _random = new Random();
-
-        public static bool RetryOnTransientErrors(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        public static ShouldRetry RetryOnTransientErrors()
         {
-            if (IsTransientError(lastException) && currentRetryCount <= 30)
-            {
-                lock (_random)
+            var random = new Random();
+
+            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
                 {
-                    retryInterval = TimeSpan.FromMilliseconds(_random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
-                }
+                    if (IsTransientError(lastException) && currentRetryCount <= 30)
+                    {
+                        retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
+                        return true;
+                    }
 
-                return true;
-            }
-
-            retryInterval = TimeSpan.Zero;
-            return false;
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                };
         }
 
         public static bool IsTransientError(Exception exception)

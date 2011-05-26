@@ -10,12 +10,12 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
 {
     internal static class HttpClientExtensions
     {
-        public static Task<T> GetXmlAsync<T>(this HttpClient httpClient, string requestUri, CancellationToken cancellationToken, ShouldRetry shouldRetry, Action<XDocument, TaskCompletionSource<T>> handle)
+        public static Task<T> GetXmlAsync<T>(this HttpClient httpClient, string requestUri, CancellationToken cancellationToken, RetryPolicy shouldRetry, Action<XDocument, TaskCompletionSource<T>> handle)
         {
             var completionSource = new TaskCompletionSource<T>();
             var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
 
-            SendXmlAsync(httpClient, request, completionSource, cancellationToken, shouldRetry, 0, response =>
+            SendXmlAsync(httpClient, request, completionSource, cancellationToken, shouldRetry(), 0, response =>
                 {
                     response.EnsureSuccessStatusCode();
                     handle(XDocument.Load(response.Content.ContentReadStream), completionSource);
@@ -24,7 +24,7 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
             return completionSource.Task;
         }
 
-        public static Task<T> PostXmlAsync<T>(this HttpClient httpClient, string requestUri, XDocument content, CancellationToken cancellationToken, ShouldRetry shouldRetry, Action<HttpResponseMessage, TaskCompletionSource<T>> handle)
+        public static Task<T> PostXmlAsync<T>(this HttpClient httpClient, string requestUri, XDocument content, CancellationToken cancellationToken, RetryPolicy shouldRetry, Action<HttpResponseMessage, TaskCompletionSource<T>> handle)
         {
             var completionSource = new TaskCompletionSource<T>();
 
@@ -37,7 +37,7 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
             streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/xml") { CharSet = "utf-8"};
             var request = new HttpRequestMessage(HttpMethod.Post, requestUri) { Content = streamContent };
 
-            SendXmlAsync(httpClient, request, completionSource, cancellationToken, shouldRetry, 0, response => handle(response, completionSource));
+            SendXmlAsync(httpClient, request, completionSource, cancellationToken, shouldRetry(), 0, response => handle(response, completionSource));
 
             completionSource.Task.ContinueWith(task => stream.Dispose());
             return completionSource.Task;
