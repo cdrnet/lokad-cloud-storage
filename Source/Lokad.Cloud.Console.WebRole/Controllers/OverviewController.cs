@@ -47,7 +47,7 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
         {
             InitializeDeploymentTenant(hostedServiceName);
 
-            _updater.UpdateInstanceCountAsync(hostedServiceName, slot, instanceCount).Wait();
+            _updater.UpdateInstanceCountAsync(hostedServiceName, slot, instanceCount);
 
             return RedirectToAction("ByHostedService");
         }
