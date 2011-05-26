@@ -62,14 +62,17 @@ namespace Lokad.Cloud.Management
         /// </remarks>
         public Task<int> GetWorkerInstanceCount(CancellationToken cancellationToken)
         {
+            var started = DateTimeOffset.UtcNow;
+
             var task = _provisioning.GetCurrentLokadCloudWorkerCount(_currentDeployment, cancellationToken);
 
+            // TODO (ruegg, 2011-05-24): Consider to move out (not strictly a concern of provisioning)
             task.ContinueWith(t =>
                 {
                     if (t.IsCompleted)
                     {
-                        // TODO: Drop
-                        _log.DebugFormat("Provisioning: Getting the current worker instance count succeeded.");
+                        // TODO (ruegg, 2011-05-24): Drop
+                        _log.DebugFormat("Provisioning: Getting the current worker instance count succeeded ({0}s).", DateTimeOffset.UtcNow - started);
                     }
                     else if (t.IsFaulted)
                     {
@@ -98,6 +101,9 @@ namespace Lokad.Cloud.Management
                 throw new ArgumentOutOfRangeException("count");
             }
 
+            _log.InfoFormat("Provisioning: Updating the worker instance count to {0}.", count);
+            var started = DateTimeOffset.UtcNow;
+
             var task = _provisioning.UpdateCurrentLokadCloudWorkerCount(_currentDeployment, count, cancellationToken);
 
             // TODO (ruegg, 2011-05-24): Consider to move out (not strictly a concern of provisioning)
@@ -105,7 +111,8 @@ namespace Lokad.Cloud.Management
                 {
                     if (t.IsCompleted)
                     {
-                        _log.InfoFormat("Provisioning: Updating the worker instance count to {1}.", count);
+                        // TODO (ruegg, 2011-05-24): Drop
+                        _log.DebugFormat("Provisioning: Updated the worker instance count to {0} ({1}s).", count, DateTimeOffset.UtcNow - started);
                     }
                     else if (t.IsFaulted)
                     {
@@ -114,7 +121,7 @@ namespace Lokad.Cloud.Management
                         {
                             if (httpStatus == HttpStatusCode.Conflict)
                             {
-                                _log.DebugFormat("Provisioning: Updating the worker instance count to {1} failed because another deployment update is already in progress.", count);
+                                _log.DebugFormat("Provisioning: Updating the worker instance count to {0} failed because another deployment update is already in progress.", count);
                             }
                             else
                             {
