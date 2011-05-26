@@ -14,7 +14,6 @@ using System.Threading;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Policies;
 using Lokad.Cloud.Storage.Shared.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
@@ -37,9 +36,8 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _serializer;
-        readonly ActionPolicy _azureServerPolicy;
-        readonly ActionPolicy _networkPolicy;
         readonly ILog _log;
+        readonly AzurePolicies _policies;
 
         // Instrumentation
         readonly ExecutionCounter _countPutBlob;
@@ -51,11 +49,10 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>IoC constructor.</summary>
         public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log = null)
         {
+            _policies = new AzurePolicies();
             _blobStorage = blobStorage;
             _serializer = serializer;
             _log = log;
-            _azureServerPolicy = AzurePolicies.TransientServerErrorBackOff;
-            _networkPolicy = AzurePolicies.NetworkCorruption;
 
             // Instrumentation
             ExecutionCounters.Default.RegisterRange(new[]
@@ -78,7 +75,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             while (true)
             {
-                if (!_azureServerPolicy.Get(enumerator.MoveNext))
+                if (!_policies.TransientServerErrorBackOff.Get(enumerator.MoveNext))
                 {
                     yield break;
                 }
@@ -97,7 +94,7 @@ namespace Lokad.Cloud.Storage.Azure
             var container = _blobStorage.GetContainerReference(containerName);
             try
             {
-                _azureServerPolicy.Do(container.Create);
+                _policies.TransientServerErrorBackOff.Do(container.Create);
                 return true;
             }
             catch(StorageClientException ex)
@@ -117,7 +114,7 @@ namespace Lokad.Cloud.Storage.Azure
             var container = _blobStorage.GetContainerReference(containerName);
             try
             {
-                _azureServerPolicy.Do(container.Delete);
+                _policies.TransientServerErrorBackOff.Do(container.Delete);
                 return true;
             }
             catch(StorageClientException ex)
@@ -174,7 +171,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 try
                 {
-                    if (!_azureServerPolicy.Get(enumerator.MoveNext))
+                    if (!_policies.TransientServerErrorBackOff.Get(enumerator.MoveNext))
                     {
                         yield break;
                     }
@@ -217,7 +214,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var blob = container.GetBlockBlobReference(blobName);
-                _azureServerPolicy.Do(blob.Delete);
+                _policies.TransientServerErrorBackOff.Do(blob.Delete);
                 _countDeleteBlob.Close(timestamp);
                 return true;
             }
@@ -268,7 +265,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+                    _policies.TransientServerErrorBackOff.Do(() => _policies.NetworkCorruption.Do(() =>
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         blob.DownloadToStream(stream);
@@ -323,7 +320,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+                    _policies.TransientServerErrorBackOff.Do(() => _policies.NetworkCorruption.Do(() =>
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         blob.DownloadToStream(stream);
@@ -396,7 +393,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 using (var stream = new MemoryStream())
                 {
-                    _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+                    _policies.TransientServerErrorBackOff.Do(() => _policies.NetworkCorruption.Do(() =>
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         blob.DownloadToStream(stream, options);
@@ -450,7 +447,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var blob = container.GetBlockBlobReference(blobName);
-                _azureServerPolicy.Do(blob.FetchAttributes);
+                _policies.TransientServerErrorBackOff.Do(blob.FetchAttributes);
                 return blob.Properties.ETag;
             }
             catch (StorageClientException ex)
@@ -528,9 +525,9 @@ namespace Lokad.Cloud.Storage.Azure
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
                         var tentativeEtag = Maybe<string>.Empty;
-                        AzurePolicies.SlowInstantiation.Do(() =>
+                        _policies.SlowInstantiation.Do(() =>
                         {
-                            _azureServerPolicy.Get(container.CreateIfNotExist);
+                            _policies.TransientServerErrorBackOff.Get(container.CreateIfNotExist);
 
                             tentativeEtag = doUpload();
                         });
@@ -599,7 +596,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+                _policies.TransientServerErrorBackOff.Do(() => _policies.NetworkCorruption.Do(() =>
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         blob.UploadFromStream(stream, options);
@@ -658,7 +655,7 @@ namespace Lokad.Cloud.Storage.Azure
             Maybe<T> output;
 
             TimeSpan retryInterval;
-            var retryPolicy = AzurePolicies.OptimisticConcurrency();
+            var retryPolicy = _policies.OptimisticConcurrency();
             for (int retryCount = 0; retryPolicy(retryCount, null, out retryInterval); retryCount++)
             {
                 // 1. DOWNLOAD EXISTING INPUT BLOB, IF IT EXISTS
@@ -671,7 +668,7 @@ namespace Lokad.Cloud.Storage.Azure
                 {
                     using (var readStream = new MemoryStream())
                     {
-                        _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+                        _policies.TransientServerErrorBackOff.Do(() => _policies.NetworkCorruption.Do(() =>
                             {
                                 readStream.Seek(0, SeekOrigin.Begin);
                                 blob.DownloadToStream(readStream);
@@ -705,7 +702,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
-                        AzurePolicies.SlowInstantiation.Do(() => _azureServerPolicy.Get(container.CreateIfNotExist));
+                        _policies.SlowInstantiation.Do(() => _policies.TransientServerErrorBackOff.Get(container.CreateIfNotExist));
                     }
                     else
                     {

@@ -12,7 +12,6 @@ using System.Text;
 using System.Web;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Policies;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -34,7 +33,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudTableClient _tableStorage;
         readonly IDataSerializer _serializer;
-        readonly ActionPolicy _storagePolicy;
+        readonly AzurePolicies _policies;
 
         // Instrumentation
         readonly ExecutionCounter _countQuery;
@@ -45,9 +44,9 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>IoC constructor.</summary>
         public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer)
         {
+            _policies = new AzurePolicies();
             _tableStorage = tableStorage;
             _serializer = serializer;
-            _storagePolicy = AzurePolicies.TransientTableErrorBackOff;
 
             // Instrumentation
             ExecutionCounters.Default.RegisterRange(new[]
@@ -62,7 +61,7 @@ namespace Lokad.Cloud.Storage.Azure
         public bool CreateTable(string tableName)
         {
             var flag = false;
-            AzurePolicies.SlowInstantiation.Do(() =>
+            _policies.SlowInstantiation.Do(() =>
                 flag = _tableStorage.CreateTableIfNotExist(tableName));
 
             return flag;
@@ -71,7 +70,7 @@ namespace Lokad.Cloud.Storage.Azure
         public bool DeleteTable(string tableName)
         {
             var flag = false;
-            AzurePolicies.SlowInstantiation.Do(() =>
+            _policies.SlowInstantiation.Do(() =>
                 flag = _tableStorage.DeleteTableIfExist(tableName));
 
             return flag;
@@ -194,7 +193,7 @@ namespace Lokad.Cloud.Storage.Azure
                 QueryOperationResponse response = null;
                 FatEntity[] fatEntities = null;
 
-                _storagePolicy.Do(() =>
+                _policies.TransientTableErrorBackOff.Do(() =>
                     {
                         try
                         {
@@ -272,7 +271,7 @@ namespace Lokad.Cloud.Storage.Azure
                     cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
-                _storagePolicy.Do(() =>
+                _policies.TransientTableErrorBackOff.Do(() =>
                     {
                         try
                         {
@@ -289,7 +288,7 @@ namespace Lokad.Cloud.Storage.Azure
                                 if (errorCode == TableErrorCodeStrings.TableNotFound
                                     || errorCode == StorageErrorCodeStrings.ResourceNotFound)
                                 {
-                                    AzurePolicies.SlowInstantiation.Do(() =>
+                                    _policies.SlowInstantiation.Do(() =>
                                         {
                                             try
                                             {
@@ -395,7 +394,7 @@ namespace Lokad.Cloud.Storage.Azure
                     cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
-                _storagePolicy.Do(() =>
+                _policies.TransientTableErrorBackOff.Do(() =>
                     {
                         try
                         {
@@ -416,7 +415,7 @@ namespace Lokad.Cloud.Storage.Azure
                             }
                             else if (errorCode == TableErrorCodeStrings.TableNotFound)
                             {
-                                AzurePolicies.SlowInstantiation.Do(() =>
+                                _policies.SlowInstantiation.Do(() =>
                                     {
                                         try
                                         {
@@ -570,7 +569,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     try // HACK: nested try/catch to handle the special case where the table is missing
                     {
-                        _storagePolicy.Do(() =>
+                        _policies.TransientTableErrorBackOff.Do(() =>
                             context.SaveChanges(SaveChangesOptions.Batch));
                     }
                     catch (DataServiceRequestException ex)
