@@ -4,358 +4,142 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
-using System.ServiceModel.Security;
-using System.Text;
-using System.Xml.Linq;
-using Lokad.Cloud.Management.Api10;
-using Lokad.Cloud.Management.Azure;
-using Lokad.Cloud.Management.Azure.Entities;
-using Lokad.Cloud.Management.Azure.InputParameters;
+using System.Threading;
+using System.Threading.Tasks;
+using Lokad.Cloud.Provisioning;
+using Lokad.Cloud.Provisioning.AzureManagement;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Management
 {
     /// <summary>Azure Management API Provider, Provisioning Provider.</summary>
-    public class CloudProvisioning : IProvisioningProvider, ICloudProvisioningApi 
+    public class CloudProvisioning : IProvisioningProvider
     {
-        readonly Storage.Shared.Logging.ILog _log;
+        private readonly ILog _log;
 
-        readonly bool _enabled;
-        readonly Maybe<X509Certificate2> _certificate = Maybe<X509Certificate2>.Empty;
-        readonly Maybe<string> _deploymentId = Maybe<string>.Empty;
-        readonly Maybe<string> _subscriptionId = Maybe<string>.Empty;
+        private readonly AzureCurrentDeployment _currentDeployment;
+        private readonly AzureProvisioning _provisioning;
 
-        readonly Storage.Shared.Policies.ActionPolicy _retryPolicy;
-
-        ManagementStatus _status;
-        Maybe<HostedService> _service = Maybe<HostedService>.Empty;
-        Maybe<Deployment> _deployment = Maybe<Deployment>.Empty;
-
-        ManagementClient _client;
-
-        //[ThreadStatic]
-        IAzureServiceManagement _channel;
-
-        /// <summary>IoC constructor.</summary>>
-        public CloudProvisioning(ICloudConfigurationSettings settings, Storage.Shared.Logging.ILog log)
+        /// <summary>IoC constructor.</summary>
+        public CloudProvisioning(ICloudConfigurationSettings settings, ILog log)
         {
             _log = log;
-            _retryPolicy = AzureManagementPolicies.TransientServerErrorBackOff;
 
             // try get settings and certificate
-            _deploymentId = CloudEnvironment.AzureDeploymentId;
-            _subscriptionId = settings.SelfManagementSubscriptionId ?? Maybe<string>.Empty;
-            var certificateThumbprint = settings.SelfManagementCertificateThumbprint ?? Maybe<string>.Empty;
-            if (certificateThumbprint.HasValue)
+            var currentDeploymentPrivateId = CloudEnvironment.AzureDeploymentId;
+            Maybe<X509Certificate2> certificate = Maybe<X509Certificate2>.Empty;
+            if (!String.IsNullOrWhiteSpace(settings.SelfManagementCertificateThumbprint))
             {
-                _certificate = CloudEnvironment.GetCertificate(certificateThumbprint.Value);
+                certificate = CloudEnvironment.GetCertificate(settings.SelfManagementCertificateThumbprint);
             }
 
             // early evaluate management status for intrinsic fault states, to skip further processing
-            if (!_deploymentId.HasValue || !_subscriptionId.HasValue || !certificateThumbprint.HasValue)
+            if (!currentDeploymentPrivateId.HasValue || !certificate.HasValue || string.IsNullOrWhiteSpace(settings.SelfManagementSubscriptionId))
             {
-                _status = ManagementStatus.ConfigurationMissing;
-                return;
-            }
-            if (!_certificate.HasValue)
-            {
-                _status = ManagementStatus.CertificateMissing;
+                _log.DebugFormat("Provisioning: Not available because either the certificate or the subscription was not provided correctly.");
                 return;
             }
 
-            // ok, now try find service matching the deployment
-            _enabled = true;
-            TryFindDeployment();
-        }
+            // ok
+            var managementClient = new AzureManagementClient(settings.SelfManagementSubscriptionId, certificate.Value);
+            _provisioning = new AzureProvisioning(managementClient);
+            _currentDeployment = new AzureCurrentDeployment(currentDeploymentPrivateId.Value, managementClient);
 
-        public ManagementStatus Status
-        {
-            get { return _status; }
+            _currentDeployment.Discover(CancellationToken.None);
         }
 
         public bool IsAvailable
         {
-            get { return _status == ManagementStatus.Available; }
+            get { return _provisioning != null; }
         }
 
-        public Maybe<X509Certificate2> Certificate
+        /// <remarks>
+        /// Logs exceptions, hence failing to handle a task fault at the calling side
+        /// will not cause an unhandled exception at finalization
+        /// </remarks>
+        public Task<int> GetWorkerInstanceCount(CancellationToken cancellationToken)
         {
-            get { return _certificate; }
+            var started = DateTimeOffset.UtcNow;
+
+            var task = _provisioning.GetCurrentLokadCloudWorkerCount(_currentDeployment, cancellationToken);
+
+            // TODO (ruegg, 2011-05-24): Consider to move out (not strictly a concern of provisioning)
+            task.ContinueWith(t =>
+                {
+                    if (t.IsCompleted)
+                    {
+                        // TODO (ruegg, 2011-05-24): Drop
+                        _log.DebugFormat("Provisioning: Getting the current worker instance count succeeded ({0}s).", DateTimeOffset.UtcNow - started);
+                    }
+                    else if (t.IsFaulted)
+                    {
+                        if (ProvisioningErrorHandling.IsTransientError(t.Exception))
+                        {
+                            _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Getting the current worker instance count failed with a transient error.");
+                        }
+                        else
+                        {
+                            _log.WarnFormat(task.Exception.GetBaseException(), "Provisioning: Getting the current worker instance count failed with a permanent error.");
+                        }
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
+
+            return task;
         }
 
-        public Maybe<string> Subscription
+        /// <remarks>
+        /// Logs exceptions, hence failing to handle a task fault at the calling side
+        /// will not cause an unhandled exception at finalization
+        /// </remarks>
+        public Task SetWorkerInstanceCount(int count, CancellationToken cancellationToken)
         {
-            get { return _subscriptionId; }
-        }
-
-        public Maybe<string> DeploymentName
-        {
-            get { return _deployment.Convert(d => d.Name); }
-        }
-
-        public Maybe<string> DeploymentId
-        {
-            get { return _deployment.Convert(d => d.PrivateID); }
-        }
-
-        public Maybe<string> DeploymentLabel
-        {
-            get { return _deployment.Convert(d => Base64Decode(d.Label)); }
-        }
-
-        public Maybe<DeploymentSlot> DeploymentSlot
-        {
-            get { return _deployment.Convert(d => d.DeploymentSlot); }
-        }
-
-        public Maybe<DeploymentStatus> DeploymentStatus
-        {
-            get { return _deployment.Convert(d => d.Status); }
-        }
-
-        public Maybe<string> ServiceName
-        {
-            get { return _service.Convert(s => s.ServiceName); }
-        }
-
-        public Maybe<string> ServiceLabel
-        {
-            get { return _service.Convert(s => Base64Decode(s.HostedServiceProperties.Label)); }
-        }
-
-        public Maybe<int> WorkerInstanceCount
-        {
-            get { return _deployment.Convert(d => d.RoleInstanceList.Count(ri => ri.RoleName == "Lokad.Cloud.WorkerRole")); }
-        }
-
-        public void Update()
-        {
-            if (!IsAvailable)
-            {
-                return;
-            }
-
-            PrepareRequest();
-
-            _deployment = _retryPolicy.Get(() => _channel.GetDeployment(_subscriptionId.Value, _service.Value.ServiceName, _deployment.Value.Name));
-        }
-
-        Maybe<int> IProvisioningProvider.GetWorkerInstanceCount()
-        {
-            Update();
-            return WorkerInstanceCount;
-        }
-
-        public void SetWorkerInstanceCount(int count)
-        {
-            if(count <= 0 && count > 500)
+            if (count <= 0 && count > 500)
             {
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            ChangeDeploymentConfiguration(
-                (config, inProgress) =>
+            _log.InfoFormat("Provisioning: Updating the worker instance count to {0}.", count);
+            var started = DateTimeOffset.UtcNow;
+
+            var task = _provisioning.UpdateCurrentLokadCloudWorkerCount(_currentDeployment, count, cancellationToken);
+
+            // TODO (ruegg, 2011-05-24): Consider to move out (not strictly a concern of provisioning)
+            task.ContinueWith(t =>
+                {
+                    if (t.IsCompleted)
                     {
-                        XAttribute instanceCount;
-                        try
+                        // TODO (ruegg, 2011-05-24): Drop
+                        _log.DebugFormat("Provisioning: Updated the worker instance count to {0} ({1}s).", count, DateTimeOffset.UtcNow - started);
+                    }
+                    else if (t.IsFaulted)
+                    {
+                        HttpStatusCode httpStatus;
+                        if (ProvisioningErrorHandling.TryGetHttpStatusCode(t.Exception, out httpStatus))
                         {
-                            // need to be careful about namespaces
-                            instanceCount = config
-                                .Descendants()
-                                .Single(d => d.Name.LocalName == "Role" && d.Attributes().Single(a => a.Name.LocalName == "name").Value == "Lokad.Cloud.WorkerRole")
-                                .Elements()
-                                .Single(e => e.Name.LocalName == "Instances")
-                                .Attributes()
-                                .Single(a => a.Name.LocalName == "count");
+                            if (httpStatus == HttpStatusCode.Conflict)
+                            {
+                                _log.DebugFormat("Provisioning: Updating the worker instance count to {0} failed because another deployment update is already in progress.", count);
+                            }
+                            else
+                            {
+                                _log.DebugFormat("Provisioning: Updating the worker instance count failed with HTTP Status {0} ({1}).", httpStatus, (int)httpStatus);
+                            }
                         }
-                        catch (Exception ex)
+                        else if (ProvisioningErrorHandling.IsTransientError(t.Exception))
                         {
-                            _log.Error(ex, "Azure Self-Management: Unexpected service configuration file format.");
-                            throw;
-                        }
-
-                        var oldCount = instanceCount.Value;
-                        var newCount = count.ToString();
-
-                        if (inProgress)
-                        {
-                            _log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}. Application will be delayed because a deployment update is already in progress.", oldCount, newCount);
+                            _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Updating the worker instance count failed with a transient error.");
                         }
                         else
                         {
-                            _log.InfoFormat("Azure Self-Management: Update worker instance count from {0} to {1}.", oldCount, newCount);
+                            _log.WarnFormat(task.Exception.GetBaseException(), "Provisioning: Updating the worker instance count failed with a permanent error.");
                         }
-
-                        instanceCount.Value = newCount;
-                    });
-        }
-
-        void ChangeDeploymentConfiguration(Action<XElement, bool> updater)
-        {
-            PrepareRequest();
-
-            _deployment = _retryPolicy.Get(() => _channel.GetDeployment(
-                _subscriptionId.Value,
-                _service.Value.ServiceName,
-                _deployment.Value.Name));
-
-            var config = Base64Decode(_deployment.Value.Configuration);
-            var xml = XDocument.Parse(config, LoadOptions.SetBaseUri | LoadOptions.PreserveWhitespace);
-            var inProgress = _deployment.Value.Status != Azure.Entities.DeploymentStatus.Running;
-
-            updater(xml.Root, inProgress);
-
-            var newConfig = xml.ToString(SaveOptions.DisableFormatting);
-
-            _retryPolicy.Do(() => _channel.ChangeConfiguration(
-                _subscriptionId.Value,
-                _service.Value.ServiceName,
-                _deployment.Value.Name,
-                new ChangeConfigurationInput
-                    {
-                        Configuration = Base64Encode(newConfig)
-                    }));
-        }
-
-        void PrepareRequest()
-        {
-            if (!_enabled)
-            {
-                throw new InvalidOperationException("not enabled");
-            }
-
-            if (_channel == null)
-            {
-                if (_client == null)
-                {
-                    _client = new ManagementClient(_certificate.Value);
-                }
-
-                _channel = _client.CreateChannel();
-            }
-
-            if (_status == ManagementStatus.Unknown)
-            {
-                TryFindDeployment();
-            }
-
-            if (_status != ManagementStatus.Available)
-            {
-                throw new InvalidOperationException("not operational");
-            }
-        }
-
-        bool TryFindDeployment()
-        {
-            if (!_enabled || _status != ManagementStatus.Unknown)
-            {
-                throw new InvalidOperationException();
-            }
-
-            if (_channel == null)
-            {
-                if (_client == null)
-                {
-                    _client = new ManagementClient(_certificate.Value);
-                }
-
-                _channel = _client.CreateChannel();
-            }
-
-
-            var deployments = new List<System.Tuple<Deployment, HostedService>>();
-            try
-            {
-                var hostedServices = _retryPolicy.Get(() => _channel.ListHostedServices(_subscriptionId.Value));
-                foreach (var hostedService in hostedServices)
-                {
-                    var service = _retryPolicy.Get(() => _channel.GetHostedServiceWithDetails(_subscriptionId.Value, hostedService.ServiceName, true));
-                    if (service == null || service.Deployments == null)
-                    {
-                        _log.Warn("Azure Self-Management: skipped unexpected null service or deployment list");
-                        continue;
                     }
+                }, TaskContinuationOptions.ExecuteSynchronously);
 
-                    foreach (var deployment in service.Deployments)
-                    {
-                        deployments.Add(System.Tuple.Create(deployment, service));
-                    }
-                }
-            }
-            catch (MessageSecurityException)
-            {
-                _status = ManagementStatus.AuthenticationFailed;
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex, "Azure Self-Management: unexpected error when listing all hosted services.");
-                return false;
-            }
-
-            if (deployments.Count == 0)
-            {
-                _log.Warn("Azure Self-Management: found no hosted service deployments");
-                _status = ManagementStatus.DeploymentNotFound;
-                return false;
-            }
-
-            var selfServiceAndDeployment = deployments.FirstOrDefault(pair => pair.Item1.PrivateID == _deploymentId.Value);
-            if (null == selfServiceAndDeployment)
-            {
-                _log.WarnFormat("Azure Self-Management: no hosted service deployment matches {0}", _deploymentId.Value);
-                _status = ManagementStatus.DeploymentNotFound;
-                return false;
-            }
-
-            _status = ManagementStatus.Available;
-            _service = selfServiceAndDeployment.Item2;
-            _deployment = selfServiceAndDeployment.Item1;
-            return true;
+            return task;
         }
-
-        static string Base64Decode(string value)
-        {
-            var bytes = Convert.FromBase64String(value);
-            return Encoding.UTF8.GetString(bytes);
-        }
-
-        static string Base64Encode(string value)
-        {
-            var bytes = Encoding.UTF8.GetBytes(value);
-            return Convert.ToBase64String(bytes);
-        }
-
-        int ICloudProvisioningApi.GetWorkerInstanceCount()
-        {
-            if (!IsAvailable)
-            {
-                throw new NotSupportedException("Provisioning not supported on this environment.");
-            }
-            return WorkerInstanceCount.Value;
-        }
-
-        void ICloudProvisioningApi.SetWorkerInstanceCount(int count)
-        {
-            if (!IsAvailable)
-            {
-                throw new NotSupportedException("Provisioning not supported on this environment.");
-            }
-            SetWorkerInstanceCount(count);
-        }
-    }
-
-    public enum ManagementStatus
-    {
-        Unknown = 0,
-        Available,
-        ConfigurationMissing,
-        CertificateMissing,
-        AuthenticationFailed,
-        DeploymentNotFound,
     }
 }

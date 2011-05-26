@@ -4,7 +4,7 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Xml.Linq;
+
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
@@ -15,7 +15,6 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         public string ServiceLabel { get; set; }
         public string Description { get; set; }
         public List<LokadCloudDeployment> Deployments { get; set; }
-        public XElement Configuration { get; set; }
 
         public CloudStorageAccount StorageAccount { get; set; }
         public string StorageAccountName { get; set; }
@@ -32,7 +31,6 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
         public bool IsRunning { get; set; }
         public bool IsTransitioning { get; set; }
 
-        public XElement Configuration { get; set; }
         public CloudStorageAccount StorageAccount { get; set; }
         public string StorageAccountName { get; set; }
         public string StorageAccountKeyPrefix { get; set; }

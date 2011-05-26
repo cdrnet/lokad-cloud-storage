@@ -137,31 +137,9 @@
     <Compile Include="Jobs\JobManager.cs" />
     <Compile Include="Management\Api10\ICloudAssembliesApi.cs" />
     <Compile Include="Management\Api10\ICloudConfigurationApi.cs" />
-    <Compile Include="Management\Api10\ICloudProvisioningApi.cs" />
     <Compile Include="Management\Api10\ICloudServicesApi.cs" />
     <Compile Include="Management\Api10\ICloudServiceSchedulingApi.cs" />
     <Compile Include="Management\Api10\ICloudStatisticsApi.cs" />
-    <Compile Include="Management\Azure\ApiConstants.cs" />
-    <Compile Include="Management\Azure\AzureManagementPolicies.cs" />
-    <Compile Include="Management\Azure\Entities\AffinityGroup.cs" />
-    <Compile Include="Management\Azure\Entities\Certificate.cs" />
-    <Compile Include="Management\Azure\Entities\Deployment.cs" />
-    <Compile Include="Management\Azure\Entities\HostedService.cs" />
-    <Compile Include="Management\Azure\Entities\Operation.cs" />
-    <Compile Include="Management\Azure\Entities\Role.cs" />
-    <Compile Include="Management\Azure\Entities\RoleInstance.cs" />
-    <Compile Include="Management\Azure\Entities\StorageService.cs" />
-    <Compile Include="Management\Azure\ExtensionMethods.cs" />
-    <Compile Include="Management\Azure\IAzureServiceManagement.cs" />
-    <Compile Include="Management\Azure\InputParameters\CertificateFileInput.cs" />
-    <Compile Include="Management\Azure\InputParameters\ChangeConfigurationInput.cs" />
-    <Compile Include="Management\Azure\InputParameters\CreateDeploymentInput.cs" />
-    <Compile Include="Management\Azure\InputParameters\RegenerateKeysInput.cs" />
-    <Compile Include="Management\Azure\InputParameters\SwapDeploymentInput.cs" />
-    <Compile Include="Management\Azure\InputParameters\UpdateDeploymentStatusInput.cs" />
-    <Compile Include="Management\Azure\InputParameters\UpgradeDeploymentInput.cs" />
-    <Compile Include="Management\Azure\InputParameters\WalkUpgradeDomainInput.cs" />
-    <Compile Include="Management\Azure\ManagementClient.cs" />
     <Compile Include="Management\CloudProvisioning.cs" />
     <Compile Include="Management\IProvisioningProvider.cs" />
     <Compile Include="Mock\MemoryProvisioning.cs" />
@@ -227,12 +205,15 @@
   <ItemGroup>
     <Content Include="Diagnostics\ReadMe.txt" />
     <Content Include="Jobs\_ReadMe.txt" />
-    <Content Include="Management\Azure\ReadMe.txt" />
     <Content Include="Management\ReadMe.txt" />
     <Content Include="ServiceFabric\ReadMe.txt" />
     <Content Include="ServiceFabric\Runtime\ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Lokad.Cloud.Provisioning\Lokad.Cloud.Provisioning.csproj">
+      <Project>{B3CA9DCB-04DB-4442-AC0C-6E1F70854DA1}</Project>
+      <Name>Lokad.Cloud.Provisioning</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Lokad.Cloud.Storage\Lokad.Cloud.Storage.csproj">
       <Project>{0F9244AB-3B7C-4F98-9D44-E46FBC65522C}</Project>
       <Name>Lokad.Cloud.Storage</Name>
