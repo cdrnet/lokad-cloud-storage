@@ -25,23 +25,6 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
             ShouldRetryCommand = ProvisioningErrorHandling.RetryOnTransientErrors;
         }
 
-        //public void Configure(ICloudConfigurationSettings settings)
-        //{
-        //    if (!string.IsNullOrEmpty(settings.SelfManagementSubscriptionId))
-        //    {
-        //        SubscriptionId = settings.SelfManagementSubscriptionId;
-        //    }
-
-        //    if (!string.IsNullOrEmpty(settings.SelfManagementCertificateThumbprint))
-        //    {
-        //        var certificate = CloudEnvironment.GetCertificate(settings.SelfManagementCertificateThumbprint);
-        //        if (certificate.HasValue)
-        //        {
-        //            Certificate = certificate.Value;
-        //        }
-        //    }
-        //}
-
         public HttpClient CreateHttpClient()
         {
             var channel = new HttpClientChannel();
