@@ -91,7 +91,7 @@ namespace Lokad.Cloud.Management
 
             var task = _provisioning.UpdateCurrentLokadCloudWorkerCount(_currentDeployment, count, cancellationToken);
 
-            // TODO (ruegg, 2011-05-24): Consider to move Out (not strictly a concern of provisioning)
+            // TODO (ruegg, 2011-05-24): Consider to move out (not strictly a concern of provisioning)
             task.ContinueWith(t =>
             {
                 if (t.IsCompleted)
