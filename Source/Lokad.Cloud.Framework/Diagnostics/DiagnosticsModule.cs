@@ -4,7 +4,6 @@
 #endregion
 
 using Autofac;
-using Autofac.Builder;
 using Lokad.Cloud.Diagnostics.Persistence;
 using Lokad.Cloud.Storage;
 using Microsoft.WindowsAzure;

@@ -38,10 +38,20 @@ namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
             var fetchTask = _fetcher.FetchAsync();
 
             // Insert into HttpRuntime Cache once finished
-            fetchTask.ContinueWith(discoveryInfo => HttpRuntime.Cache.Insert(
-                "lokadcloud-DiscoveryInfo", discoveryInfo.Result,
-                null, DateTime.UtcNow.AddMinutes(60), Cache.NoSlidingExpiration),
+            fetchTask.ContinueWith(discoveryInfo =>
+                HttpRuntime.Cache.Insert(
+                    "lokadcloud-DiscoveryInfo", discoveryInfo.Result,
+                    null, DateTime.UtcNow.AddMinutes(60), Cache.NoSlidingExpiration),
                 TaskContinuationOptions.OnlyOnRanToCompletion);
+
+            fetchTask.ContinueWith(task =>
+                {
+                    // Ensure the Task doesn't throw at finalization
+                    var exception = task.Exception.GetBaseException();
+
+                    // TODO (ruegg, 2011-05-19): report error to the user
+
+                }, TaskContinuationOptions.OnlyOnFaulted);
             
             return fetchTask;
         }
