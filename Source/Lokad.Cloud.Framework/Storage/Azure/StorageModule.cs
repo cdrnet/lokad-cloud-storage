@@ -6,7 +6,6 @@
 using System;
 using System.Net;
 using Autofac;
-using Autofac.Builder;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
@@ -20,8 +19,6 @@ namespace Lokad.Cloud.Storage.Azure
     /// <see cref="TableStorageProvider"/> from the <see cref="ICloudConfigurationSettings"/>.</summary>
     public sealed class StorageModule : Module
     {
-        static StorageModule() { }
-
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisterType<CloudFormatter>().As<IDataSerializer>().PreserveExistingDefaults();
@@ -77,7 +74,7 @@ namespace Lokad.Cloud.Storage.Azure
                 c.Resolve<IQueueStorageProvider>(),
                 c.Resolve<ITableStorageProvider>(),
                 c.ResolveOptional<IRuntimeFinalizer>(),
-                c.ResolveOptional<Storage.Shared.Logging.ILog>());
+                c.ResolveOptional<Shared.Logging.ILog>());
         }
 
         static ITableStorageProvider TableStorageProvider(IComponentContext c)
@@ -90,7 +87,8 @@ namespace Lokad.Cloud.Storage.Azure
 
             return new TableStorageProvider(
                 c.Resolve<CloudTableClient>(),
-                formatter);
+                formatter,
+                c.ResolveOptional<Events.Observers.ICloudStorageObserver>());
         }
 
         static IQueueStorageProvider QueueStorageProvider(IComponentContext c)
@@ -109,7 +107,8 @@ namespace Lokad.Cloud.Storage.Azure
                 // This dependency is typically not available in a pure O/C mapper scenario.
                 // In such case, we just pass a dummy finalizer (that won't be used any
                 c.ResolveOptional<IRuntimeFinalizer>(),
-                c.ResolveOptional<Storage.Shared.Logging.ILog>());
+                c.ResolveOptional<Events.Observers.ICloudStorageObserver>(),
+                c.ResolveOptional<Shared.Logging.ILog>());
         }
 
         static IBlobStorageProvider BlobStorageProvider(IComponentContext c)
@@ -123,7 +122,8 @@ namespace Lokad.Cloud.Storage.Azure
             return new BlobStorageProvider(
                 c.Resolve<CloudBlobClient>(),
                 formatter,
-                c.ResolveOptional<Storage.Shared.Logging.ILog>());
+                c.ResolveOptional<Events.Observers.ICloudStorageObserver>(),
+                c.ResolveOptional<Shared.Logging.ILog>());
         }
 
         static CloudTableClient TableClient(IComponentContext c)

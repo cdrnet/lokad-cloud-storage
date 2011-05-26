@@ -4,21 +4,25 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Data.Services.Client;
+using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Microsoft.WindowsAzure.StorageClient;
+using Lokad.Cloud.Storage.Events;
+using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared.Policies;
+using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
 {
     /// <summary>
     /// Azure retry policies for corner-situation and server errors.
     /// </summary>
-    public class AzurePolicies
+    internal class AzurePolicies
     {
+        private readonly ICloudStorageObserver _observer;
+
         /// <summary>
         /// Retry policy to temporarily back off in case of transient Azure server
         /// errors, system overload or in case the denial of service detection system
@@ -43,23 +47,13 @@ namespace Lokad.Cloud.Storage.Azure
         public ActionPolicy NetworkCorruption { get; private set; }
 
         /// <summary>
-        /// Retry policy for optimistic concurrency retrials. The exception parameter is ignored, it can be null.
-        /// </summary>
-        public ShouldRetry OptimisticConcurrency()
-        {
-            var random = new Random();
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
-                {
-                    retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
-                    return currentRetryCount <= 30;
-                };
-        }
-
-        /// <summary>
         /// Static Constructor
         /// </summary>
-        public AzurePolicies()
+        /// <param name="observer">Can be <see langword="null"/>.</param>
+        internal AzurePolicies(ICloudStorageObserver observer)
         {
+            _observer = observer;
+
             // Initialize Policies
             TransientServerErrorBackOff = ActionPolicy.With(TransientServerErrorExceptionFilter)
                 .Retry(30, OnTransientServerErrorRetry);
@@ -74,8 +68,68 @@ namespace Lokad.Cloud.Storage.Azure
                 .Retry(2, OnNetworkCorruption);
         }
 
+        /// <summary>
+        /// Retry policy for optimistic concurrency retrials.
+        /// </summary>
+        /// <remarks>Fitting the <see cref="ShouldRetry"/> delegate.</remarks>
+        public bool ShouldRetryOptimisticConcurrency(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        {
+            if (currentRetryCount >= 30)
+            {
+                retryInterval = TimeSpan.Zero;
+                return false;
+            }
+
+            if (_observer != null)
+            {
+                _observer.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount));
+            }
+
+            var random = new Random();
+            retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
+            return true;
+        }
+
+        /// <summary>
+        /// Retry policy which is applied to all Azure storage clients.
+        /// </summary>
+        /// <remarks>Fitting the <see cref="ShouldRetry"/> delegate.</remarks>
+        public bool ShouldRetryInAzureStorageClient(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        {
+            // [abdullin]: in short this gives us MinBackOff + 2^(10)*Rand.(~0.5.Seconds()) at the last retry.
+
+            // TODO (ruegg, 2011-05-26): This policy might actually be counterproductive and interfere with the other policies. Investigate.
+
+            if (currentRetryCount >= 10)
+            {
+                retryInterval = TimeSpan.Zero;
+                return false;
+            }
+
+            if (_observer != null)
+            {
+                _observer.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount));
+            }
+
+            var random = new Random();
+
+            double deltaBackoff = TimeSpan.FromSeconds(0.5).TotalMilliseconds;
+            double minBackoff = RetryPolicies.DefaultMinBackoff.TotalMilliseconds;
+            double maxBackoff = RetryPolicies.DefaultMaxBackoff.TotalMilliseconds;
+
+            retryInterval = TimeSpan.FromMilliseconds(Math.Min(
+                maxBackoff,
+                minBackoff + ((Math.Pow(2.0, currentRetryCount) - 1.0) * random.Next((int)(deltaBackoff * 0.8), (int)(deltaBackoff * 1.2)))));
+            return true;
+        }
+
         void OnTransientServerErrorRetry(Exception exception, int count)
         {
+            if (_observer != null)
+            {
+                _observer.Notify(new OperationRetriedEvent(exception, "TransientServerError", count));
+            }
+
             // quadratic backoff, capped at 5 minutes
             var c = count + 1;
             Thread.Sleep(TimeSpan.FromSeconds(Math.Min(300, c*c)));
@@ -83,6 +137,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         void OnTransientTableErrorRetry(Exception exception, int count)
         {
+            if (_observer != null)
+            {
+                _observer.Notify(new OperationRetriedEvent(exception, "TransientTableError", count));
+            }
+
             // quadratic backoff, capped at 5 minutes
             var c = count + 1;
             Thread.Sleep(TimeSpan.FromSeconds(Math.Min(300, c * c)));
@@ -90,12 +149,22 @@ namespace Lokad.Cloud.Storage.Azure
 
         void OnSlowInstantiationRetry(Exception exception, int count)
         {
+            if (_observer != null)
+            {
+                _observer.Notify(new OperationRetriedEvent(exception, "SlowInstantiation", count));
+            }
+
             // linear backoff
             Thread.Sleep(TimeSpan.FromMilliseconds(100 * count));
         }
 
         void OnNetworkCorruption(Exception exception, int count)
         {
+            if (_observer != null)
+            {
+                _observer.Notify(new OperationRetriedEvent(exception, "NetworkCorruption", count));
+            }
+
             // no backoff, retry immediately
         }
 

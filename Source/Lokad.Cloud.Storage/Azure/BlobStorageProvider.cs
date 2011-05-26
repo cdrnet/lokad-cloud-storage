@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Xml.Linq;
+using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Threading;
@@ -47,9 +48,10 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDeleteBlob;
 
         /// <summary>IoC constructor.</summary>
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log = null)
+        /// <param name="observer">Can be <see langword="null"/>.</param>
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageObserver observer = null, ILog log = null)
         {
-            _policies = new AzurePolicies();
+            _policies = new AzurePolicies(observer);
             _blobStorage = blobStorage;
             _serializer = serializer;
             _log = log;
@@ -655,8 +657,7 @@ namespace Lokad.Cloud.Storage.Azure
             Maybe<T> output;
 
             TimeSpan retryInterval;
-            var retryPolicy = _policies.OptimisticConcurrency();
-            for (int retryCount = 0; retryPolicy(retryCount, null, out retryInterval); retryCount++)
+            for (int retryCount = 0; _policies.ShouldRetryOptimisticConcurrency(retryCount, null, out retryInterval); retryCount++)
             {
                 // 1. DOWNLOAD EXISTING INPUT BLOB, IF IT EXISTS
 

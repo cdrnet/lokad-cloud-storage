@@ -9,6 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
+
+using Lokad.Cloud.Storage.Events;
+using Lokad.Cloud.Storage.Events.Observers;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared;
@@ -62,15 +65,17 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="serializer">Not null.</param>
         /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper
         /// scenario).</param>
+        /// <param name="observer">Can be <see langword="null"/>.</param>
         /// <param name="log">Optional log</param>
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
             IDataSerializer serializer,
             IRuntimeFinalizer runtimeFinalizer,
+            ICloudStorageObserver observer = null,
             ILog log = null)
         {
-            _policies = new AzurePolicies();
+            _policies = new AzurePolicies(observer);
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
             _serializer = serializer;
