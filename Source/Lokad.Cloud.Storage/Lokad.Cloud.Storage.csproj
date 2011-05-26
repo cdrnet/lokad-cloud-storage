@@ -68,9 +68,9 @@
     <Compile Include="CloudStorage.cs" />
     <Compile Include="CloudStorageProviders.cs" />
     <Compile Include="DataSerializerExtensions.cs" />
-    <Compile Include="Events\Observers\ICloudStorageObserver.cs" />
+    <Compile Include="Events\Observers\ICloudStorageSystemObserver.cs" />
     <Compile Include="Events\OperationRetriedEvent.cs" />
-    <Compile Include="Events\Observers\CloudStorageObserver.cs" />
+    <Compile Include="Events\Observers\CloudStorageSystemObserver.cs" />
     <Compile Include="Events\ICloudStorageEvent.cs" />
     <Compile Include="IIntermediateDataSerializer.cs" />
     <Compile Include="InMemory\MemoryBlobStorageProvider.cs" />

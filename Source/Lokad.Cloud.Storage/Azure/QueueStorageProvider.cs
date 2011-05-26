@@ -65,17 +65,17 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="serializer">Not null.</param>
         /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper
         /// scenario).</param>
-        /// <param name="observer">Can be <see langword="null"/>.</param>
+        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
         /// <param name="log">Optional log</param>
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
             IDataSerializer serializer,
+            ICloudStorageSystemObserver systemObserver,
             IRuntimeFinalizer runtimeFinalizer,
-            ICloudStorageObserver observer = null,
             ILog log = null)
         {
-            _policies = new AzurePolicies(observer);
+            _policies = new AzurePolicies(systemObserver);
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
             _serializer = serializer;

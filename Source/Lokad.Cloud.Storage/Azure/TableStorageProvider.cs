@@ -45,10 +45,10 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDelete;
 
         /// <summary>IoC constructor.</summary>
-        /// <param name="observer">Can be <see langword="null"/>.</param>
-        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer, ICloudStorageObserver observer = null)
+        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
+        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer, ICloudStorageSystemObserver systemObserver)
         {
-            _policies = new AzurePolicies(observer);
+            _policies = new AzurePolicies(systemObserver);
             _tableStorage = tableStorage;
             _serializer = serializer;
 

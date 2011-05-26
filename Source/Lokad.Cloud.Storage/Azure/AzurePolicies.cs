@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Storage.Azure
     /// </summary>
     internal class AzurePolicies
     {
-        private readonly ICloudStorageObserver _observer;
+        private readonly ICloudStorageSystemObserver _systemObserver;
 
         /// <summary>
         /// Retry policy to temporarily back off in case of transient Azure server
@@ -49,10 +49,10 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>
         /// Static Constructor
         /// </summary>
-        /// <param name="observer">Can be <see langword="null"/>.</param>
-        internal AzurePolicies(ICloudStorageObserver observer)
+        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
+        internal AzurePolicies(ICloudStorageSystemObserver systemObserver)
         {
-            _observer = observer;
+            _systemObserver = systemObserver;
 
             // Initialize Policies
             TransientServerErrorBackOff = ActionPolicy.With(TransientServerErrorExceptionFilter)
@@ -80,9 +80,9 @@ namespace Lokad.Cloud.Storage.Azure
                 return false;
             }
 
-            if (_observer != null)
+            if (_systemObserver != null)
             {
-                _observer.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount));
+                _systemObserver.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount));
             }
 
             var random = new Random();
@@ -106,9 +106,9 @@ namespace Lokad.Cloud.Storage.Azure
                 return false;
             }
 
-            if (_observer != null)
+            if (_systemObserver != null)
             {
-                _observer.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount));
+                _systemObserver.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount));
             }
 
             var random = new Random();
@@ -125,9 +125,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         void OnTransientServerErrorRetry(Exception exception, int count)
         {
-            if (_observer != null)
+            if (_systemObserver != null)
             {
-                _observer.Notify(new OperationRetriedEvent(exception, "TransientServerError", count));
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientServerError", count));
             }
 
             // quadratic backoff, capped at 5 minutes
@@ -137,9 +137,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         void OnTransientTableErrorRetry(Exception exception, int count)
         {
-            if (_observer != null)
+            if (_systemObserver != null)
             {
-                _observer.Notify(new OperationRetriedEvent(exception, "TransientTableError", count));
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientTableError", count));
             }
 
             // quadratic backoff, capped at 5 minutes
@@ -149,9 +149,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         void OnSlowInstantiationRetry(Exception exception, int count)
         {
-            if (_observer != null)
+            if (_systemObserver != null)
             {
-                _observer.Notify(new OperationRetriedEvent(exception, "SlowInstantiation", count));
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "SlowInstantiation", count));
             }
 
             // linear backoff
@@ -160,9 +160,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         void OnNetworkCorruption(Exception exception, int count)
         {
-            if (_observer != null)
+            if (_systemObserver != null)
             {
-                _observer.Notify(new OperationRetriedEvent(exception, "NetworkCorruption", count));
+                _systemObserver.Notify(new OperationRetriedEvent(exception, "NetworkCorruption", count));
             }
 
             // no backoff, retry immediately

@@ -2,11 +2,11 @@
 
 namespace Lokad.Cloud.Storage.Events.Observers
 {
-    public class CloudStorageObserver : IDisposable, ICloudStorageObserver
+    public class CloudStorageSystemObserver : IDisposable, ICloudStorageSystemObserver
     {
         readonly IObserver<ICloudStorageEvent>[] _observers;
 
-        public CloudStorageObserver(IObserver<ICloudStorageEvent>[] observers)
+        public CloudStorageSystemObserver(IObserver<ICloudStorageEvent>[] observers)
         {
             _observers = observers;
         }

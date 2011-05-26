@@ -48,10 +48,10 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDeleteBlob;
 
         /// <summary>IoC constructor.</summary>
-        /// <param name="observer">Can be <see langword="null"/>.</param>
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageObserver observer = null, ILog log = null)
+        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageSystemObserver systemObserver, ILog log = null)
         {
-            _policies = new AzurePolicies(observer);
+            _policies = new AzurePolicies(systemObserver);
             _blobStorage = blobStorage;
             _serializer = serializer;
             _log = log;
