@@ -24,6 +24,9 @@ namespace Lokad.Cloud.ServiceFabric
 		/// Maximum number of times a message is tried to process before it is considered as
 		/// being poisonous, removed from the queue and persisted to the 'failing-messages' store.
 		/// </summary>
+		/// <remarks>
+		/// If the property is left at zero, then the default value of 5 is applied.
+		/// </remarks>
 		public int MaxProcessingTrials { get; set; }
 	}
 }
