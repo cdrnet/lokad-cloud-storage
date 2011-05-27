@@ -8,7 +8,7 @@ using System.Data.Services.Client;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-using Lokad.Cloud.Storage.Events;
+using Lokad.Cloud.Storage.SystemEvents;
 using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -50,7 +50,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     if (_systemObserver != null)
                     {
-                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval, sequence));
+                        _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
@@ -87,7 +87,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     if (_systemObserver != null)
                     {
-                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval, sequence));
+                        _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
@@ -118,7 +118,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     if (_systemObserver != null)
                     {
-                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "TransientServerError", currentRetryCount, retryInterval, sequence));
+                        _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "TransientServerError", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
@@ -145,7 +145,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 if (_systemObserver != null)
                 {
-                    _systemObserver.Notify(new OperationRetriedEvent(lastException, "TransientTableError", currentRetryCount, retryInterval, sequence));
+                    _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "TransientTableError", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
@@ -173,7 +173,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 if (_systemObserver != null)
                 {
-                    _systemObserver.Notify(new OperationRetriedEvent(lastException, "SlowInstantiation", currentRetryCount, retryInterval, sequence));
+                    _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "SlowInstantiation", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
@@ -200,7 +200,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 if (_systemObserver != null)
                 {
-                    _systemObserver.Notify(new OperationRetriedEvent(lastException, "NetworkCorruption", currentRetryCount, retryInterval, sequence));
+                    _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "NetworkCorruption", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;

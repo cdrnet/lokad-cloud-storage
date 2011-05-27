@@ -16,6 +16,7 @@ using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared.Threading;
+using Lokad.Cloud.Storage.SystemEvents;
 using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
@@ -38,6 +39,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _serializer;
         readonly ILog _log;
+        readonly ICloudStorageSystemObserver _observer;
         readonly AzurePolicies _policies;
 
         // Instrumentation
@@ -55,6 +57,7 @@ namespace Lokad.Cloud.Storage.Azure
             _blobStorage = blobStorage;
             _serializer = serializer;
             _log = log;
+            _observer = systemObserver;
 
             // Instrumentation
             ExecutionCounters.Default.RegisterRange(new[]
@@ -293,11 +296,20 @@ namespace Lokad.Cloud.Storage.Azure
 
                 _countGetBlob.Close(timestamp);
 
-                if (!deserialized.IsSuccess && _log != null)
+                if (!deserialized.IsSuccess)
                 {
-                    _log.WarnFormat(deserialized.Error,
-                        "Cloud Storage: A blob was retrieved for GeBlob but failed to deserialize. Blob {0} in container {1}.",
-                        blobName, containerName);
+                    if (_log != null)
+                    {
+                        // TODO (ruegg, 2011-05-27): DROP
+                        _log.WarnFormat(deserialized.Error,
+                            "Cloud Storage: A blob was retrieved for GetBlob but failed to deserialize. Blob {0} in container {1}.",
+                            blobName, containerName);
+                    }
+
+                    if (_observer != null)
+                    {
+                        _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                    }
                 }
 
                 return deserialized.IsSuccess ? new Maybe<object>(deserialized.Value) : Maybe<object>.Empty;
@@ -409,11 +421,20 @@ namespace Lokad.Cloud.Storage.Azure
 
                     _countGetBlobIfModified.Close(timestamp);
 
-                    if (!deserialized.IsSuccess && _log != null)
+                    if (!deserialized.IsSuccess)
                     {
-                        _log.WarnFormat(deserialized.Error,
-                            "Cloud Storage: A blob was retrieved for GetBlobIfModified but failed to deserialize. Blob {0} in container {1}.",
-                            blobName, containerName);
+                        if (_log != null)
+                        {
+                            // TODO (ruegg, 2011-05-27): DROP
+                            _log.WarnFormat(deserialized.Error,
+                                "Cloud Storage: A blob was retrieved for GetBlobIfModified but failed to deserialize. Blob {0} in container {1}.",
+                                blobName, containerName);
+                        }
+
+                        if (_observer != null)
+                        {
+                            _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                        }
                     }
 
                     return deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
@@ -691,11 +712,20 @@ namespace Lokad.Cloud.Storage.Azure
                         readStream.Seek(0, SeekOrigin.Begin);
 
                         var deserialized = _serializer.TryDeserializeAs<T>(readStream);
-                        if (!deserialized.IsSuccess && _log != null)
+                        if (!deserialized.IsSuccess)
                         {
-                            _log.WarnFormat(deserialized.Error,
-                                "Cloud Storage: A blob was retrieved for Upsert but failed to deserialize. An Insert will be performed instead, overwriting the corrupt blob {0} in container {1}.",
-                                blobName, containerName);
+                            if (_log != null)
+                            {
+                                // TODO (ruegg, 2011-05-27): DROP
+                                _log.WarnFormat(deserialized.Error,
+                                    "Cloud Storage: A blob was retrieved for Upsert but failed to deserialize. An Insert will be performed instead, overwriting the corrupt blob {0} in container {1}.",
+                                    blobName, containerName);
+                            }
+
+                            if (_observer != null)
+                            {
+                                _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                            }
                         }
 
                         input = deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;

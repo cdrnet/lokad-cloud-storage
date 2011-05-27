@@ -3,7 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Storage.Events;
+using Lokad.Cloud.Storage.SystemEvents;
 
 namespace Lokad.Cloud.Storage.SystemObservers
 {

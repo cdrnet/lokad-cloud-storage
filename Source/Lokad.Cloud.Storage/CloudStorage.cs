@@ -6,10 +6,9 @@
 using System;
 using System.ComponentModel;
 using System.Net;
-using Lokad.Cloud.Storage.Events;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.SystemEvents;
 using Lokad.Cloud.Storage.SystemObservers;
-
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 

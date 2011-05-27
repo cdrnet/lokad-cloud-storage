@@ -69,10 +69,13 @@
     <Compile Include="CloudStorage.cs" />
     <Compile Include="CloudStorageProviders.cs" />
     <Compile Include="DataSerializerExtensions.cs" />
+    <Compile Include="SystemEvents\BlobDeserializationFailedEvent.cs" />
+    <Compile Include="SystemEvents\MessageQuarantinedDeserializationFailedEvent.cs" />
+    <Compile Include="SystemEvents\MessageQuarantinedAfterRetrialsEvent.cs" />
     <Compile Include="SystemObservers\ICloudStorageSystemObserver.cs" />
-    <Compile Include="Events\OperationRetriedEvent.cs" />
+    <Compile Include="SystemEvents\StorageOperationRetriedEvent.cs" />
     <Compile Include="SystemObservers\CloudStorageSystemObserver.cs" />
-    <Compile Include="Events\ICloudStorageEvent.cs" />
+    <Compile Include="SystemEvents\ICloudStorageEvent.cs" />
     <Compile Include="IIntermediateDataSerializer.cs" />
     <Compile Include="InMemory\MemoryBlobStorageProvider.cs" />
     <Compile Include="InMemory\MemoryQueueStorageProvider.cs" />

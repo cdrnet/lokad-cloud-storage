@@ -12,6 +12,7 @@ using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.SystemEvents;
 using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -42,6 +43,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IRuntimeFinalizer _runtimeFinalizer;
         private readonly AzurePolicies _policies;
 
+        readonly ICloudStorageSystemObserver _observer;
         readonly ILog _log;
 
         // Instrumentation
@@ -78,6 +80,7 @@ namespace Lokad.Cloud.Storage.Azure
             _blobStorage = blobStorage;
             _serializer = serializer;
             _runtimeFinalizer = runtimeFinalizer;
+            _observer = systemObserver;
             _log = log;
 
             // finalizer can be null in a strict O/C mapper scenario
@@ -190,7 +193,13 @@ namespace Lokad.Cloud.Storage.Azure
 
                             if (_log != null)
                             {
+                                // TODO (ruegg, 2011-05-27): DROP
                                 _log.WarnFormat("Cloud Storage: A message of type {0} in queue {1} failed to process repeatedly and has been quarantined.", typeof(T).Name, queueName);
+                            }
+
+                            if (_observer != null)
+                            {
+                                _observer.Notify(new MessageQuarantinedAfterRetrialsEvent(queueName, PoisonedMessagePersistenceStoreName, typeof(T), rawMessage, data));
                             }
 
                             continue;
@@ -229,7 +238,15 @@ namespace Lokad.Cloud.Storage.Azure
 
                         if (_log != null)
                         {
+                            // TODO (ruegg, 2011-05-27): DROP
                             _log.WarnFormat(messageAsT.Error, "Cloud Storage: A message in queue {0} failed to deserialize to type {1} and has been quarantined.", queueName, typeof(T).Name);
+                        }
+
+                        if (_observer != null)
+                        {
+                            var exceptions = new List<Exception> { messageAsT.Error, messageAsWrapper.Error };
+                            if (!messageAsEnvelope.IsSuccess) { exceptions.Add(messageAsEnvelope.Error); }
+                            _observer.Notify(new MessageQuarantinedDeserializationFailedEvent(new AggregateException(exceptions), queueName, PoisonedMessagePersistenceStoreName, typeof(T), rawMessage, data));
                         }
                     }
                     finally

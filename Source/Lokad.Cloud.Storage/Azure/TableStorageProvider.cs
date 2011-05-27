@@ -11,7 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Web;
 
-using Lokad.Cloud.Storage.Events;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.SystemObservers;

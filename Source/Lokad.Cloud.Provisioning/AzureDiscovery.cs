@@ -41,6 +41,8 @@ namespace Lokad.Cloud.Provisioning
 
         public void DoDiscoverDeploymentAsync(string deploymentPrivateId, TaskCompletionSource<DeploymentReference> completionSource, CancellationToken cancellationToken)
         {
+            // TODO (ruegg, 2011-05-27): Weird design, refactor
+
             DiscoverHostedServices(cancellationToken).ContinuePropagateWith(completionSource, cancellationToken, task =>
             {
                 foreach (var hostedService in task.Result)
@@ -61,11 +63,6 @@ namespace Lokad.Cloud.Provisioning
 
                 completionSource.TrySetException(new KeyNotFoundException());
             });
-
-            //completionSource.Task.ContinueWith(task =>
-            //{
-            //    _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Deployment discovery failed.");
-            //}, TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 }

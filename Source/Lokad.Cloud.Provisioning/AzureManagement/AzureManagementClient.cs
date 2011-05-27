@@ -107,6 +107,8 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
                         serviceNames.Select(serviceName => DiscoverHostedService(client, serviceName, cancellationToken)).ToArray(),
                         tasks =>
                             {
+                                // TODO (ruegg, 2011-05-27): Check task fault state and deal with it
+
                                 try
                                 {
                                     tcs.TrySetResult(tasks.Select(t => t.Result).ToArray());

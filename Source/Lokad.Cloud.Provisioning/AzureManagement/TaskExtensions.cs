@@ -33,6 +33,8 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
                         return;
                     }
 
+                    // TODO (ruegg, 2011-05-27): Catch and forward errors to completionSOurce
+
                     handleCompleted(t);
 
                 }, TaskContinuationOptions.ExecuteSynchronously);

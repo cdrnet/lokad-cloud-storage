@@ -4,20 +4,20 @@
 #endregion
 
 using System;
-using Lokad.Cloud.Storage.SystemEvents;
+using Lokad.Cloud.Provisioning.SystemEvents;
 
-namespace Lokad.Cloud.Storage.SystemObservers
+namespace Lokad.Cloud.Provisioning.SystemObservers
 {
-    public class CloudStorageSystemObserver : IDisposable, ICloudStorageSystemObserver
+    public class CloudProvisioningSystemObserver : IDisposable, ICloudProvisioningSystemObserver
     {
-        readonly IObserver<ICloudStorageEvent>[] _observers;
+        readonly IObserver<ICloudProvisioningEvent>[] _observers;
 
-        public CloudStorageSystemObserver(IObserver<ICloudStorageEvent>[] observers)
+        public CloudProvisioningSystemObserver(IObserver<ICloudProvisioningEvent>[] observers)
         {
             _observers = observers;
         }
 
-        public void Notify(ICloudStorageEvent @event)
+        public void Notify(ICloudProvisioningEvent @event)
         {
             // NOTE: Assuming event observers are light - else we may want to do this async
             foreach (var observer in _observers)
