@@ -13,13 +13,15 @@ namespace Lokad.Cloud.Storage.Events
         public string Policy { get; private set; }
         public int Trial { get; private set; }
         public TimeSpan Interval { get; private set; }
+        public Guid Sequence { get; private set; }
 
-        public OperationRetriedEvent(Exception exception, string policy, int trial, TimeSpan interval)
+        public OperationRetriedEvent(Exception exception, string policy, int trial, TimeSpan interval, Guid sequence)
         {
             Exception = exception;
             Policy = policy;
             Trial = trial;
             Interval = interval;
+            Sequence = sequence;
         }
     }
 }

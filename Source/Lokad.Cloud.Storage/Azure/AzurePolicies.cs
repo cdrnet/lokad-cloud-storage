@@ -8,9 +8,7 @@ using System.Data.Services.Client;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Lokad.Cloud.Storage.Events;
-using Lokad.Cloud.Storage.Shared.Policies;
 using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -24,48 +22,12 @@ namespace Lokad.Cloud.Storage.Azure
         private readonly ICloudStorageSystemObserver _systemObserver;
 
         /// <summary>
-        /// Retry policy to temporarily back off in case of transient Azure server
-        /// errors, system overload or in case the denial of service detection system
-        /// thinks we're a too heavy user. Blocks the thread while backing off to
-        /// prevent further requests for a while (per thread).
-        /// </summary>
-        public ActionPolicy TransientServerErrorBackOff { get; private set; }
-
-        /// <summary>Similar to <see cref="TransientServerErrorBackOff"/>, yet
-        /// the Table Storage comes with its own set or exceptions/.</summary>
-        public ActionPolicy TransientTableErrorBackOff { get; private set; }
-
-        /// <summary>
-        /// Very patient retry policy to deal with container, queue or table instantiation
-        /// that happens just after a deletion.
-        /// </summary>
-        public ActionPolicy SlowInstantiation { get; private set; }
-
-        /// <summary>
-        /// Limited retry related to MD5 validation failure.
-        /// </summary>
-        public ActionPolicy NetworkCorruption { get; private set; }
-
-        /// <summary>
         /// Static Constructor
         /// </summary>
         /// <param name="systemObserver">Can be <see langword="null"/>.</param>
         internal AzurePolicies(ICloudStorageSystemObserver systemObserver)
         {
             _systemObserver = systemObserver;
-
-            // Initialize Policies
-            TransientServerErrorBackOff = ActionPolicy.With(TransientServerErrorExceptionFilter)
-                .Retry(30, OnTransientServerErrorRetry);
-
-            TransientTableErrorBackOff = ActionPolicy.With(TransientTableErrorExceptionFilter)
-                .Retry(30, OnTransientTableErrorRetry);
-
-            SlowInstantiation = ActionPolicy.With(SlowInstantiationExceptionFilter)
-                .Retry(30, OnSlowInstantiationRetry);
-
-            NetworkCorruption = ActionPolicy.With(NetworkCorruptionExceptionFilter)
-                .Retry(2, OnNetworkCorruption);
         }
 
         /// <summary>
@@ -74,6 +36,7 @@ namespace Lokad.Cloud.Storage.Azure
         public ShouldRetry OptimisticConcurrency()
         {
             var random = new Random();
+            Guid sequence = Guid.NewGuid();
 
             return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
                 {
@@ -87,7 +50,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     if (_systemObserver != null)
                     {
-                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval));
+                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
@@ -95,7 +58,7 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <summary>
-        /// Retry policy which is applied to all Azure storage clients.
+        /// Retry policy which is applied to all Azure storage clients. Ignores the actual exception.
         /// </summary>
         public ShouldRetry ForAzureStorageClient()
         {
@@ -104,6 +67,8 @@ namespace Lokad.Cloud.Storage.Azure
             // TODO (ruegg, 2011-05-26): This policy might actually be counterproductive and interfere with the other policies. Investigate.
 
             var random = new Random();
+            Guid sequence = Guid.NewGuid();
+
             double deltaBackoff = TimeSpan.FromSeconds(0.5).TotalMilliseconds;
             double minBackoff = RetryPolicies.DefaultMinBackoff.TotalMilliseconds;
             double maxBackoff = RetryPolicies.DefaultMaxBackoff.TotalMilliseconds;
@@ -122,62 +87,124 @@ namespace Lokad.Cloud.Storage.Azure
 
                     if (_systemObserver != null)
                     {
-                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval));
+                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
                 };
         }
 
-        void OnTransientServerErrorRetry(Exception exception, int count)
+        /// <summary>
+        /// Retry policy to temporarily back off in case of transient Azure server
+        /// errors, system overload or in case the denial of service detection system
+        /// thinks we're a too heavy user. Blocks the thread while backing off to
+        /// prevent further requests for a while (per thread).
+        /// </summary>
+        public ShouldRetry TransientServerErrorBackOff()
         {
-            // quadratic backoff, capped at 5 minutes
-            var c = count + 1;
-            var retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
+            Guid sequence = Guid.NewGuid();
 
-            if (_systemObserver != null)
-            {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientServerError", count, retryInterval));
-            }
+            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+                {
+                    if (currentRetryCount >= 30 || !TransientServerErrorExceptionFilter(lastException))
+                    {
+                        retryInterval = TimeSpan.Zero;
+                        return false;
+                    }
 
-            Thread.Sleep(retryInterval);
+                    // quadratic backoff, capped at 5 minutes
+                    var c = currentRetryCount + 1;
+                    retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
+
+                    if (_systemObserver != null)
+                    {
+                        _systemObserver.Notify(new OperationRetriedEvent(lastException, "TransientServerError", currentRetryCount, retryInterval, sequence));
+                    }
+
+                    return true;
+                };
         }
 
-        void OnTransientTableErrorRetry(Exception exception, int count)
+        /// <summary>Similar to <see cref="TransientServerErrorBackOff"/>, yet
+        /// the Table Storage comes with its own set or exceptions/.</summary>
+        public ShouldRetry TransientTableErrorBackOff()
         {
-            // quadratic backoff, capped at 5 minutes
-            var c = count + 1;
-            var retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
+            Guid sequence = Guid.NewGuid();
 
-            if (_systemObserver != null)
+            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
             {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "TransientTableError", count, retryInterval));
-            }
+                if (currentRetryCount >= 30 || !TransientTableErrorExceptionFilter(lastException))
+                {
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                }
 
-            Thread.Sleep(retryInterval);
+                // quadratic backoff, capped at 5 minutes
+                var c = currentRetryCount + 1;
+                retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
+
+                if (_systemObserver != null)
+                {
+                    _systemObserver.Notify(new OperationRetriedEvent(lastException, "TransientTableError", currentRetryCount, retryInterval, sequence));
+                }
+
+                return true;
+            };
         }
 
-        void OnSlowInstantiationRetry(Exception exception, int count)
+        /// <summary>
+        /// Very patient retry policy to deal with container, queue or table instantiation
+        /// that happens just after a deletion.
+        /// </summary>
+        public ShouldRetry SlowInstantiation()
         {
-            // linear backoff
-            var retryInterval = TimeSpan.FromMilliseconds(100 * count);
+            Guid sequence = Guid.NewGuid();
 
-            if (_systemObserver != null)
+            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
             {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "SlowInstantiation", count, retryInterval));
-            }
+                if (currentRetryCount >= 30 || !SlowInstantiationExceptionFilter(lastException))
+                {
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                }
 
-            Thread.Sleep(retryInterval);
+                // linear backoff
+                retryInterval = TimeSpan.FromMilliseconds(100 * currentRetryCount);
+
+                if (_systemObserver != null)
+                {
+                    _systemObserver.Notify(new OperationRetriedEvent(lastException, "SlowInstantiation", currentRetryCount, retryInterval, sequence));
+                }
+
+                return true;
+            };
         }
 
-        void OnNetworkCorruption(Exception exception, int count)
+        /// <summary>
+        /// Limited retry related to MD5 validation failure.
+        /// </summary>
+        public ShouldRetry NetworkCorruption()
         {
-            // no backoff, retry immediately
+            Guid sequence = Guid.NewGuid();
 
-            if (_systemObserver != null)
+            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
             {
-                _systemObserver.Notify(new OperationRetriedEvent(exception, "NetworkCorruption", count, TimeSpan.Zero));
-            }
+                if (currentRetryCount >= 3 || !NetworkCorruptionExceptionFilter(lastException))
+                {
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                }
+
+                // no backoff, retry immediately
+                retryInterval = TimeSpan.Zero;
+
+                if (_systemObserver != null)
+                {
+                    _systemObserver.Notify(new OperationRetriedEvent(lastException, "NetworkCorruption", currentRetryCount, retryInterval, sequence));
+                }
+
+                return true;
+            };
         }
 
         static bool IsErrorCodeMatch(StorageException exception, params StorageErrorCode[] codes)

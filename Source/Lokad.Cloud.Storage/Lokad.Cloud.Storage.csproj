@@ -57,6 +57,7 @@
     <Compile Include="Azure\DataCorruptionException.cs" />
     <Compile Include="Azure\FatEntity.cs" />
     <Compile Include="Azure\QueueStorageProvider.cs" />
+    <Compile Include="Azure\Retry.cs" />
     <Compile Include="Azure\TableStorageProvider.cs" />
     <Compile Include="Blobs\BlobName.cs" />
     <Compile Include="Blobs\BlobStorageExtensions.cs" />
