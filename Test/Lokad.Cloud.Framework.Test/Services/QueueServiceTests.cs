@@ -73,7 +73,7 @@ namespace Lokad.Cloud.Test.Services
             public TemporaryBlobName<decimal> BlobCounter { get; set; }
         }
 
-        [QueueServiceSettings(AutoStart = true, BatchSize = 100, //QueueName = "SquareQueue",
+        [QueueServiceSettings(AutoStart = true, //QueueName = "SquareQueue",
         Description = "multiply numbers by themselves.")]
         class SquareQueueService : QueueService<SquareMessage>
         {

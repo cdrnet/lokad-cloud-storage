@@ -4,7 +4,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Lokad.Cloud.ServiceFabric
@@ -23,7 +22,6 @@ namespace Lokad.Cloud.ServiceFabric
     {
         readonly string _queueName;
         readonly string _serviceName;
-        readonly int _batchSize;
         readonly TimeSpan _visibilityTimeout;
         readonly int _maxProcessingTrials;
 
@@ -40,19 +38,12 @@ namespace Lokad.Cloud.ServiceFabric
                                     .FirstOrDefault() as QueueServiceSettingsAttribute;
 
             // default settings
-            _batchSize = 1;
             _maxProcessingTrials = 5;
 
             if (null != settings) // settings are provided through custom attribute
             {
                 _queueName = settings.QueueName ?? TypeMapper.GetStorageName(typeof (T));
                 _serviceName = settings.ServiceName ?? GetType().FullName;
-
-                if (settings.BatchSize > 0)
-                {
-                    // need to be at least 1
-                    _batchSize = settings.BatchSize;
-                }
 
                 if (settings.MaxProcessingTrials > 0)
                 {
@@ -69,56 +60,34 @@ namespace Lokad.Cloud.ServiceFabric
             _visibilityTimeout = TimeSpan.FromSeconds(Math.Max(1, Math.Min(7200, (1.25*ExecutionTimeout.TotalSeconds))));
         }
 
-        /// <summary>Do not try to override this method, use <see cref="StartRange"/>
-        /// instead.</summary>
+        /// <summary>Do not try to override this method, use <see cref="Start"/> instead.</summary>
         protected sealed override ServiceExecutionFeedback StartImpl()
         {
-            var messages = QueueStorage.Get<T>(_queueName, _batchSize, _visibilityTimeout, _maxProcessingTrials);
+            // 1 message at most
+            var messages = QueueStorage.Get<T>(_queueName, 1, _visibilityTimeout, _maxProcessingTrials);
 
-            var count = messages.Count();
-            if (count > 0)
+            if (messages.Any())
             {
-                StartRange(messages);
+                var msg = messages.First();
+                Start(msg);
+
+                // Messages might have already been deleted by the 'Start' method.
+                // It's OK, 'Delete' is idempotent.
+                Delete(msg);
+
+                return ServiceExecutionFeedback.WorkAvailable;
             }
 
-            // Messages might have already been deleted by the 'Start' method.
-            // It's OK, 'Delete' is idempotent.
-            DeleteRange(messages);
-
-            return count > 0
-                ? ServiceExecutionFeedback.WorkAvailable
-                : ServiceExecutionFeedback.Skipped;
+            return ServiceExecutionFeedback.Skipped;
         }
 
-        /// <summary>Method called first by the <c>Lokad.Cloud</c> framework when messages are
-        /// available for processing. Default implementation is naively calling <see cref="Start"/>.
-        /// </summary>
-        /// <param name="messages">Messages to be processed.</param>
-        /// <remarks>
-        /// We suggest to make messages deleted asap through the <see cref="DeleteRange"/>
-        /// method. Otherwise, messages will be automatically deleted when the method
-        /// returns (except if an exception is thrown obviously).
-        /// </remarks>
-        protected virtual void StartRange(IEnumerable<T> messages)
-        {
-            foreach (var message in messages)
-            {
-                Start(message);
-            }
-        }
-
-        /// <summary>Method called by <see cref="StartRange"/>, passing the message.</summary>
-        /// <remarks>
-        /// This method is a syntactic sugar for <see cref="QueueService{T}"/> inheritors
-        /// dealing only with 1 message at a time.
-        /// </remarks>
-        protected virtual void Start(T message)
-        {
-            throw new NotSupportedException("Start or StartRange method must overridden by inheritor.");
-        }
+        /// <summary>Method called first by the <c>Lokad.Cloud</c> framework when a message is
+        /// available for processing. The message is automatically deleted from the queue
+        /// if the method returns (no deletion if an exception is thrown).</summary>
+        protected abstract void Start(T message);
 
         /// <summary>
-        /// Delete message retrieved through <see cref="StartRange"/>.
+        /// Delete message retrieved through <see cref="Start"/>.
         /// </summary>
         public void Delete(T message)
         {
@@ -126,29 +95,12 @@ namespace Lokad.Cloud.ServiceFabric
         }
 
         /// <summary>
-        /// Delete messages retrieved through <see cref="StartRange"/>.
-        /// </summary>
-        public void DeleteRange(IEnumerable<T> messages)
-        {
-            QueueStorage.DeleteRange(messages);
-        }
-
-        /// <summary>
-        /// Abandon a messages retrieved through <see cref="StartRange"/>
+        /// Abandon a messages retrieved through <see cref="Start"/>
         /// and put it visibly back on the queue.
         /// </summary>
         public void Abandon(T message)
         {
             QueueStorage.Abandon(message);
-        }
-
-        /// <summary>
-        /// Abandon a set of messages retrieved through <see cref="StartRange"/>
-        /// and put them visibly back on the queue.
-        /// </summary>
-        public void AbandonRange(IEnumerable<T> messages)
-        {
-            QueueStorage.AbandonRange(messages);
         }
     }
 }
