@@ -117,28 +117,8 @@ namespace Lokad.Cloud.ServiceFabric
             throw new NotSupportedException("Start or StartRange method must overridden by inheritor.");
         }
 
-        /// <summary>Get more messages from the underlying queue.</summary>
-        /// <param name="count">Maximal number of messages to be retrieved.</param>
-        /// <returns>Retrieved messages (enumeration might be empty).</returns>
-        /// <remarks>It is suggested to <see cref="DeleteRange"/> messages first
-        /// before asking for more.</remarks>
-        public IEnumerable<T> GetMore(int count)
-        {
-            return QueueStorage.Get<T>(_queueName, count, _visibilityTimeout, _maxProcessingTrials);
-        }
-
-        /// <summary>Get more message from an arbitrary queue.</summary>
-        /// <param name="count">Number of message to be retrieved.</param>
-        /// <param name="queueName">Name of the queue.</param>
-        /// <returns>Retrieved message (enumeration might be empty).</returns>
-        public IEnumerable<T> GetMore(int count, string queueName)
-        {
-            return QueueStorage.Get<T>(queueName, count, _visibilityTimeout, _maxProcessingTrials);
-        }
-
         /// <summary>
-        /// Delete message retrieved either through <see cref="StartRange"/>
-        /// or through <see cref="GetMore(int)"/>.
+        /// Delete message retrieved through <see cref="StartRange"/>.
         /// </summary>
         public void Delete(T message)
         {
@@ -146,8 +126,7 @@ namespace Lokad.Cloud.ServiceFabric
         }
 
         /// <summary>
-        /// Delete messages retrieved either through <see cref="StartRange"/>
-        /// or through <see cref="GetMore(int)"/>.
+        /// Delete messages retrieved through <see cref="StartRange"/>.
         /// </summary>
         public void DeleteRange(IEnumerable<T> messages)
         {
@@ -155,8 +134,8 @@ namespace Lokad.Cloud.ServiceFabric
         }
 
         /// <summary>
-        /// Abandon a messages retrieved either through <see cref="StartRange"/>
-        /// or through <see cref="GetMore(int)"/> and put it visibly back on the queue.
+        /// Abandon a messages retrieved through <see cref="StartRange"/>
+        /// and put it visibly back on the queue.
         /// </summary>
         public void Abandon(T message)
         {
@@ -164,8 +143,8 @@ namespace Lokad.Cloud.ServiceFabric
         }
 
         /// <summary>
-        /// Abandon a set of messages retrieved either through <see cref="StartRange"/>
-        /// or through <see cref="GetMore(int)"/> and put them visibly back on the queue.
+        /// Abandon a set of messages retrieved through <see cref="StartRange"/>
+        /// and put them visibly back on the queue.
         /// </summary>
         public void AbandonRange(IEnumerable<T> messages)
         {
