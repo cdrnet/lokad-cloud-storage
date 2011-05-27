@@ -1,10 +1,9 @@
-﻿#region Copyright (c) Lokad 2009-2010
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using Autofac;
-using Autofac.Builder;
 
 namespace Lokad.Cloud
 {
@@ -24,9 +23,9 @@ namespace Lokad.Cloud
     {
         protected override void Load(ContainerBuilder builder)
         {
+            builder.RegisterModule(new Storage.Azure.StorageModule());
             builder.RegisterModule(new Diagnostics.DiagnosticsModule());
             builder.RegisterModule(new Management.ManagementModule());
-            builder.RegisterModule(new Storage.Azure.StorageModule());
 
             builder.RegisterType<Jobs.JobManager>();
             builder.RegisterType<ServiceFabric.RuntimeFinalizer>().As<IRuntimeFinalizer>().InstancePerLifetimeScope();

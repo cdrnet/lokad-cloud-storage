@@ -515,8 +515,15 @@ Time:2010-01-15T12:37:25.1611631Z</message>
 
             var ex = new DataServiceRequestException("", new Exception(errorMessage));
 
-            Assert.AreEqual("OperationTimedOut", AzurePolicies.GetErrorCode(ex));
+            Assert.AreEqual("OperationTimedOut", GetErrorCode(ex));
 
+        }
+
+        static string GetErrorCode(DataServiceRequestException ex)
+        {
+            var r = new Regex(@"<code>(\w+)</code>", RegexOptions.IgnoreCase);
+            var match = r.Match(ex.InnerException.Message);
+            return match.Groups[1].Value;
         }
 
         [Test]

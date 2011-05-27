@@ -4,9 +4,9 @@
 #endregion
 
 using Autofac;
-using Autofac.Builder;
 using Lokad.Cloud.Diagnostics.Persistence;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared.Logging;
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Diagnostics
@@ -16,9 +16,8 @@ namespace Lokad.Cloud.Diagnostics
     {
         protected override void Load(ContainerBuilder builder)
         {
-            builder.Register(CloudLogger);
-            builder.Register(CloudLogger).As<Storage.Shared.Logging.ILog>().PreserveExistingDefaults();
-            builder.Register(CloudLogProvider).As<Storage.Shared.Logging.ILogProvider>().PreserveExistingDefaults();
+            builder.Register(CloudLogger).As<ILog>();
+            builder.Register(CloudLogProvider).As<ILogProvider>();
 
             // Cloud Monitoring
             builder.RegisterType<BlobDiagnosticsRepository>().As<ICloudDiagnosticsRepository>().PreserveExistingDefaults();
@@ -35,13 +34,17 @@ namespace Lokad.Cloud.Diagnostics
 
         static CloudLogProvider CloudLogProvider(IComponentContext c)
         {
+            // TODO (ruegg, 2011-05-26): Looks like legacy code, verify and remove
             return new CloudLogProvider(BlobStorageForDiagnostics(c));
         }
 
         static IBlobStorageProvider BlobStorageForDiagnostics(IComponentContext c)
         {
-            // No log is provided here (WithLog method) since the providers
+            // Neither log nor observers are provided since the providers
             // used for logging obviously can't log themselves (cyclic dependency)
+
+            // We also always use the CloudFormatter, so this is equivalent
+            // to the RuntimeProvider, for the same reasons.
 
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())

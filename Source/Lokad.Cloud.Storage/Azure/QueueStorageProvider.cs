@@ -11,9 +11,9 @@ using System.Runtime.Serialization;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
-using Lokad.Cloud.Storage.Shared.Policies;
-using Lokad.Diagnostics;
 using Lokad.Cloud.Storage.Shared;
+using Lokad.Cloud.Storage.SystemEvents;
+using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -41,8 +41,9 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IBlobStorageProvider _blobStorage;
         readonly IDataSerializer _serializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
-        readonly ActionPolicy _azureServerPolicy;
+        private readonly AzurePolicies _policies;
 
+        readonly ICloudStorageSystemObserver _observer;
         readonly ILog _log;
 
         // Instrumentation
@@ -64,18 +65,22 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="serializer">Not null.</param>
         /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper
         /// scenario).</param>
+        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
         /// <param name="log">Optional log</param>
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
             IDataSerializer serializer,
+            ICloudStorageSystemObserver systemObserver,
             IRuntimeFinalizer runtimeFinalizer,
             ILog log = null)
         {
+            _policies = new AzurePolicies(systemObserver);
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
             _serializer = serializer;
             _runtimeFinalizer = runtimeFinalizer;
+            _observer = systemObserver;
             _log = log;
 
             // finalizer can be null in a strict O/C mapper scenario
@@ -84,8 +89,6 @@ namespace Lokad.Cloud.Storage.Azure
                 // self-registration for finalization
                 _runtimeFinalizer.Register(this);
             }
-
-            _azureServerPolicy = AzurePolicies.TransientServerErrorBackOff;
 
             _inProcessMessages = new Dictionary<object, InProcessMessage>(20);
 
@@ -131,7 +134,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                rawMessages = _azureServerPolicy.Get(() => queue.GetMessages(count, visibilityTimeout));
+                rawMessages = Retry.Get(_policies.TransientServerErrorBackOff, () => queue.GetMessages(count, visibilityTimeout));
             }
             catch (StorageClientException ex)
             {
@@ -192,7 +195,13 @@ namespace Lokad.Cloud.Storage.Azure
 
                             if (_log != null)
                             {
+                                // TODO (ruegg, 2011-05-27): DROP
                                 _log.WarnFormat("Cloud Storage: A message of type {0} in queue {1} failed to process repeatedly and has been quarantined.", typeof(T).Name, queueName);
+                            }
+
+                            if (_observer != null)
+                            {
+                                _observer.Notify(new MessageQuarantinedAfterRetrialsEvent(queueName, PoisonedMessagePersistenceStoreName, typeof(T), rawMessage, data));
                             }
 
                             continue;
@@ -231,7 +240,15 @@ namespace Lokad.Cloud.Storage.Azure
 
                         if (_log != null)
                         {
+                            // TODO (ruegg, 2011-05-27): DROP
                             _log.WarnFormat(messageAsT.Error, "Cloud Storage: A message in queue {0} failed to deserialize to type {1} and has been quarantined.", queueName, typeof(T).Name);
+                        }
+
+                        if (_observer != null)
+                        {
+                            var exceptions = new List<Exception> { messageAsT.Error, messageAsWrapper.Error };
+                            if (!messageAsEnvelope.IsSuccess) { exceptions.Add(messageAsEnvelope.Error); }
+                            _observer.Notify(new MessageQuarantinedDeserializationFailedEvent(new AggregateException(exceptions), queueName, PoisonedMessagePersistenceStoreName, typeof(T), rawMessage, data));
                         }
                     }
                     finally
@@ -367,7 +384,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // caution: call 'DeleteOverflowingMessages' first (BASE).
                 DeleteOverflowingMessages(queueName);
                 var queue = _queueStorage.GetQueueReference(queueName);
-                _azureServerPolicy.Do(queue.Clear);
+                Retry.Do(_policies.TransientServerErrorBackOff, queue.Clear);
             }
             catch (StorageClientException ex)
             {
@@ -765,7 +782,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             try
             {
-                _azureServerPolicy.Do(() => queue.DeleteMessage(message));
+                Retry.Do(_policies.TransientServerErrorBackOff, () => queue.DeleteMessage(message));
                 return true;
             }
             catch (StorageClientException ex)
@@ -804,7 +821,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             try
             {
-                _azureServerPolicy.Do(() => queue.AddMessage(message));
+                Retry.Do(_policies.TransientServerErrorBackOff, () => queue.AddMessage(message));
             }
             catch (StorageClientException ex)
             {
@@ -814,7 +831,7 @@ namespace Lokad.Cloud.Storage.Azure
                 {
                     // It usually takes time before the queue gets available
                     // (the queue might also have been freshly deleted).
-                    AzurePolicies.SlowInstantiation.Do(() =>
+                    Retry.Do(_policies.SlowInstantiation, () =>
                         {
                             queue.Create();
                             queue.AddMessage(message);
@@ -892,7 +909,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // Caution: call to 'DeleteOverflowingMessages' comes first (BASE).
                 DeleteOverflowingMessages(queueName);
                 var queue = _queueStorage.GetQueueReference(queueName);
-                _azureServerPolicy.Do(queue.Delete);
+                Retry.Do(_policies.TransientServerErrorBackOff, queue.Delete);
                 return true;
             }
             catch (StorageClientException ex)
@@ -915,7 +932,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var queue = _queueStorage.GetQueueReference(queueName);
-                return _azureServerPolicy.Get(queue.RetrieveApproximateMessageCount);
+                return Retry.Get(_policies.TransientServerErrorBackOff, queue.RetrieveApproximateMessageCount);
             }
             catch (StorageClientException ex)
             {
@@ -940,7 +957,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                rawMessage = _azureServerPolicy.Get(queue.PeekMessage);
+                rawMessage = Retry.Get(_policies.TransientServerErrorBackOff, queue.PeekMessage);
             }
             catch (StorageClientException ex)
             {

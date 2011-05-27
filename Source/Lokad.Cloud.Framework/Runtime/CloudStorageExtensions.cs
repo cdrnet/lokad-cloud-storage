@@ -3,7 +3,6 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Storage;
 
 namespace Lokad.Cloud.Runtime
@@ -12,16 +11,9 @@ namespace Lokad.Cloud.Runtime
     {
         public static RuntimeProviders BuildRuntimeProviders(this CloudStorage.CloudStorageBuilder builder)
         {
-            var formatter = new CloudFormatter();
-
-            var diagnosticsStorage = builder
-                .WithLog(null)
-                .WithDataSerializer(formatter)
-                .BuildBlobStorage();
-
+            // override formatter
             var providers = builder
-                .WithLog(new CloudLogger(diagnosticsStorage, string.Empty))
-                .WithDataSerializer(formatter)
+                .WithDataSerializer(new CloudFormatter()) // (ruegg, 2011-05-26) do NOT change formatter here
                 .BuildStorageProviders();
 
             return new RuntimeProviders(

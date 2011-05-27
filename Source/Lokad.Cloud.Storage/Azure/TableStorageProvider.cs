@@ -10,9 +10,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Web;
+
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Policies;
+using Lokad.Cloud.Storage.SystemObservers;
+
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -34,7 +36,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudTableClient _tableStorage;
         readonly IDataSerializer _serializer;
-        readonly ActionPolicy _storagePolicy;
+        readonly AzurePolicies _policies;
 
         // Instrumentation
         readonly ExecutionCounter _countQuery;
@@ -43,11 +45,12 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDelete;
 
         /// <summary>IoC constructor.</summary>
-        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer)
+        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
+        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer, ICloudStorageSystemObserver systemObserver)
         {
+            _policies = new AzurePolicies(systemObserver);
             _tableStorage = tableStorage;
             _serializer = serializer;
-            _storagePolicy = AzurePolicies.TransientTableErrorBackOff;
 
             // Instrumentation
             ExecutionCounters.Default.RegisterRange(new[]
@@ -63,8 +66,7 @@ namespace Lokad.Cloud.Storage.Azure
         public bool CreateTable(string tableName)
         {
             var flag = false;
-            AzurePolicies.SlowInstantiation.Do(() =>
-                flag = _tableStorage.CreateTableIfNotExist(tableName));
+            Retry.Do(_policies.SlowInstantiation, () => flag = _tableStorage.CreateTableIfNotExist(tableName));
 
             return flag;
         }
@@ -73,8 +75,7 @@ namespace Lokad.Cloud.Storage.Azure
         public bool DeleteTable(string tableName)
         {
             var flag = false;
-            AzurePolicies.SlowInstantiation.Do(() =>
-                flag = _tableStorage.DeleteTableIfExist(tableName));
+            Retry.Do(_policies.SlowInstantiation, () => flag = _tableStorage.DeleteTableIfExist(tableName));
 
             return flag;
         }
@@ -202,7 +203,7 @@ namespace Lokad.Cloud.Storage.Azure
                 QueryOperationResponse response = null;
                 FatEntity[] fatEntities = null;
 
-                _storagePolicy.Do(() =>
+                Retry.Do(_policies.TransientTableErrorBackOff, () =>
                     {
                         try
                         {
@@ -282,7 +283,7 @@ namespace Lokad.Cloud.Storage.Azure
                     cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
-                _storagePolicy.Do(() =>
+                Retry.Do(_policies.TransientTableErrorBackOff, () =>
                     {
                         try
                         {
@@ -299,7 +300,7 @@ namespace Lokad.Cloud.Storage.Azure
                                 if (errorCode == TableErrorCodeStrings.TableNotFound
                                     || errorCode == StorageErrorCodeStrings.ResourceNotFound)
                                 {
-                                    AzurePolicies.SlowInstantiation.Do(() =>
+                                    Retry.Do(_policies.SlowInstantiation, () =>
                                         {
                                             try
                                             {
@@ -407,7 +408,7 @@ namespace Lokad.Cloud.Storage.Azure
                     cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
-                _storagePolicy.Do(() =>
+                Retry.Do(_policies.TransientTableErrorBackOff, () =>
                     {
                         try
                         {
@@ -428,7 +429,7 @@ namespace Lokad.Cloud.Storage.Azure
                             }
                             else if (errorCode == TableErrorCodeStrings.TableNotFound)
                             {
-                                AzurePolicies.SlowInstantiation.Do(() =>
+                                Retry.Do(_policies.SlowInstantiation, () =>
                                     {
                                         try
                                         {
@@ -586,8 +587,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     try // HACK: nested try/catch to handle the special case where the table is missing
                     {
-                        _storagePolicy.Do(() =>
-                            context.SaveChanges(SaveChangesOptions.Batch));
+                        Retry.Do(_policies.TransientTableErrorBackOff, () => context.SaveChanges(SaveChangesOptions.Batch));
                     }
                     catch (DataServiceRequestException ex)
                     {

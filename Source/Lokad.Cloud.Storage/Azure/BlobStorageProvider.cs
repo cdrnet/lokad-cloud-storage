@@ -14,11 +14,12 @@ using System.Threading;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Policies;
+using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared.Threading;
+using Lokad.Cloud.Storage.SystemEvents;
+using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
-using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -37,9 +38,9 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _serializer;
-        readonly ActionPolicy _azureServerPolicy;
-        readonly ActionPolicy _networkPolicy;
         readonly ILog _log;
+        readonly ICloudStorageSystemObserver _observer;
+        readonly AzurePolicies _policies;
 
         // Instrumentation
         readonly ExecutionCounter _countPutBlob;
@@ -49,13 +50,14 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDeleteBlob;
 
         /// <summary>IoC constructor.</summary>
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ILog log = null)
+        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageSystemObserver systemObserver, ILog log = null)
         {
+            _policies = new AzurePolicies(systemObserver);
             _blobStorage = blobStorage;
             _serializer = serializer;
             _log = log;
-            _azureServerPolicy = AzurePolicies.TransientServerErrorBackOff;
-            _networkPolicy = AzurePolicies.NetworkCorruption;
+            _observer = systemObserver;
 
             // Instrumentation
             ExecutionCounters.Default.RegisterRange(new[]
@@ -79,7 +81,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             while (true)
             {
-                if (!_azureServerPolicy.Get(enumerator.MoveNext))
+                if (!Retry.Get(_policies.TransientServerErrorBackOff, enumerator.MoveNext))
                 {
                     yield break;
                 }
@@ -99,7 +101,7 @@ namespace Lokad.Cloud.Storage.Azure
             var container = _blobStorage.GetContainerReference(containerName);
             try
             {
-                _azureServerPolicy.Do(container.Create);
+                Retry.Do(_policies.TransientServerErrorBackOff, container.Create);
                 return true;
             }
             catch(StorageClientException ex)
@@ -120,7 +122,7 @@ namespace Lokad.Cloud.Storage.Azure
             var container = _blobStorage.GetContainerReference(containerName);
             try
             {
-                _azureServerPolicy.Do(container.Delete);
+                Retry.Do(_policies.TransientServerErrorBackOff, container.Delete);
                 return true;
             }
             catch(StorageClientException ex)
@@ -178,7 +180,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 try
                 {
-                    if (!_azureServerPolicy.Get(enumerator.MoveNext))
+                    if (!Retry.Get(_policies.TransientServerErrorBackOff, enumerator.MoveNext))
                     {
                         yield break;
                     }
@@ -223,7 +225,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var blob = container.GetBlockBlobReference(blobName);
-                _azureServerPolicy.Do(blob.Delete);
+                Retry.Do(_policies.TransientServerErrorBackOff, blob.Delete);
                 _countDeleteBlob.Close(timestamp);
                 return true;
             }
@@ -278,12 +280,12 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
-                    {
-                        stream.Seek(0, SeekOrigin.Begin);
-                        blob.DownloadToStream(stream);
-                        VerifyContentHash(blob, stream, containerName, blobName);
-                    }));
+                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                        {
+                            stream.Seek(0, SeekOrigin.Begin);
+                            blob.DownloadToStream(stream);
+                            VerifyContentHash(blob, stream, containerName, blobName);
+                        });
 
                     etag = blob.Properties.ETag;
                 }
@@ -304,11 +306,20 @@ namespace Lokad.Cloud.Storage.Azure
 
                 _countGetBlob.Close(timestamp);
 
-                if (!deserialized.IsSuccess && _log != null)
+                if (!deserialized.IsSuccess)
                 {
-                    _log.WarnFormat(deserialized.Error,
-                        "Cloud Storage: A blob was retrieved for GeBlob but failed to deserialize. Blob {0} in container {1}.",
-                        blobName, containerName);
+                    if (_log != null)
+                    {
+                        // TODO (ruegg, 2011-05-27): DROP
+                        _log.WarnFormat(deserialized.Error,
+                            "Cloud Storage: A blob was retrieved for GetBlob but failed to deserialize. Blob {0} in container {1}.",
+                            blobName, containerName);
+                    }
+
+                    if (_observer != null)
+                    {
+                        _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                    }
                 }
 
                 return deserialized.IsSuccess ? new Maybe<object>(deserialized.Value) : Maybe<object>.Empty;
@@ -334,12 +345,12 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
-                    {
-                        stream.Seek(0, SeekOrigin.Begin);
-                        blob.DownloadToStream(stream);
-                        VerifyContentHash(blob, stream, containerName, blobName);
-                    }));
+                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                        {
+                            stream.Seek(0, SeekOrigin.Begin);
+                            blob.DownloadToStream(stream);
+                            VerifyContentHash(blob, stream, containerName, blobName);
+                        });
 
                     etag = blob.Properties.ETag;
                 }
@@ -408,12 +419,12 @@ namespace Lokad.Cloud.Storage.Azure
 
                 using (var stream = new MemoryStream())
                 {
-                    _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
-                    {
-                        stream.Seek(0, SeekOrigin.Begin);
-                        blob.DownloadToStream(stream, options);
-                        VerifyContentHash(blob, stream, containerName, blobName);
-                    }));
+                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                        {
+                            stream.Seek(0, SeekOrigin.Begin);
+                            blob.DownloadToStream(stream, options);
+                            VerifyContentHash(blob, stream, containerName, blobName);
+                        });
 
                     newEtag = blob.Properties.ETag;
 
@@ -422,11 +433,20 @@ namespace Lokad.Cloud.Storage.Azure
 
                     _countGetBlobIfModified.Close(timestamp);
 
-                    if (!deserialized.IsSuccess && _log != null)
+                    if (!deserialized.IsSuccess)
                     {
-                        _log.WarnFormat(deserialized.Error,
-                            "Cloud Storage: A blob was retrieved for GetBlobIfModified but failed to deserialize. Blob {0} in container {1}.",
-                            blobName, containerName);
+                        if (_log != null)
+                        {
+                            // TODO (ruegg, 2011-05-27): DROP
+                            _log.WarnFormat(deserialized.Error,
+                                "Cloud Storage: A blob was retrieved for GetBlobIfModified but failed to deserialize. Blob {0} in container {1}.",
+                                blobName, containerName);
+                        }
+
+                        if (_observer != null)
+                        {
+                            _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                        }
                     }
 
                     return deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
@@ -463,7 +483,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var blob = container.GetBlockBlobReference(blobName);
-                _azureServerPolicy.Do(blob.FetchAttributes);
+                Retry.Do(_policies.TransientServerErrorBackOff, blob.FetchAttributes);
                 return blob.Properties.ETag;
             }
             catch (StorageClientException ex)
@@ -546,12 +566,12 @@ namespace Lokad.Cloud.Storage.Azure
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
                         var tentativeEtag = Maybe<string>.Empty;
-                        AzurePolicies.SlowInstantiation.Do(() =>
-                        {
-                            _azureServerPolicy.Get(container.CreateIfNotExist);
+                        Retry.Do(_policies.SlowInstantiation, () =>
+                            {
+                                Retry.Get(_policies.TransientServerErrorBackOff, container.CreateIfNotExist);
 
-                            tentativeEtag = doUpload();
-                        });
+                                tentativeEtag = doUpload();
+                            });
 
                         if (!tentativeEtag.HasValue)
                         {
@@ -620,11 +640,11 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+                Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         blob.UploadFromStream(stream, options);
-                    }));
+                    });
             }
             catch (StorageClientException ex)
             {
@@ -683,10 +703,18 @@ namespace Lokad.Cloud.Storage.Azure
 
             Maybe<T> output;
 
-            TimeSpan retryInterval;
-            var retryPolicy = AzurePolicies.OptimisticConcurrency();
-            for (int retryCount = 0; retryPolicy(retryCount, null, out retryInterval); retryCount++)
+            var optimisticPolicy = _policies.OptimisticConcurrency();
+            TimeSpan retryInterval = TimeSpan.Zero;
+            int retryCount = 0;
+            do
             {
+                // 0. IN CASE OF RETRIAL, WAIT UNTIL NEXT TRIAL (retry policy)
+
+                if (retryInterval > TimeSpan.Zero)
+                {
+                    Thread.Sleep(retryInterval);
+                }
+
                 // 1. DOWNLOAD EXISTING INPUT BLOB, IF IT EXISTS
 
                 Maybe<T> input;
@@ -697,12 +725,12 @@ namespace Lokad.Cloud.Storage.Azure
                 {
                     using (var readStream = new MemoryStream())
                     {
-                        _azureServerPolicy.Do(() => _networkPolicy.Do(() =>
+                        Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
                             {
                                 readStream.Seek(0, SeekOrigin.Begin);
                                 blob.DownloadToStream(readStream);
                                 VerifyContentHash(blob, readStream, containerName, blobName);
-                            }));
+                            });
 
                         inputETag = blob.Properties.ETag;
                         inputBlobExists = !String.IsNullOrEmpty(inputETag);
@@ -710,11 +738,20 @@ namespace Lokad.Cloud.Storage.Azure
                         readStream.Seek(0, SeekOrigin.Begin);
 
                         var deserialized = _serializer.TryDeserializeAs<T>(readStream);
-                        if (!deserialized.IsSuccess && _log != null)
+                        if (!deserialized.IsSuccess)
                         {
-                            _log.WarnFormat(deserialized.Error,
-                                "Cloud Storage: A blob was retrieved for Upsert but failed to deserialize. An Insert will be performed instead, overwriting the corrupt blob {0} in container {1}.",
-                                blobName, containerName);
+                            if (_log != null)
+                            {
+                                // TODO (ruegg, 2011-05-27): DROP
+                                _log.WarnFormat(deserialized.Error,
+                                    "Cloud Storage: A blob was retrieved for Upsert but failed to deserialize. An Insert will be performed instead, overwriting the corrupt blob {0} in container {1}.",
+                                    blobName, containerName);
+                            }
+
+                            if (_observer != null)
+                            {
+                                _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                            }
                         }
 
                         input = deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
@@ -731,7 +768,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
-                        AzurePolicies.SlowInstantiation.Do(() => _azureServerPolicy.Get(container.CreateIfNotExist));
+                        Retry.Do(_policies.SlowInstantiation, () => Retry.Get(_policies.TransientServerErrorBackOff, container.CreateIfNotExist));
                     }
                     else
                     {
@@ -772,14 +809,7 @@ namespace Lokad.Cloud.Storage.Azure
                         return output;
                     }
                 }
-
-                // 5. WAIT UNTIL NEXT TRIAL (retry policy)
-
-                if (retryInterval > TimeSpan.Zero)
-                {
-                    Thread.Sleep(retryInterval);
-                }
-            }
+            } while (optimisticPolicy(retryCount++, null, out retryInterval));
 
             throw new TimeoutException("Failed to resolve optimistic concurrency errors within a limited number of retrials");
         }
