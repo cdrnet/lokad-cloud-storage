@@ -91,7 +91,7 @@ namespace Lokad.Cloud.Test.Storage.InMemory
             Assert.AreEqual(2, retrieved7.Count(), "#B07");
 
             //The next test should handle non existing table names.
-            var isSuccess = false;
+            //var isSuccess = false;
 
             // TODO: Looks like something is not finished here
 

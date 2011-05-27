@@ -28,20 +28,36 @@ namespace Lokad.Cloud.Storage.Azure
 
         // ReSharper disable InconsistentNaming
         // ReSharper disable MemberCanBePrivate.Global
+
+        /// <remarks></remarks>
         public byte[] P0 { get; set; }
+        /// <remarks></remarks>
         public byte[] P1 { get; set; }
+        /// <remarks></remarks>
         public byte[] P2 { get; set; }
+        /// <remarks></remarks>
         public byte[] P3 { get; set; }
+        /// <remarks></remarks>
         public byte[] P4 { get; set; }
+        /// <remarks></remarks>
         public byte[] P5 { get; set; }
+        /// <remarks></remarks>
         public byte[] P6 { get; set; }
+        /// <remarks></remarks>
         public byte[] P7 { get; set; }
+        /// <remarks></remarks>
         public byte[] P8 { get; set; }
+        /// <remarks></remarks>
         public byte[] P9 { get; set; }
+        /// <remarks></remarks>
         public byte[] P10 { get; set; }
+        /// <remarks></remarks>
         public byte[] P11 { get; set; }
+        /// <remarks></remarks>
         public byte[] P12 { get; set; }
+        /// <remarks></remarks>
         public byte[] P13 { get; set; }
+        /// <remarks></remarks>
         public byte[] P14 { get; set; }
 
         IEnumerable<byte[]> GetProperties()
@@ -63,6 +79,7 @@ namespace Lokad.Cloud.Storage.Azure
             if (null != P14) yield return P14;
         }
 
+        /// <summary>Returns the concatenated stream contained in the fat entity.</summary>
         public byte[] GetData()
         {
             var arrays = GetProperties().ToArray();
@@ -78,6 +95,7 @@ namespace Lokad.Cloud.Storage.Azure
             return buffer;
         }
 
+        /// <summary>Split the stream as a fat entity.</summary>
         public void SetData(byte[] data)
         {
             if(null == data) throw new ArgumentNullException("data");

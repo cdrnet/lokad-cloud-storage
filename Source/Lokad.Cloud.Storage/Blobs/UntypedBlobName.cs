@@ -66,6 +66,7 @@ namespace Lokad.Cloud.Storage
                 s => new DateTimeOffset(DateTime.SpecifyKind(DateTime.ParseExact(s, DateFormatInBlobName, CultureInfo.InvariantCulture), DateTimeKind.Utc)));
         }
 
+        /// <summary>Syntactic equivalent to Print{T} with T being the current base type.</summary>
         public override string ToString()
         {
             // Invoke a Static Generic Method using Reflection

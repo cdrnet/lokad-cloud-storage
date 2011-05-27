@@ -313,6 +313,7 @@ namespace Lokad.Cloud.Storage.Azure
             return false;
         }
 
+        /// <summary>Hack around lack of proper way of retrieving the error code through a property.</summary>
         public static string GetErrorCode(DataServiceRequestException ex)
         {
             var r = new Regex(@"<code>(\w+)</code>", RegexOptions.IgnoreCase);
@@ -320,7 +321,8 @@ namespace Lokad.Cloud.Storage.Azure
             return match.Groups[1].Value;
         }
 
-        // HACK: just dupplicating the other overload of 'GetErrorCode'
+        // HACK: just duplicating the other overload of 'GetErrorCode'
+        /// <summary>Hack around lack of proper way of retrieving the error code through a property.</summary>
         public static string GetErrorCode(DataServiceQueryException ex)
         {
             var r = new Regex(@"<code>(\w+)</code>", RegexOptions.IgnoreCase);

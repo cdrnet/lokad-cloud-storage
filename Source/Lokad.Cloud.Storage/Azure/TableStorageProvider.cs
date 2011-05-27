@@ -59,6 +59,7 @@ namespace Lokad.Cloud.Storage.Azure
                 });
         }
 
+        /// <remarks></remarks>
         public bool CreateTable(string tableName)
         {
             var flag = false;
@@ -68,6 +69,7 @@ namespace Lokad.Cloud.Storage.Azure
             return flag;
         }
 
+        /// <remarks></remarks>
         public bool DeleteTable(string tableName)
         {
             var flag = false;
@@ -77,11 +79,13 @@ namespace Lokad.Cloud.Storage.Azure
             return flag;
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> GetTables()
         {
             return _tableStorage.ListTables();
         }
 
+        /// <remarks></remarks>
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName)
         {
             if(null == tableName) throw new ArgumentNullException("tableName");
@@ -90,6 +94,7 @@ namespace Lokad.Cloud.Storage.Azure
             return GetInternal<T>(context, tableName, Maybe<string>.Empty);
         }
 
+        /// <remarks></remarks>
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey)
         {
             if(null == tableName) throw new ArgumentNullException("tableName");
@@ -103,6 +108,7 @@ namespace Lokad.Cloud.Storage.Azure
             return GetInternal<T>(context, tableName, filter);
         }
 
+        /// <remarks></remarks>
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey, string startRowKey, string endRowKey)
         {
             if(null == tableName) throw new ArgumentNullException("tableName");
@@ -133,6 +139,7 @@ namespace Lokad.Cloud.Storage.Azure
             return GetInternal<T>(context, tableName, filter);
         }
 
+        /// <remarks></remarks>
         public IEnumerable<CloudEntity<T>> Get<T>(string tableName, string partitionKey, IEnumerable<string> rowKeys)
         {
             if(null == tableName) throw new ArgumentNullException("tableName");
@@ -167,6 +174,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         private IEnumerable<CloudEntity<T>> GetInternal<T>(TableServiceContext context, string tableName, Maybe<string> filter)
         {
             string continuationRowKey = null;
@@ -243,6 +251,7 @@ namespace Lokad.Cloud.Storage.Azure
             } while (null != continuationRowKey);
         }
 
+        /// <remarks></remarks>
         public void Insert<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
             foreach (var g in entities.GroupBy(e => e.PartitionKey))
@@ -251,6 +260,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         void InsertInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
             var context = _tableStorage.GetDataServiceContext();
@@ -341,7 +351,7 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                         catch (DataServiceQueryException ex)
                         {
-                            // HACK: code dupplicated
+                            // HACK: code duplicated
 
                             var errorCode = AzurePolicies.GetErrorCode(ex);
 
@@ -364,6 +374,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public void Update<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
             foreach (var g in entities.GroupBy(e => e.PartitionKey))
@@ -372,6 +383,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         void UpdateInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
             var context = _tableStorage.GetDataServiceContext();
@@ -442,7 +454,7 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                         catch (DataServiceQueryException ex)
                         {
-                            // HACK: code dupplicated
+                            // HACK: code duplicated
 
                             var errorCode = AzurePolicies.GetErrorCode(ex);
 
@@ -465,6 +477,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public void Upsert<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
             foreach (var g in entities.GroupBy(e => e.PartitionKey))
@@ -519,11 +532,13 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public void Delete<T>(string tableName, string partitionKey, IEnumerable<string> rowKeys)
         {
             DeleteInternal<T>(tableName, partitionKey, rowKeys.Select(k => Tuple.Create(k, "*")), true);
         }
 
+        /// <remarks></remarks>
         public void Delete<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
             foreach (var g in entities.GroupBy(e => e.PartitionKey))
@@ -533,6 +548,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         void DeleteInternal<T>(string tableName, string partitionKey, IEnumerable<Tuple<string,string>> rowKeysAndETags, bool force)
         {
             var context = _tableStorage.GetDataServiceContext();

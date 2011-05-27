@@ -61,26 +61,31 @@ namespace Lokad.Cloud.Storage
             provider.DeleteAllBlobs(blobNamePrefix.ContainerName, blobNamePrefix.ToString());
         }
 
+        /// <remarks></remarks>
         public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, BlobName<T> name)
         {
             return provider.GetBlob<T>(name.ContainerName, name.ToString());
         }
 
+        /// <remarks></remarks>
         public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, BlobName<T> name, out string etag)
         {
             return provider.GetBlob<T>(name.ContainerName, name.ToString(), out etag);
         }
 
+        /// <remarks></remarks>
         public static string GetBlobEtag<T>(this IBlobStorageProvider provider, BlobName<T> name)
         {
             return provider.GetBlobEtag(name.ContainerName, name.ToString());
         }
 
+        /// <remarks></remarks>
         public static void PutBlob<T>(this IBlobStorageProvider provider, BlobName<T> name, T item)
         {
             provider.PutBlob(name.ContainerName, name.ToString(), item);
         }
 
+        /// <remarks></remarks>
         public static bool PutBlob<T>(this IBlobStorageProvider provider, BlobName<T> name, T item, bool overwrite)
         {
             return provider.PutBlob(name.ContainerName, name.ToString(), item, overwrite);

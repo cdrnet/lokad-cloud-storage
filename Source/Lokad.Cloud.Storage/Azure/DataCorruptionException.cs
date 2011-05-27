@@ -14,12 +14,16 @@ namespace Lokad.Cloud.Storage.Azure
     [Serializable]
     public class DataCorruptionException : Exception
     {
+        /// <remarks></remarks>
         public DataCorruptionException() { }
 
+        /// <remarks></remarks>
         public DataCorruptionException(string message) : base(message) { }
 
+        /// <remarks></remarks>
         public DataCorruptionException(string message, Exception inner) : base(message, inner) { }
 
+        /// <remarks></remarks>
         protected DataCorruptionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -5,6 +5,7 @@
 
 namespace Lokad.Cloud.Storage
 {
+    /// <summary>Storage providers and runtime providers.</summary>
     public class CloudStorageProviders
     {
         /// <summary>Abstracts the Blob Storage.</summary>
@@ -20,6 +21,7 @@ namespace Lokad.Cloud.Storage
         /// in case of runtime shutdown).</summary>
         public IRuntimeFinalizer RuntimeFinalizer { get; private set; }
 
+        /// <summary>Abstracts the logger.</summary>
         public Shared.Logging.ILog Log { get; private set; }
 
         /// <summary>IoC constructor.</summary>

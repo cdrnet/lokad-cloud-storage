@@ -36,6 +36,7 @@ namespace Lokad.Cloud.Storage.InMemory
             DataSerializer = new CloudFormatter();
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> ListContainers(string prefix = null)
         {
             lock (_syncRoot)
@@ -49,6 +50,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public bool CreateContainerIfNotExist(string containerName)
         {
             lock (_syncRoot)
@@ -68,6 +70,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }	
         }
 
+        /// <remarks></remarks>
         public bool DeleteContainerIfExist(string containerName)
         {
             lock (_syncRoot)
@@ -82,6 +85,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> ListBlobNames(string containerName, string blobNamePrefix = null)
         {
             lock (_syncRoot)
@@ -96,6 +100,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0)
         {
             var names = ListBlobNames(containerName, blobNamePrefix);
@@ -110,6 +115,7 @@ namespace Lokad.Cloud.Storage.InMemory
                 .Select(blob => blob.Value);
         }
 
+        /// <remarks></remarks>
         public bool DeleteBlobIfExist(string containerName, string blobName)
         {
             lock (_syncRoot)
@@ -124,6 +130,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void DeleteAllBlobs(string containerName, string blobNamePrefix = null)
         {
             foreach (var blobName in ListBlobNames(containerName, blobNamePrefix))
@@ -132,18 +139,21 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<T> GetBlob<T>(string containerName, string blobName)
         {
             string ignoredEtag;
             return GetBlob<T>(containerName, blobName, out ignoredEtag);
         }
 
+        /// <remarks></remarks>
         public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
         {
             return GetBlob(containerName, blobName, typeof(T), out etag)
                 .Convert(o => o is T ? (T)o : Maybe<T>.Empty, Maybe<T>.Empty);
         }
 
+        /// <remarks></remarks>
         public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
         {
             lock (_syncRoot)
@@ -160,6 +170,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag)
         {
             etag = null;
@@ -191,6 +202,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
         {
             // Copy-paste from BlobStorageProvider.cs
@@ -214,6 +226,7 @@ namespace Lokad.Cloud.Storage.InMemory
             return result;
         }
 
+        /// <remarks></remarks>
         public Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag)
         {
             lock (_syncRoot)
@@ -231,6 +244,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public string GetBlobEtag(string containerName, string blobName)
         {
             lock (_syncRoot)
@@ -241,33 +255,39 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void PutBlob<T>(string containerName, string blobName, T item)
         {
             PutBlob(containerName, blobName, item, true);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite)
         {
             string ignored;
             return PutBlob(containerName, blobName, item, overwrite, out ignored);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag)
         {
             return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag)
         {
             string ignored;
             return PutBlob(containerName, blobName, item, typeof (T), true, expectedEtag, out ignored);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string etag)
         {
             return PutBlob(containerName, blobName, item, type, overwrite, null, out etag);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string etag)
         {
             lock(_syncRoot)
@@ -315,16 +335,19 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update)
         {
             return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t));
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
         {
             return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
         {
             var result = UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
@@ -336,11 +359,13 @@ namespace Lokad.Cloud.Storage.InMemory
             return result;
         }
 
+        /// <remarks></remarks>
         public T UpsertBlob<T>(string containerName, string blobName, Func<T> insert, Func<T, T> update)
         {
             return UpsertBlobOrSkip<T>(containerName, blobName, () => insert(), t => update(t)).Value;
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpsertBlobOrSkip<T>(
             string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
         {
@@ -376,6 +401,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpsertBlobOrDelete<T>(
             string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
         {
@@ -431,6 +457,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Result<string> TryAcquireLease(string containerName, string blobName)
         {
             lock (_syncRoot)
@@ -446,6 +473,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public bool TryReleaseLease(string containerName, string blobName, string leaseId)
         {
             lock (_syncRoot)
@@ -461,6 +489,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public bool TryRenewLease(string containerName, string blobName, string leaseId)
         {
             lock (_syncRoot)

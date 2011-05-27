@@ -29,15 +29,17 @@ namespace Lokad.Cloud.Storage.InMemory
         {
             _queues = new Dictionary<string, Queue<byte[]>>();
             _inProcessMessages = new Dictionary<object, Tu>();
-            _persistedMessages = new HashSet<System.Tuple<string, string, string, byte[]>>();
+            _persistedMessages = new HashSet<Tuple<string, string, string, byte[]>>();
             DataSerializer = new CloudFormatter();
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> List(string prefix)
         {
             return _queues.Keys.Where(e => e.StartsWith(prefix));
         }
 
+        /// <remarks></remarks>
         public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials)
         {
             lock (_sync)
@@ -69,6 +71,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void Put<T>(string queueName, T message)
         {
             lock (_sync)
@@ -89,6 +92,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void PutRange<T>(string queueName, IEnumerable<T> messages)
         {
             lock (_sync)
@@ -100,6 +104,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void Clear(string queueName)
         {
             lock (_sync)
@@ -114,6 +119,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public bool Delete<T>(T message)
         {
             lock (_sync)
@@ -134,6 +140,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public int DeleteRange<T>(IEnumerable<T> messages)
         {
             lock (_sync)
@@ -142,6 +149,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public bool Abandon<T>(T message)
         {
             lock (_sync)
@@ -171,6 +179,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public int AbandonRange<T>(IEnumerable<T> messages)
         {
             lock (_sync)
@@ -179,18 +188,21 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public bool ResumeLater<T>(T message)
         {
             // same as abandon as the InMemory provider applies no poison detection
             return Abandon(message);
         }
 
+        /// <remarks></remarks>
         public int ResumeLaterRange<T>(IEnumerable<T> messages)
         {
             // same as abandon as the InMemory provider applies no poison detection
             return AbandonRange(messages);
         }
 
+        /// <remarks></remarks>
         public void Persist<T>(T message, string storeName, string reason)
         {
             lock (_sync)
@@ -214,6 +226,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void PersistRange<T>(IEnumerable<T> messages, string storeName, string reason)
         {
             lock (_sync)
@@ -225,6 +238,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> ListPersisted(string storeName)
         {
             lock (_sync)
@@ -236,6 +250,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
         {
             var intermediateDataSerializer = DataSerializer as IIntermediateDataSerializer;
@@ -262,6 +277,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void DeletePersisted(string storeName, string key)
         {
             lock (_sync)
@@ -270,6 +286,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public void RestorePersisted(string storeName, string key)
         {
             lock (_sync)
@@ -287,6 +304,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public bool DeleteQueue(string queueName)
         {
             lock (_sync)
@@ -308,6 +326,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public int GetApproximateCount(string queueName)
         {
             lock (_sync)
@@ -318,6 +337,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<TimeSpan> GetApproximateLatency(string queueName)
         {
             return Maybe<TimeSpan>.Empty;

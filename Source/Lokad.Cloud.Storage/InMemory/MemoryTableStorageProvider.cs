@@ -218,7 +218,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        /// <see cref="ITableStorageProvider.Delete{T}"/>
+        /// <see cref="ITableStorageProvider.Delete{T}(string,string,IEnumerable{string})"/>
         public void Delete<T>(string tableName, string partitionKey, IEnumerable<string> rowKeys)
         {
             lock (_syncRoot)
@@ -234,7 +234,7 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
-        /// <see cref="ITableStorageProvider.Delete{T}"/>
+        /// <remarks></remarks>
         public void Delete<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
             lock (_syncRoot)

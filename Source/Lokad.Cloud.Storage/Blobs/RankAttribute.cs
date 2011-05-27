@@ -12,6 +12,7 @@ namespace Lokad.Cloud.Storage
     /// is made compact not to make client code too verbose.</remarks>
     public class RankAttribute : Attribute
     {
+        /// <summary>Index of the property within the generated blob name.</summary>
         public readonly int Index;
 
         /// <summary>Indicates whether the default value (for value types)

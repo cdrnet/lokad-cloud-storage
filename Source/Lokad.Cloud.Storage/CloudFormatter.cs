@@ -25,7 +25,7 @@ namespace Lokad.Cloud.Storage
     /// </remarks>
     public class CloudFormatter : IIntermediateDataSerializer
     {
-        XmlObjectSerializer GetXmlSerializer(Type type)
+        static XmlObjectSerializer GetXmlSerializer(Type type)
         {
             // 'false' == do not inherit the attribute
             if (GetAttributes<DataContractAttribute>(type, false).Length > 0)
@@ -36,6 +36,7 @@ namespace Lokad.Cloud.Storage
             return new NetDataContractSerializer();
         }
 
+        /// <remarks></remarks>
         public void Serialize(object instance, Stream destination)
         {
             var serializer = GetXmlSerializer(instance.GetType());
@@ -47,6 +48,7 @@ namespace Lokad.Cloud.Storage
             }
         }
 
+        /// <remarks></remarks>
         public object Deserialize(Stream source, Type type)
         {
             var serializer = GetXmlSerializer(type);
@@ -58,6 +60,7 @@ namespace Lokad.Cloud.Storage
             }
         }
 
+        /// <remarks></remarks>
         public XElement UnpackXml(Stream source)
         {
             using(var decompressed = Decompress(source, true))
@@ -67,6 +70,7 @@ namespace Lokad.Cloud.Storage
             }
         }
 
+        /// <remarks></remarks>
         public void RepackXml(XElement data, Stream destination)
         {
             using(var compressed = Compress(destination, true))

@@ -68,6 +68,7 @@ namespace Lokad.Cloud.Storage.Azure
                 });
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> ListContainers(string containerNamePrefix = null)
         {
             var enumerator = String.IsNullOrEmpty(containerNamePrefix)
@@ -88,6 +89,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public bool CreateContainerIfNotExist(string containerName)
         {
             //workaround since Azure is presently returning OutOfRange exception when using a wrong name.
@@ -112,6 +114,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public bool DeleteContainerIfExist(string containerName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -132,6 +135,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> ListBlobNames(string containerName, string blobNamePrefix = null)
         {
             // Enumerated blobs do not have a "name" property,
@@ -194,6 +198,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0)
         {
             var names = ListBlobNames(containerName, blobNamePrefix);
@@ -208,6 +213,7 @@ namespace Lokad.Cloud.Storage.Azure
                 .Select(blob => blob.Value);
         }
 
+        /// <remarks></remarks>
         public bool DeleteBlobIfExist(string containerName, string blobName)
         {
             var timestamp = _countDeleteBlob.Open();
@@ -233,6 +239,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public void DeleteAllBlobs(string containerName, string blobNamePrefix = null)
         {
             // TODO: Parallelize
@@ -242,18 +249,21 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<T> GetBlob<T>(string containerName, string blobName)
         {
             string ignoredEtag;
             return GetBlob<T>(containerName, blobName, out ignoredEtag);
         }
 
+        /// <remarks></remarks>
         public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
         {
             return GetBlob(containerName, blobName, typeof(T), out etag)
                 .Convert(o => (T)o, Maybe<T>.Empty);
         }
 
+        /// <remarks></remarks>
         public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
         {
             var timestamp = _countGetBlob.Open();
@@ -305,6 +315,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag)
         {
             etag = null;
@@ -372,6 +383,7 @@ namespace Lokad.Cloud.Storage.Azure
             return result;
         }
 
+        /// <remarks></remarks>
         public Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag)
         {
             // 'oldEtag' is null, then behavior always match simple 'GetBlob'.
@@ -443,6 +455,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public string GetBlobEtag(string containerName, string blobName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -465,28 +478,33 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public void PutBlob<T>(string containerName, string blobName, T item)
         {
             PutBlob(containerName, blobName, item, true);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite)
         {
             string ignored;
             return PutBlob(containerName, blobName, item, overwrite, out ignored);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag)
         {
             return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag)
         {
             string outEtag;
             return PutBlob(containerName, blobName, item, typeof (T), true, expectedEtag, out outEtag);
         }
 
+        /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string outEtag)
         {
             var timestamp = _countPutBlob.Open();
@@ -569,11 +587,14 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string outEtag)
         {
             return PutBlob(containerName, blobName, item, type, overwrite, null, out outEtag);
         }
 
+        /// <param name="blob"></param>
+        /// <param name="stream"></param>
         /// <param name="overwrite">If <c>false</c>, then no write happens if the blob already exists.</param>
         /// <param name="expectedEtag">When specified, no writing occurs unless the blob etag
         /// matches the one specified as argument.</param>
@@ -618,18 +639,21 @@ namespace Lokad.Cloud.Storage.Azure
             return blob.Properties.ETag;
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExist<T>(
             string containerName, string blobName, Func<T, T> update)
         {
             return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t));
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExistOrSkip<T>(
             string containerName, string blobName, Func<T, Maybe<T>> update)
         {
             return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExistOrDelete<T>(
             string containerName, string blobName, Func<T, Maybe<T>> update)
         {
@@ -642,11 +666,13 @@ namespace Lokad.Cloud.Storage.Azure
             return result;
         }
 
+        /// <remarks></remarks>
         public T UpsertBlob<T>(string containerName, string blobName, Func<T> insert, Func<T, T> update)
         {
             return UpsertBlobOrSkip<T>(containerName, blobName, () => insert(), t => update(t)).Value;
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpsertBlobOrSkip<T>(
             string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
         {
@@ -758,6 +784,7 @@ namespace Lokad.Cloud.Storage.Azure
             throw new TimeoutException("Failed to resolve optimistic concurrency errors within a limited number of retrials");
         }
 
+        /// <remarks></remarks>
         public Maybe<T> UpsertBlobOrDelete<T>(
             string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
         {
@@ -822,6 +849,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public Result<string> TryAcquireLease(string containerName, string blobName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -862,16 +890,19 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public bool TryReleaseLease(string containerName, string blobName, string leaseId)
         {
             return TryLeaseAction(containerName, blobName, LeaseAction.Release, leaseId);
         }
 
+        /// <remarks></remarks>
         public bool TryRenewLease(string containerName, string blobName, string leaseId)
         {
             return TryLeaseAction(containerName, blobName, LeaseAction.Renew, leaseId);
         }
 
+        /// <remarks></remarks>
         private bool TryLeaseAction(string containerName, string blobName, LeaseAction action, string leaseId = null)
         {
             var container = _blobStorage.GetContainerReference(containerName);

@@ -83,13 +83,13 @@ namespace Lokad.Cloud.Storage
             _provider.Insert(_tableName, new []{entity});
         }
 
-        /// <seealso cref="ITableStorageProvider.Update{T}(string, IEnumerable{CloudEntity{T}})"/>
+        /// <remarks></remarks>
         public void Update(IEnumerable<CloudEntity<T>> entities)
         {
             _provider.Update(_tableName, entities);
         }
 
-        /// <seealso cref="ITableStorageProvider.Update{T}(string, IEnumerable{CloudEntity{T}})"/>
+        /// <remarks></remarks>
         public void Update(CloudEntity<T> entity)
         {
             _provider.Update(_tableName, new [] {entity});

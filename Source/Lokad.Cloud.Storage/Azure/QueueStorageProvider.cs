@@ -112,11 +112,13 @@ namespace Lokad.Cloud.Storage.Azure
             AbandonRange(_inProcessMessages.Keys.ToArray());
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> List(string prefix)
         {
             return _queueStorage.ListQueues(prefix).Select(queue => queue.Name);
         }
 
+        /// <remarks></remarks>
         public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials)
         {
             var timestamp = _countGetMessage.Open();
@@ -281,11 +283,13 @@ namespace Lokad.Cloud.Storage.Azure
             return messages;
         }
 
+        /// <remarks></remarks>
         public void Put<T>(string queueName, T message)
         {
             PutRange(queueName, new[] { message });
         }
 
+        /// <remarks></remarks>
         public void PutRange<T>(string queueName, IEnumerable<T> messages)
         {
             var queue = _queueStorage.GetQueueReference(queueName);
@@ -349,11 +353,13 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         void DeleteOverflowingMessages(string queueName)
         {
             _blobStorage.DeleteAllBlobs(OverflowingMessagesContainerName, queueName);
         }
 
+        /// <remarks></remarks>
         public void Clear(string queueName)
         {
             try
@@ -375,11 +381,13 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public bool Delete<T>(T message)
         {
             return DeleteRange(new[] { message }) > 0;
         }
 
+        /// <remarks></remarks>
         public int DeleteRange<T>(IEnumerable<T> messages)
         {
             int deletionCount = 0;
@@ -444,11 +452,13 @@ namespace Lokad.Cloud.Storage.Azure
             return deletionCount;
         }
 
+        /// <remarks></remarks>
         public bool Abandon<T>(T message)
         {
             return AbandonRange(new[] { message }) > 0;
         }
 
+        /// <remarks></remarks>
         public int AbandonRange<T>(IEnumerable<T> messages)
         {
             int abandonCount = 0;
@@ -534,6 +544,7 @@ namespace Lokad.Cloud.Storage.Azure
             return abandonCount;
         }
 
+        /// <remarks></remarks>
         public bool ResumeLater<T>(T message)
         {
             string queueName;
@@ -554,16 +565,19 @@ namespace Lokad.Cloud.Storage.Azure
             return Delete(message);
         }
 
+        /// <remarks></remarks>
         public int ResumeLaterRange<T>(IEnumerable<T> messages)
         {
             return messages.Count(ResumeLater);
         }
 
+        /// <remarks></remarks>
         public void Persist<T>(T message, string storeName, string reason)
         {
             PersistRange(new[] { message }, storeName, reason);
         }
 
+        /// <remarks></remarks>
         public void PersistRange<T>(IEnumerable<T> messages, string storeName, string reason)
         {
             foreach (var message in messages)
@@ -598,12 +612,14 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        /// <remarks></remarks>
         public IEnumerable<string> ListPersisted(string storeName)
         {
             var blobPrefix = PersistedMessageBlobName.GetPrefix(storeName);
             return _blobStorage.ListBlobNames(blobPrefix).Select(blobReference => blobReference.Key);
         }
 
+        /// <remarks></remarks>
         public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
         {
             // 1. GET PERSISTED MESSAGE BLOB
@@ -665,6 +681,7 @@ namespace Lokad.Cloud.Storage.Azure
                 };
         }
 
+        /// <remarks></remarks>
         public void DeletePersisted(string storeName, string key)
         {
             // 1. GET PERSISTED MESSAGE BLOB
@@ -691,6 +708,7 @@ namespace Lokad.Cloud.Storage.Azure
             _blobStorage.DeleteBlobIfExist(blobReference);
         }
 
+        /// <remarks></remarks>
         public void RestorePersisted(string storeName, string key)
         {
             // 1. GET PERSISTED MESSAGE BLOB

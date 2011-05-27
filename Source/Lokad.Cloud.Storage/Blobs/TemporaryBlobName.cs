@@ -12,7 +12,7 @@ namespace Lokad.Cloud.Storage
     /// Reference to a unique blob with a fixed limited lifespan.
     /// </summary>
     /// <remarks>
-    /// Used in conjunction with the Gargage Collector service. Use as
+    /// Used in conjunction with the Garbage Collector service. Use as
     /// base class for custom temporary blobs with additional attributes, or use
     /// the method 
     /// <see cref="GetNew(System.DateTimeOffset)"/> to instantiate a new instance
@@ -22,6 +22,7 @@ namespace Lokad.Cloud.Storage
     [Serializable, DataContract]
     public class TemporaryBlobName<T> : BlobName<T>
     {
+        /// <summary>Name of the container for the temporary blobs.</summary>
         public const string DefaultContainerName = "lokad-cloud-temporary";
 
         /// <summary>
@@ -32,7 +33,10 @@ namespace Lokad.Cloud.Storage
             get { return DefaultContainerName; }
         }
 
+        /// <summary>Define the time when the object becomes eligible for deletion.</summary>
         [Rank(0), DataMember] public readonly DateTimeOffset Expiration;
+
+        /// <summary>Suffix, provided to avoid collision between temporary blob name.</summary>
         [Rank(1), DataMember] public readonly string Suffix;
 
         /// <summary>

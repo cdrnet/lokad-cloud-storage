@@ -18,6 +18,7 @@ namespace Lokad.Cloud.Storage
         /// <typeparam name="T">Type of the messages.</typeparam>
         /// <param name="queueName">Identifier of the queue to be pulled.</param>
         /// <param name="count">Maximal number of messages to be retrieved.</param>
+        /// <param name="provider">Provider for the queue storage.</param>
         /// <returns>Enumeration of messages, possibly empty.</returns>
         public static IEnumerable<T> Get<T>(this IQueueStorageProvider provider, string queueName, int count)
         {
@@ -26,6 +27,7 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Gets messages from a queue with a visibility timeout of 2 hours.</summary>
         /// <typeparam name="T">Type of the messages.</typeparam>
+        /// <param name="provider">Queue storage provider.</param>
         /// <param name="queueName">Identifier of the queue to be pulled.</param>
         /// <param name="count">Maximal number of messages to be retrieved.</param>
         /// <param name="maxProcessingTrials">

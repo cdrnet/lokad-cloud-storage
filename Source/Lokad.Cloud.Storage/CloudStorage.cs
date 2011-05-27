@@ -12,13 +12,16 @@ using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage
 {
+    /// <summary>Helper class to get access to cloud storage providers.</summary>
     public static class CloudStorage
     {
+        /// <remarks></remarks>
         public static CloudStorageBuilder ForAzureAccount(CloudStorageAccount storageAccount)
         {
             return new AzureCloudStorageBuilder(storageAccount);
         }
 
+        /// <remarks></remarks>
         public static CloudStorageBuilder ForAzureConnectionString(string connectionString)
         {
             CloudStorageAccount storageAccount;
@@ -30,21 +33,25 @@ namespace Lokad.Cloud.Storage
             return new AzureCloudStorageBuilder(storageAccount);
         }
 
+        /// <remarks></remarks>
         public static CloudStorageBuilder ForAzureAccountAndKey(string accountName, string key, bool useHttps = true)
         {
             return new AzureCloudStorageBuilder(new CloudStorageAccount(new StorageCredentialsAccountAndKey(accountName, key), useHttps));
         }
 
+        /// <remarks></remarks>
         public static CloudStorageBuilder ForDevelopmentStorage()
         {
             return new AzureCloudStorageBuilder(CloudStorageAccount.DevelopmentStorageAccount);
         }
 
+        /// <remarks></remarks>
         public static CloudStorageBuilder ForInMemoryStorage()
         {
             return new InMemoryStorageBuilder();
         }
 
+        /// <remarks></remarks>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public abstract class CloudStorageBuilder
         {
@@ -57,6 +64,7 @@ namespace Lokad.Cloud.Storage
             /// <remarks>Can be null if not needed</remarks>
             protected IRuntimeFinalizer RuntimeFinalizer { get; private set; }
 
+            /// <remarks></remarks>
             protected CloudStorageBuilder()
             {
                 // defaults
@@ -90,10 +98,16 @@ namespace Lokad.Cloud.Storage
                 return this;
             }
 
+            /// <remarks></remarks>
             public abstract IBlobStorageProvider BuildBlobStorage();
+
+            /// <remarks></remarks>
             public abstract ITableStorageProvider BuildTableStorage();
+
+            /// <remarks></remarks>
             public abstract IQueueStorageProvider BuildQueueStorage();
 
+            /// <remarks></remarks>
             public CloudStorageProviders BuildStorageProviders()
             {
                 return new CloudStorageProviders(

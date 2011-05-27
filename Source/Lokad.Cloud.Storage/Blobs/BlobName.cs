@@ -13,10 +13,6 @@ namespace Lokad.Cloud.Storage
     /// strongly typed content.
     /// </summary>
     /// <typeparam name="T">Type contained in the blob.</typeparam>
-    /// <remarks>
-    /// The type <c>T</c> is handy to strengthen the 
-    /// <see cref="StorageExtensions"/>.
-    /// </remarks>
     [Serializable, DataContract]
     public abstract class BlobName<T> : UntypedBlobName
     {
