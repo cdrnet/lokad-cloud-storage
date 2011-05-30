@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Autofac;
-using Autofac.Builder;
 using Autofac.Configuration;
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Runtime;
@@ -22,7 +21,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
     {
         readonly RuntimeProviders _runtimeProviders;
         readonly IRuntimeFinalizer _runtimeFinalizer;
-        readonly Storage.Shared.Logging.ILog _log;
+        readonly ILog _log;
 
         readonly IServiceMonitor _monitoring;
         readonly DiagnosticsAcquisition _diagnostics;
@@ -60,18 +59,25 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             // hook on the current thread to force shut down
             _executeThread = Thread.CurrentThread;
 
-            _scheduler = new Scheduler(LoadServices<CloudService>, RunService);
-
             try
             {
-                foreach (var action in _scheduler.Schedule())
+                List<CloudService> services;
+                using (var applicationContainer = LoadAndBuildApplication(out services))
                 {
-                    if (_isStopRequested)
-                    {
-                        break;
-                    }
+                    // Give the application a chance to override external diagnostics sources
+                    applicationContainer.InjectProperties(_diagnostics);
+                    _applicationFinalizer = applicationContainer.ResolveOptional<IRuntimeFinalizer>();
+                    _scheduler = new Scheduler(services, RunService);
 
-                    action();
+                    foreach (var action in _scheduler.Schedule())
+                    {
+                        if (_isStopRequested)
+                        {
+                            break;
+                        }
+
+                        action();
+                    }
                 }
             }
             catch (ThreadInterruptedException)
@@ -121,6 +127,21 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             }
         }
 
+        /// <summary>
+        /// Run a scheduled service
+        /// </summary>
+        ServiceExecutionFeedback RunService(CloudService service)
+        {
+            ServiceExecutionFeedback feedback;
+
+            using (_monitoring.Monitor(service))
+            {
+                feedback = service.Start();
+            }
+
+            return feedback;
+        }
+
         /// <summary>The name of the service that is being executed, if any, <c>null</c> otherwise.</summary>
         private string GetNameOfServiceInExecution()
         {
@@ -157,7 +178,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         /// <summary>
         /// Load and get all initialized service instances using the provided IoC container.
         /// </summary>
-        IEnumerable<T> LoadServices<T>()
+        IContainer LoadAndBuildApplication(out List<CloudService> services)
         {
             var applicationBuilder = new ContainerBuilder();
             applicationBuilder.RegisterModule(new CloudModule());
@@ -171,13 +192,20 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             var config = loader.LoadConfiguration();
             if (config.HasValue)
             {
-                ApplyConfiguration(config.Value, applicationBuilder);
+                // HACK: need to copy settings locally first
+                // HACK: hard-code string for local storage name
+                const string fileName = "lokad.cloud.clientapp.config";
+                const string resourceName = "LokadCloudStorage";
+
+                var pathToFile = Path.Combine(CloudEnvironment.GetLocalStoragePath(resourceName), fileName);
+                File.WriteAllBytes(pathToFile, config.Value);
+                applicationBuilder.RegisterModule(new ConfigurationSettingsReader("autofac", pathToFile));
             }
 
             // Look for all cloud services currently loaded in the AppDomain
             var serviceTypes = AppDomain.CurrentDomain.GetAssemblies()
                 .Select(a => a.GetExportedTypes()).SelectMany(x => x)
-                .Where(t => t.IsSubclassOf(typeof (T)) && !t.IsAbstract && !t.IsGenericType)
+                .Where(t => t.IsSubclassOf(typeof (CloudService)) && !t.IsAbstract && !t.IsGenericType)
                 .ToList();
 
             // Register the cloud services in the IoC Builder so we can support dependencies
@@ -203,28 +231,11 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             }
 
             var applicationContainer = applicationBuilder.Build();
-            _applicationFinalizer = applicationContainer.ResolveOptional<IRuntimeFinalizer>();
-
-            // Give the application a chance to override external diagnostics sources
-            applicationContainer.InjectProperties(_diagnostics);
 
             // Instanciate and return all the cloud services
-            return serviceTypes.Select(type => (T)applicationContainer.Resolve(type));
-        }
+            services = serviceTypes.Select(type => (CloudService)applicationContainer.Resolve(type)).ToList();
 
-        /// <summary>
-        /// Run a scheduled service
-        /// </summary>
-        ServiceExecutionFeedback RunService(CloudService service)
-        {
-            ServiceExecutionFeedback feedback;
-
-            using (_monitoring.Monitor(service))
-            {
-                feedback = service.Start();
-            }
-
-            return feedback;
+            return applicationContainer;
         }
 
         /// <summary>
@@ -248,26 +259,6 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
                 // logging is likely to fail as well in this case
                 // Suppress exception, can't do anything (will be recycled anyway)
             }
-        }
-
-        /// <summary>
-        /// Apply the configuration provided in text as raw bytes to the provided IoC
-        /// container.
-        /// </summary>
-        static void ApplyConfiguration(byte[] config, ContainerBuilder applicationBuilder)
-        {
-            // HACK: need to copy settings locally first
-            // HACK: hard-code string for local storage name
-            const string fileName = "lokad.cloud.clientapp.config";
-            const string resourceName = "LokadCloudStorage";
-
-            var pathToFile = Path.Combine(
-                CloudEnvironment.GetLocalStoragePath(resourceName),
-                fileName);
-
-            File.WriteAllBytes(pathToFile, config);
-
-            applicationBuilder.RegisterModule(new ConfigurationSettingsReader("autofac", pathToFile));
         }
     }
 }

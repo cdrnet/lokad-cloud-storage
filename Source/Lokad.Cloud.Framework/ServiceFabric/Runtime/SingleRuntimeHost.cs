@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Security;
 using System.Threading;
 using Autofac;
-using Autofac.Builder;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared.Logging;
 
@@ -106,7 +105,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 
             using (var runtimeContainer = runtimeBuilder.Build())
             {
-                var log = runtimeContainer.Resolve<Storage.Shared.Logging.ILog>();
+                var log = runtimeContainer.Resolve<ILog>();
 
                 _runtime = null;
                 try
