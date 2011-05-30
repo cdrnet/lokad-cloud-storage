@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cloud.Provisioning.AzureManagement;
@@ -57,24 +58,33 @@ namespace Lokad.Cloud.Provisioning
             // Retry once in case it will fail, or, more importantly, if it has already failed (the last time).
             previousTask.ContinueWith(task =>
             {
-                if (task.IsFaulted || (task.IsCanceled && !cancellationToken.IsCancellationRequested))
+                try
                 {
-                    // Make sure the task doesn't throw at finalization
-                    task.Exception.GetBaseException();
+                    if (task.IsFaulted || (task.IsCanceled && !cancellationToken.IsCancellationRequested))
+                    {
+                        // Make sure the task doesn't throw at finalization
+                        task.Exception.GetBaseException();
 
-                    discovery.DoDiscoverDeploymentAsync(DeploymentPrivateId, completionSource, cancellationToken);
-                    return;
+                        discovery.DoDiscoverDeploymentAsync(DeploymentPrivateId, completionSource, cancellationToken);
+                        return;
+                    }
+
+                    if (task.IsCanceled)
+                    {
+                        completionSource.TrySetCanceled();
+                        return;
+                    }
+
+                    completionSource.TrySetResult(task.Result);
                 }
-
-                if (task.IsCanceled)
+                catch (Exception exception)
                 {
-                    completionSource.TrySetCanceled();
-                    return;
+                    // this should never happen, so forward but do not try to handle/retry here.
+                    completionSource.TrySetException(exception);
                 }
-
-                completionSource.TrySetResult(task.Result);
             }, TaskContinuationOptions.ExecuteSynchronously);
 
+            // NOTE: _currentDeployment may not be available yet in other continuations. This is ok.
             completionSource.Task.ContinueWith(t =>
             {
                 lock (_currentDeploymentDiscoveryLock)

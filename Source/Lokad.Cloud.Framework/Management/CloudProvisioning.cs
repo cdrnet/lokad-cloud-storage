@@ -66,24 +66,31 @@ namespace Lokad.Cloud.Management
 
             var task = _provisioning.GetCurrentLokadCloudWorkerCount(_currentDeployment, cancellationToken);
 
-            // TODO (ruegg, 2011-05-24): Consider to move out (not strictly a concern of provisioning)
+            // TODO (ruegg, 2011-05-30): Replace with system events
             task.ContinueWith(t =>
                 {
-                    if (t.IsCompleted)
+                    try
                     {
-                        // TODO (ruegg, 2011-05-24): Drop
-                        _log.DebugFormat("Provisioning: Getting the current worker instance count succeeded ({0}s).", DateTimeOffset.UtcNow - started);
+                        if (t.IsCompleted)
+                        {
+                            // TODO (ruegg, 2011-05-24): Drop
+                            _log.DebugFormat("Provisioning: Getting the current worker instance count succeeded ({0}s).", DateTimeOffset.UtcNow - started);
+                        }
+                        else if (t.IsFaulted)
+                        {
+                            if (ProvisioningErrorHandling.IsTransientError(t.Exception))
+                            {
+                                _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Getting the current worker instance count failed with a transient error.");
+                            }
+                            else
+                            {
+                                _log.WarnFormat(task.Exception.GetBaseException(), "Provisioning: Getting the current worker instance count failed with a permanent error.");
+                            }
+                        }
                     }
-                    else if (t.IsFaulted)
+                    catch (Exception)
                     {
-                        if (ProvisioningErrorHandling.IsTransientError(t.Exception))
-                        {
-                            _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Getting the current worker instance count failed with a transient error.");
-                        }
-                        else
-                        {
-                            _log.WarnFormat(task.Exception.GetBaseException(), "Provisioning: Getting the current worker instance count failed with a permanent error.");
-                        }
+                        // We don't really care, it's only logging that failed
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
 
@@ -106,36 +113,43 @@ namespace Lokad.Cloud.Management
 
             var task = _provisioning.UpdateCurrentLokadCloudWorkerCount(_currentDeployment, count, cancellationToken);
 
-            // TODO (ruegg, 2011-05-24): Consider to move out (not strictly a concern of provisioning)
+            // TODO (ruegg, 2011-05-30): Replace with system events
             task.ContinueWith(t =>
                 {
-                    if (t.IsCompleted)
+                    try
                     {
-                        // TODO (ruegg, 2011-05-24): Drop
-                        _log.DebugFormat("Provisioning: Updated the worker instance count to {0} ({1}s).", count, DateTimeOffset.UtcNow - started);
-                    }
-                    else if (t.IsFaulted)
-                    {
-                        HttpStatusCode httpStatus;
-                        if (ProvisioningErrorHandling.TryGetHttpStatusCode(t.Exception, out httpStatus))
+                        if (t.IsCompleted)
                         {
-                            if (httpStatus == HttpStatusCode.Conflict)
+                            // TODO (ruegg, 2011-05-24): Drop
+                            _log.DebugFormat("Provisioning: Updated the worker instance count to {0} ({1}s).", count, DateTimeOffset.UtcNow - started);
+                        }
+                        else if (t.IsFaulted)
+                        {
+                            HttpStatusCode httpStatus;
+                            if (ProvisioningErrorHandling.TryGetHttpStatusCode(t.Exception, out httpStatus))
                             {
-                                _log.DebugFormat("Provisioning: Updating the worker instance count to {0} failed because another deployment update is already in progress.", count);
+                                if (httpStatus == HttpStatusCode.Conflict)
+                                {
+                                    _log.DebugFormat("Provisioning: Updating the worker instance count to {0} failed because another deployment update is already in progress.", count);
+                                }
+                                else
+                                {
+                                    _log.DebugFormat("Provisioning: Updating the worker instance count failed with HTTP Status {0} ({1}).", httpStatus, (int)httpStatus);
+                                }
+                            }
+                            else if (ProvisioningErrorHandling.IsTransientError(t.Exception))
+                            {
+                                _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Updating the worker instance count failed with a transient error.");
                             }
                             else
                             {
-                                _log.DebugFormat("Provisioning: Updating the worker instance count failed with HTTP Status {0} ({1}).", httpStatus, (int)httpStatus);
+                                _log.WarnFormat(task.Exception.GetBaseException(), "Provisioning: Updating the worker instance count failed with a permanent error.");
                             }
                         }
-                        else if (ProvisioningErrorHandling.IsTransientError(t.Exception))
-                        {
-                            _log.DebugFormat(task.Exception.GetBaseException(), "Provisioning: Updating the worker instance count failed with a transient error.");
-                        }
-                        else
-                        {
-                            _log.WarnFormat(task.Exception.GetBaseException(), "Provisioning: Updating the worker instance count failed with a permanent error.");
-                        }
+                    }
+                    catch (Exception)
+                    {
+                        // We don't really care, it's only logging that failed
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
 
