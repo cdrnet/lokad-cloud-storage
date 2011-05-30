@@ -9,11 +9,11 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
+using Lokad.Cloud.Storage.Instrumentation;
+using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Cloud.Storage.SystemEvents;
-using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -43,7 +43,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IRuntimeFinalizer _runtimeFinalizer;
         private readonly AzurePolicies _policies;
 
-        readonly ICloudStorageSystemObserver _observer;
+        readonly ICloudStorageObserver _observer;
         readonly ILog _log;
 
         // Instrumentation
@@ -63,24 +63,23 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="blobStorage">Not null.</param>
         /// <param name="queueStorage">Not null.</param>
         /// <param name="serializer">Not null.</param>
-        /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper
-        /// scenario).</param>
-        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
+        /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper scenario).</param>
+        /// <param name="observer">Can be <see langword="null"/>.</param>
         /// <param name="log">Optional log</param>
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
             IDataSerializer serializer,
-            ICloudStorageSystemObserver systemObserver,
-            IRuntimeFinalizer runtimeFinalizer,
+            ICloudStorageObserver observer = null,
+            IRuntimeFinalizer runtimeFinalizer = null,
             ILog log = null)
         {
-            _policies = new AzurePolicies(systemObserver);
+            _policies = new AzurePolicies(observer);
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
             _serializer = serializer;
             _runtimeFinalizer = runtimeFinalizer;
-            _observer = systemObserver;
+            _observer = observer;
             _log = log;
 
             // finalizer can be null in a strict O/C mapper scenario

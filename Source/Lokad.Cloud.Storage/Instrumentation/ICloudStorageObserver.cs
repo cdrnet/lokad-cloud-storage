@@ -3,11 +3,11 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Storage.SystemEvents;
+using Lokad.Cloud.Storage.Instrumentation.Events;
 
-namespace Lokad.Cloud.Storage.SystemObservers
+namespace Lokad.Cloud.Storage.Instrumentation
 {
-    public interface ICloudStorageSystemObserver
+    public interface ICloudStorageObserver
     {
         void Notify(ICloudStorageEvent @event);
     }

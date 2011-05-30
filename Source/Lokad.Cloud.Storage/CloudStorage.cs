@@ -6,9 +6,9 @@
 using System;
 using System.ComponentModel;
 using System.Net;
+using Lokad.Cloud.Storage.Instrumentation;
+using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Cloud.Storage.SystemEvents;
-using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -61,7 +61,7 @@ namespace Lokad.Cloud.Storage
             protected IDataSerializer DataSerializer { get; private set; }
 
             /// <remarks>Can be null if not needed</remarks>
-            protected ICloudStorageSystemObserver SystemObserver { get; set; }
+            protected ICloudStorageObserver Observer { get; set; }
 
             /// <remarks>Can be null if not needed</remarks>
             protected Shared.Logging.ILog Log { get; private set; }
@@ -97,18 +97,18 @@ namespace Lokad.Cloud.Storage
             /// <summary>
             /// Optionally provide a log provider.
             /// </summary>
-            public CloudStorageBuilder WithSystemObserver(ICloudStorageSystemObserver systemObserver)
+            public CloudStorageBuilder WithObserver(ICloudStorageObserver observer)
             {
-                SystemObserver = systemObserver;
+                Observer = observer;
                 return this;
             }
 
             /// <summary>
             /// Optionally provide a log provider.
             /// </summary>
-            public CloudStorageBuilder WithSystemObserver(params IObserver<ICloudStorageEvent>[] observers)
+            public CloudStorageBuilder WithObserver(params IObserver<ICloudStorageEvent>[] observers)
             {
-                SystemObserver = new CloudStorageSystemObserver(observers);
+                Observer = new CloudStorageObserver(observers);
                 return this;
             }
 
@@ -188,7 +188,7 @@ namespace Lokad.Cloud.Storage
             return new Azure.BlobStorageProvider(
                 BlobClient(),
                 DataSerializer,
-                SystemObserver,
+                Observer,
                 Log);
         }
 
@@ -197,7 +197,7 @@ namespace Lokad.Cloud.Storage
             return new Azure.TableStorageProvider(
                 TableClient(),
                 DataSerializer,
-                SystemObserver);
+                Observer);
         }
 
         public override IQueueStorageProvider BuildQueueStorage()
@@ -206,14 +206,14 @@ namespace Lokad.Cloud.Storage
                 QueueClient(),
                 BuildBlobStorage(),
                 DataSerializer,
-                SystemObserver,
+                Observer,
                 RuntimeFinalizer,
                 Log);
         }
 
         CloudBlobClient BlobClient()
         {
-            var policies = new Azure.AzurePolicies(SystemObserver);
+            var policies = new Azure.AzurePolicies(Observer);
             var blobClient = _storageAccount.CreateCloudBlobClient();
             blobClient.RetryPolicy = policies.ForAzureStorageClient;
             return blobClient;
@@ -221,7 +221,7 @@ namespace Lokad.Cloud.Storage
 
         CloudTableClient TableClient()
         {
-            var policies = new Azure.AzurePolicies(SystemObserver);
+            var policies = new Azure.AzurePolicies(Observer);
             var tableClient = _storageAccount.CreateCloudTableClient();
             tableClient.RetryPolicy = policies.ForAzureStorageClient;
             return tableClient;
@@ -229,7 +229,7 @@ namespace Lokad.Cloud.Storage
 
         CloudQueueClient QueueClient()
         {
-            var policies = new Azure.AzurePolicies(SystemObserver);
+            var policies = new Azure.AzurePolicies(Observer);
             var queueClient = _storageAccount.CreateCloudQueueClient();
             queueClient.RetryPolicy = policies.ForAzureStorageClient;
             return queueClient;

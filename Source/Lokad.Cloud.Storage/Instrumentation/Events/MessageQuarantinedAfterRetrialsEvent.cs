@@ -6,7 +6,7 @@
 using System;
 using Microsoft.WindowsAzure.StorageClient;
 
-namespace Lokad.Cloud.Storage.SystemEvents
+namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
     /// <summary>
     /// Raised whenever a message is quarantined because it failed to be processed multiple times.

@@ -5,7 +5,7 @@
 
 using System;
 
-namespace Lokad.Cloud.Storage.SystemEvents
+namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
     /// <summary>
     /// Raised whenever a storage operation is retried.

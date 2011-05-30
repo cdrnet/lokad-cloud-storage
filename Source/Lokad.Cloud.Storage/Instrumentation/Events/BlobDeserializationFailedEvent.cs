@@ -5,7 +5,7 @@
 
 using System;
 
-namespace Lokad.Cloud.Storage.SystemEvents
+namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
     /// <summary>
     /// Raised whenever a blob is ignored because it could not be deserialized.

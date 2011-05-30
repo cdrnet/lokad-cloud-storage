@@ -3,11 +3,11 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Provisioning.SystemEvents;
+using Lokad.Cloud.Provisioning.Instrumentation.Events;
 
-namespace Lokad.Cloud.Provisioning.SystemObservers
+namespace Lokad.Cloud.Provisioning.Instrumentation
 {
-    public interface ICloudProvisioningSystemObserver
+    public interface ICloudProvisioningObserver
     {
         void Notify(ICloudProvisioningEvent @event);
     }

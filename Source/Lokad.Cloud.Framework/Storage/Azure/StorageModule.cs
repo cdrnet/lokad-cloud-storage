@@ -8,14 +8,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Autofac;
-
-using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
+using Lokad.Cloud.Storage.Instrumentation;
+using Lokad.Cloud.Storage.Instrumentation.Events;
+using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Logging;
-using Lokad.Cloud.Storage.SystemEvents;
-using Lokad.Cloud.Storage.SystemObservers;
-
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -60,7 +58,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
-                .WithSystemObserver(c.Resolve<ICloudStorageSystemObserver>())
+                .WithObserver(c.Resolve<ICloudStorageObserver>())
                 .WithLog(c.ResolveOptional<ILog>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .BuildRuntimeProviders();
@@ -78,7 +76,7 @@ namespace Lokad.Cloud.Storage.Azure
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
-                .WithSystemObserver(c.Resolve<ICloudStorageSystemObserver>())
+                .WithObserver(c.Resolve<ICloudStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .WithLog(c.ResolveOptional<ILog>())
                 .BuildStorageProviders();
@@ -89,7 +87,7 @@ namespace Lokad.Cloud.Storage.Azure
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
-                .WithSystemObserver(c.Resolve<ICloudStorageSystemObserver>())
+                .WithObserver(c.Resolve<ICloudStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .WithLog(c.ResolveOptional<ILog>())
                 .BuildTableStorage();
@@ -100,7 +98,7 @@ namespace Lokad.Cloud.Storage.Azure
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
-                .WithSystemObserver(c.Resolve<ICloudStorageSystemObserver>())
+                .WithObserver(c.Resolve<ICloudStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .WithLog(c.ResolveOptional<ILog>())
                 .BuildQueueStorage();
@@ -111,15 +109,15 @@ namespace Lokad.Cloud.Storage.Azure
             return CloudStorage
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
-                .WithSystemObserver(c.Resolve<ICloudStorageSystemObserver>())
+                .WithObserver(c.Resolve<ICloudStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .WithLog(c.ResolveOptional<ILog>())
                 .BuildBlobStorage();
         }
 
-        static ICloudStorageSystemObserver Observer(IComponentContext c)
+        static ICloudStorageObserver Observer(IComponentContext c)
         {
-            return new CloudStorageSystemObserver(c.Resolve<IEnumerable<IObserver<ICloudStorageEvent>>>().ToArray());
+            return new CloudStorageObserver(c.Resolve<IEnumerable<IObserver<ICloudStorageEvent>>>().ToArray());
         }
     }
 }

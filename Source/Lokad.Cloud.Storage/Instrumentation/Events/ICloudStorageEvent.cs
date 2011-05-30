@@ -3,7 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
-namespace Lokad.Cloud.Storage.SystemEvents
+namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
     public interface ICloudStorageEvent
     {

@@ -12,12 +12,12 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Xml.Linq;
+using Lokad.Cloud.Storage.Instrumentation;
+using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared.Threading;
-using Lokad.Cloud.Storage.SystemEvents;
-using Lokad.Cloud.Storage.SystemObservers;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
 
@@ -39,7 +39,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _serializer;
         readonly ILog _log;
-        readonly ICloudStorageSystemObserver _observer;
+        readonly ICloudStorageObserver _observer;
         readonly AzurePolicies _policies;
 
         // Instrumentation
@@ -50,14 +50,14 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDeleteBlob;
 
         /// <summary>IoC constructor.</summary>
-        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageSystemObserver systemObserver, ILog log = null)
+        /// <param name="observer">Can be <see langword="null"/>.</param>
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageObserver observer = null, ILog log = null)
         {
-            _policies = new AzurePolicies(systemObserver);
+            _policies = new AzurePolicies(observer);
             _blobStorage = blobStorage;
             _serializer = serializer;
             _log = log;
-            _observer = systemObserver;
+            _observer = observer;
 
             // Instrumentation
             ExecutionCounters.Default.RegisterRange(new[]

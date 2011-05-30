@@ -10,11 +10,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Web;
-
+using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.SystemObservers;
-
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -45,10 +43,10 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ExecutionCounter _countDelete;
 
         /// <summary>IoC constructor.</summary>
-        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
-        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer, ICloudStorageSystemObserver systemObserver)
+        /// <param name="observer">Can be <see langword="null"/>.</param>
+        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer, ICloudStorageObserver observer = null)
         {
-            _policies = new AzurePolicies(systemObserver);
+            _policies = new AzurePolicies(observer);
             _tableStorage = tableStorage;
             _serializer = serializer;
 

@@ -8,8 +8,8 @@ using System.Data.Services.Client;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
-using Lokad.Cloud.Storage.SystemEvents;
-using Lokad.Cloud.Storage.SystemObservers;
+using Lokad.Cloud.Storage.Instrumentation;
+using Lokad.Cloud.Storage.Instrumentation.Events;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -19,15 +19,15 @@ namespace Lokad.Cloud.Storage.Azure
     /// </summary>
     internal class AzurePolicies
     {
-        private readonly ICloudStorageSystemObserver _systemObserver;
+        private readonly ICloudStorageObserver _observer;
 
         /// <summary>
         /// Static Constructor
         /// </summary>
-        /// <param name="systemObserver">Can be <see langword="null"/>.</param>
-        internal AzurePolicies(ICloudStorageSystemObserver systemObserver)
+        /// <param name="observer">Can be <see langword="null"/>.</param>
+        internal AzurePolicies(ICloudStorageObserver observer)
         {
-            _systemObserver = systemObserver;
+            _observer = observer;
         }
 
         /// <summary>
@@ -48,9 +48,9 @@ namespace Lokad.Cloud.Storage.Azure
 
                     retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
 
-                    if (_systemObserver != null)
+                    if (_observer != null)
                     {
-                        _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval, sequence));
+                        _observer.Notify(new StorageOperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
@@ -85,9 +85,9 @@ namespace Lokad.Cloud.Storage.Azure
                         maxBackoff,
                         minBackoff + ((Math.Pow(2.0, currentRetryCount) - 1.0) * random.Next((int)(deltaBackoff * 0.8), (int)(deltaBackoff * 1.2)))));
 
-                    if (_systemObserver != null)
+                    if (_observer != null)
                     {
-                        _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval, sequence));
+                        _observer.Notify(new StorageOperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
@@ -116,9 +116,9 @@ namespace Lokad.Cloud.Storage.Azure
                     var c = currentRetryCount + 1;
                     retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
 
-                    if (_systemObserver != null)
+                    if (_observer != null)
                     {
-                        _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "TransientServerError", currentRetryCount, retryInterval, sequence));
+                        _observer.Notify(new StorageOperationRetriedEvent(lastException, "TransientServerError", currentRetryCount, retryInterval, sequence));
                     }
 
                     return true;
@@ -143,9 +143,9 @@ namespace Lokad.Cloud.Storage.Azure
                 var c = currentRetryCount + 1;
                 retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
 
-                if (_systemObserver != null)
+                if (_observer != null)
                 {
-                    _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "TransientTableError", currentRetryCount, retryInterval, sequence));
+                    _observer.Notify(new StorageOperationRetriedEvent(lastException, "TransientTableError", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
@@ -171,9 +171,9 @@ namespace Lokad.Cloud.Storage.Azure
                 // linear backoff
                 retryInterval = TimeSpan.FromMilliseconds(100 * currentRetryCount);
 
-                if (_systemObserver != null)
+                if (_observer != null)
                 {
-                    _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "SlowInstantiation", currentRetryCount, retryInterval, sequence));
+                    _observer.Notify(new StorageOperationRetriedEvent(lastException, "SlowInstantiation", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
@@ -198,9 +198,9 @@ namespace Lokad.Cloud.Storage.Azure
                 // no backoff, retry immediately
                 retryInterval = TimeSpan.Zero;
 
-                if (_systemObserver != null)
+                if (_observer != null)
                 {
-                    _systemObserver.Notify(new StorageOperationRetriedEvent(lastException, "NetworkCorruption", currentRetryCount, retryInterval, sequence));
+                    _observer.Notify(new StorageOperationRetriedEvent(lastException, "NetworkCorruption", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
