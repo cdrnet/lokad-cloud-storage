@@ -200,7 +200,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                             if (_observer != null)
                             {
-                                _observer.Notify(new MessageQuarantinedAfterRetrialsEvent(queueName, PoisonedMessagePersistenceStoreName, typeof(T), rawMessage, data));
+                                _observer.Notify(new MessageProcessingFailedQuarantinedEvent(queueName, PoisonedMessagePersistenceStoreName, typeof(T), data));
                             }
 
                             continue;
@@ -247,7 +247,7 @@ namespace Lokad.Cloud.Storage.Azure
                         {
                             var exceptions = new List<Exception> { messageAsT.Error, messageAsWrapper.Error };
                             if (!messageAsEnvelope.IsSuccess) { exceptions.Add(messageAsEnvelope.Error); }
-                            _observer.Notify(new MessageQuarantinedDeserializationFailedEvent(new AggregateException(exceptions), queueName, PoisonedMessagePersistenceStoreName, typeof(T), rawMessage, data));
+                            _observer.Notify(new MessageDeserializationFailedQuarantinedEvent(new AggregateException(exceptions), queueName, PoisonedMessagePersistenceStoreName, typeof(T), data));
                         }
                     }
                     finally

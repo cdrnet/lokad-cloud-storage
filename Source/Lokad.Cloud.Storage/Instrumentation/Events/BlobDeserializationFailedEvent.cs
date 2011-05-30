@@ -13,8 +13,6 @@ namespace Lokad.Cloud.Storage.Instrumentation.Events
     /// </summary>
     public class BlobDeserializationFailedEvent : ICloudStorageEvent
     {
-        // TODO (ruegg, 2011-05-27): Drop properties that we don't actually need in practice
-
         public Exception Exception { get; private set; }
         public string ContainerName { get; private set; }
         public string BlobName { get; private set; }
@@ -28,7 +26,7 @@ namespace Lokad.Cloud.Storage.Instrumentation.Events
 
         public override string ToString()
         {
-            return string.Format("Storage: A blob was retrieved but failed to deserialize. Blob {0} in container {1}. Reason: {2}",
+            return string.Format("Storage: A blob was retrieved but failed to deserialize. The blob was ignored. Blob {0} in container {1}. Reason: {2}",
                 BlobName, ContainerName, Exception != null ? Exception.Message : "unknown");
         }
     }

@@ -4,29 +4,24 @@
 #endregion
 
 using System;
-using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
     /// <summary>
     /// Raised whenever a message is quarantined because it failed to be processed multiple times.
     /// </summary>
-    public class MessageQuarantinedAfterRetrialsEvent : ICloudStorageEvent
+    public class MessageProcessingFailedQuarantinedEvent : ICloudStorageEvent
     {
-        // TODO (ruegg, 2011-05-27): Drop properties that we don't actually need in practice
-
         public string QueueName { get; private set; }
         public string QuarantineStoreName { get; private set; }
         public Type MessageType { get; private set; }
-        public CloudQueueMessage RawMessage { get; private set; }
         public byte[] Data { get; private set; }
 
-        public MessageQuarantinedAfterRetrialsEvent(string queueName, string storeName, Type messageType, CloudQueueMessage rawMessage, byte[] data)
+        public MessageProcessingFailedQuarantinedEvent(string queueName, string storeName, Type messageType, byte[] data)
         {
             QueueName = queueName;
             QuarantineStoreName = storeName;
             MessageType = messageType;
-            RawMessage = rawMessage;
             Data = data;
         }
 

@@ -70,8 +70,8 @@
     <Compile Include="CloudStorageProviders.cs" />
     <Compile Include="DataSerializerExtensions.cs" />
     <Compile Include="Instrumentation\Events\BlobDeserializationFailedEvent.cs" />
-    <Compile Include="Instrumentation\Events\MessageQuarantinedDeserializationFailedEvent.cs" />
-    <Compile Include="Instrumentation\Events\MessageQuarantinedAfterRetrialsEvent.cs" />
+    <Compile Include="Instrumentation\Events\MessageDeserializationFailedQuarantinedEvent.cs" />
+    <Compile Include="Instrumentation\Events\MessageProcessingFailedQuarantinedEvent.cs" />
     <Compile Include="Instrumentation\ICloudStorageObserver.cs" />
     <Compile Include="Instrumentation\Events\StorageOperationRetriedEvent.cs" />
     <Compile Include="Instrumentation\CloudStorageObserver.cs" />
