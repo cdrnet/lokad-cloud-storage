@@ -64,9 +64,6 @@ namespace Lokad.Cloud.Storage
             protected ICloudStorageObserver Observer { get; set; }
 
             /// <remarks>Can be null if not needed</remarks>
-            protected Shared.Logging.ILog Log { get; private set; }
-
-            /// <remarks>Can be null if not needed</remarks>
             protected IRuntimeFinalizer RuntimeFinalizer { get; private set; }
 
             /// <remarks></remarks>
@@ -82,15 +79,6 @@ namespace Lokad.Cloud.Storage
             public CloudStorageBuilder WithDataSerializer(IDataSerializer dataSerializer)
             {
                 DataSerializer = dataSerializer;
-                return this;
-            }
-
-            /// <summary>
-            /// Optionally provide a log provider.
-            /// </summary>
-            public CloudStorageBuilder WithLog(Shared.Logging.ILog log)
-            {
-                Log = log;
                 return this;
             }
 
@@ -137,8 +125,7 @@ namespace Lokad.Cloud.Storage
                     BuildBlobStorage(),
                     BuildQueueStorage(),
                     BuildTableStorage(),
-                    RuntimeFinalizer,
-                    Log);
+                    RuntimeFinalizer);
             }
         }
     }
@@ -188,8 +175,7 @@ namespace Lokad.Cloud.Storage
             return new Azure.BlobStorageProvider(
                 BlobClient(),
                 DataSerializer,
-                Observer,
-                Log);
+                Observer);
         }
 
         public override ITableStorageProvider BuildTableStorage()
@@ -207,8 +193,7 @@ namespace Lokad.Cloud.Storage
                 BuildBlobStorage(),
                 DataSerializer,
                 Observer,
-                RuntimeFinalizer,
-                Log);
+                RuntimeFinalizer);
         }
 
         CloudBlobClient BlobClient()

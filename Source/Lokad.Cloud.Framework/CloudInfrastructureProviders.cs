@@ -6,6 +6,7 @@
 using Lokad.Cloud.Management;
 using Lokad.Cloud.ServiceFabric;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud
 {
@@ -20,26 +21,31 @@ namespace Lokad.Cloud
         /// <summary>Abstracts the Management API.</summary>
         public IProvisioningProvider Provisioning { get; set; }
 
+        public ILog Log { get; set; }
+
         /// <summary>IoC constructor.</summary>
         public CloudInfrastructureProviders(
             IBlobStorageProvider blobStorage,
             IQueueStorageProvider queueStorage,
             ITableStorageProvider tableStorage,
-            Storage.Shared.Logging.ILog log,
+            ILog log,
             IProvisioningProvider provisioning,
-            IRuntimeFinalizer runtimeFinalizer)
-            : base(blobStorage, queueStorage, tableStorage, runtimeFinalizer, log)
+            IRuntimeFinalizer runtimeFinalizer = null)
+            : base(blobStorage, queueStorage, tableStorage, runtimeFinalizer)
         {
             Provisioning = provisioning;
+            Log = log;
         }
 
         /// <summary>IoC constructor 2.</summary>
         public CloudInfrastructureProviders(
             CloudStorageProviders storageProviders,
-            IProvisioningProvider provisioning)
+            IProvisioningProvider provisioning,
+            ILog log)
             : base(storageProviders)
         {
             Provisioning = provisioning;
+            Log = log;
         }
     }
 }

@@ -101,6 +101,10 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Reactive, Version=1.1.10425.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Rx-Main.1.1.10425\lib\Net4\System.Reactive.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Web" />
@@ -127,6 +131,7 @@
     <Compile Include="CloudEnvironment.cs" />
     <Compile Include="CloudModule.cs" />
     <Compile Include="Diagnostics\CloudLogger.cs" />
+    <Compile Include="Diagnostics\CloudStorageLogger.cs" />
     <Compile Include="Diagnostics\Persistence\ExecutionProfilingStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\PartitionStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\ServiceStatisticsName.cs" />
@@ -191,6 +196,11 @@
     <Compile Include="Services\AssemblyConfigurationUpdateService.cs" />
     <Compile Include="Services\MonitoringDataRetentionService.cs" />
     <Compile Include="Services\MonitoringService.cs" />
+    <Compile Include="Shared\Logging\ILog.cs" />
+    <Compile Include="Shared\Logging\ILogExtensions.cs" />
+    <Compile Include="Shared\Logging\ILogProvider.cs" />
+    <Compile Include="Shared\Logging\LogLevel.cs" />
+    <Compile Include="Shared\Logging\NullLog.cs" />
     <Compile Include="Standalone.cs" />
     <Compile Include="Storage\Azure\StorageModule.cs" />
     <Compile Include="Storage\BlobCounter.cs" />

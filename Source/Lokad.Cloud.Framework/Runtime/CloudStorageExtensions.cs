@@ -4,12 +4,13 @@
 #endregion
 
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Runtime
 {
     public static class CloudStorageExtensions
     {
-        public static RuntimeProviders BuildRuntimeProviders(this CloudStorage.CloudStorageBuilder builder)
+        public static RuntimeProviders BuildRuntimeProviders(this CloudStorage.CloudStorageBuilder builder, ILog log = null)
         {
             // override formatter
             var providers = builder
@@ -21,7 +22,7 @@ namespace Lokad.Cloud.Runtime
                 providers.QueueStorage,
                 providers.TableStorage,
                 providers.RuntimeFinalizer,
-                providers.Log);
+                log);
         }
     }
 }

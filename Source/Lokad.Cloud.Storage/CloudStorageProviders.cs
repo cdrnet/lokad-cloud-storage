@@ -21,22 +21,17 @@ namespace Lokad.Cloud.Storage
         /// in case of runtime shutdown).</summary>
         public IRuntimeFinalizer RuntimeFinalizer { get; private set; }
 
-        /// <summary>Abstracts the logger.</summary>
-        public Shared.Logging.ILog Log { get; private set; }
-
         /// <summary>IoC constructor.</summary>
         public CloudStorageProviders(
             IBlobStorageProvider blobStorage,
             IQueueStorageProvider queueStorage,
             ITableStorageProvider tableStorage,
-            IRuntimeFinalizer runtimeFinalizer,
-            Shared.Logging.ILog log)
+            IRuntimeFinalizer runtimeFinalizer = null)
         {
             BlobStorage = blobStorage;
             QueueStorage = queueStorage;
             TableStorage = tableStorage;
             RuntimeFinalizer = runtimeFinalizer;
-            Log = log;
         }
 
         /// <summary>Copy constructor.</summary>
@@ -47,7 +42,6 @@ namespace Lokad.Cloud.Storage
             QueueStorage = copyFrom.QueueStorage;
             TableStorage = copyFrom.TableStorage;
             RuntimeFinalizer = copyFrom.RuntimeFinalizer;
-            Log = copyFrom.Log;
         }
     }
 }

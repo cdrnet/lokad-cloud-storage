@@ -12,7 +12,6 @@ using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared.Diagnostics;
-using Lokad.Cloud.Storage.Shared.Logging;
 using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -42,9 +41,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IDataSerializer _serializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
         private readonly AzurePolicies _policies;
-
         readonly ICloudStorageObserver _observer;
-        readonly ILog _log;
 
         // Instrumentation
         readonly ExecutionCounter _countGetMessage;
@@ -71,8 +68,7 @@ namespace Lokad.Cloud.Storage.Azure
             IBlobStorageProvider blobStorage,
             IDataSerializer serializer,
             ICloudStorageObserver observer = null,
-            IRuntimeFinalizer runtimeFinalizer = null,
-            ILog log = null)
+            IRuntimeFinalizer runtimeFinalizer = null)
         {
             _policies = new AzurePolicies(observer);
             _queueStorage = queueStorage;
@@ -80,7 +76,6 @@ namespace Lokad.Cloud.Storage.Azure
             _serializer = serializer;
             _runtimeFinalizer = runtimeFinalizer;
             _observer = observer;
-            _log = log;
 
             // finalizer can be null in a strict O/C mapper scenario
             if(null != _runtimeFinalizer)
@@ -192,12 +187,6 @@ namespace Lokad.Cloud.Storage.Azure
                             PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
                                 String.Format("Message was dequeued {0} times but failed processing each time.", dequeueCount - 1));
 
-                            if (_log != null)
-                            {
-                                // TODO (ruegg, 2011-05-27): DROP
-                                _log.WarnFormat("Cloud Storage: A message of type {0} in queue {1} failed to process repeatedly and has been quarantined.", typeof(T).Name, queueName);
-                            }
-
                             if (_observer != null)
                             {
                                 _observer.Notify(new MessageProcessingFailedQuarantinedEvent(queueName, PoisonedMessagePersistenceStoreName, typeof(T), data));
@@ -236,12 +225,6 @@ namespace Lokad.Cloud.Storage.Azure
                         PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
                             String.Format("Message failed to deserialize:\r\nAs {0}:\r\n{1}\r\n\r\nAs MessageEnvelope:\r\n{2}\r\n\r\nAs MessageWrapper:\r\n{3}",
                                 typeof (T).FullName, messageAsT.Error, messageAsEnvelope.IsSuccess ? "unwrapped" : messageAsEnvelope.Error.ToString(), messageAsWrapper.Error));
-
-                        if (_log != null)
-                        {
-                            // TODO (ruegg, 2011-05-27): DROP
-                            _log.WarnFormat(messageAsT.Error, "Cloud Storage: A message in queue {0} failed to deserialize to type {1} and has been quarantined.", queueName, typeof(T).Name);
-                        }
 
                         if (_observer != null)
                         {
@@ -444,10 +427,6 @@ namespace Lokad.Cloud.Storage.Azure
                     if (messageWrapper.IsSuccess)
                     {
                         _blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
-                    }
-                    else if (_log != null)
-                    {
-                        _log.WarnFormat(messageWrapper.Error, "Cloud Storage: The overflowing part of a corrupt message in queue {0} could not be identified and may have not been deleted while deleting the message itself.", queueName);
                     }
                 }
 
@@ -799,11 +778,6 @@ namespace Lokad.Cloud.Storage.Azure
 
                 if (info.ErrorCode == QueueErrorCodeStrings.PopReceiptMismatch)
                 {
-                    if (_log != null)
-                    {
-                        _log.WarnFormat("Cloud Storage: A message to be deleted in queue {0} was already remotely deleted or the invisibility timeout has elapsed.", queue.Name);
-                    }
-
                     return false;
                 }
 
