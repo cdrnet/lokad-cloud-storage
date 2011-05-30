@@ -74,7 +74,7 @@
     <Compile Include="Instrumentation\Events\MessageProcessingFailedQuarantinedEvent.cs" />
     <Compile Include="Instrumentation\ICloudStorageObserver.cs" />
     <Compile Include="Instrumentation\Events\StorageOperationRetriedEvent.cs" />
-    <Compile Include="Instrumentation\CloudStorageObserver.cs" />
+    <Compile Include="Instrumentation\CloudStorageInstrumentationSubject.cs" />
     <Compile Include="Instrumentation\Events\ICloudStorageEvent.cs" />
     <Compile Include="IIntermediateDataSerializer.cs" />
     <Compile Include="InMemory\MemoryBlobStorageProvider.cs" />

@@ -26,7 +26,6 @@ namespace Lokad.Cloud.Storage.Azure
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(StorageAccountFromSettings);
-            builder.Register(Observer);
             builder.RegisterType<CloudFormatter>().As<IDataSerializer>();
 
             builder.Register(BlobStorageProvider);
@@ -36,6 +35,10 @@ namespace Lokad.Cloud.Storage.Azure
             builder.Register(RuntimeProviders);
             builder.Register(CloudStorageProviders);
             builder.Register(CloudInfrastructureProviders);
+
+            builder.Register(StorageObserver)
+                .As<ICloudStorageObserver, IObservable<ICloudStorageEvent>>()
+                .SingleInstance();
         }
 
         private static CloudStorageAccount StorageAccountFromSettings(IComponentContext c)
@@ -115,9 +118,10 @@ namespace Lokad.Cloud.Storage.Azure
                 .BuildBlobStorage();
         }
 
-        static ICloudStorageObserver Observer(IComponentContext c)
+        static CloudStorageInstrumentationSubject StorageObserver(IComponentContext c)
         {
-            return new CloudStorageObserver(c.Resolve<IEnumerable<IObserver<ICloudStorageEvent>>>().ToArray());
+            // will include any registered storage event observers, if there are any, as fixed subscriptions
+            return new CloudStorageInstrumentationSubject(c.Resolve<IEnumerable<IObserver<ICloudStorageEvent>>>().ToArray());
         }
     }
 }

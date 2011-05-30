@@ -95,7 +95,7 @@ namespace Lokad.Cloud.Storage
             }
 
             /// <summary>
-            /// Optionally provide a log provider.
+            /// Optionally provide a storage event observer, e.g. a <see cref="CloudStorageInstrumentationSubject"/>.
             /// </summary>
             public CloudStorageBuilder WithObserver(ICloudStorageObserver observer)
             {
@@ -104,11 +104,11 @@ namespace Lokad.Cloud.Storage
             }
 
             /// <summary>
-            /// Optionally provide a log provider.
+            /// Optionally provide a set of observers, will use a <see cref="CloudStorageInstrumentationSubject"/> internally.
             /// </summary>
-            public CloudStorageBuilder WithObserver(params IObserver<ICloudStorageEvent>[] observers)
+            public CloudStorageBuilder WithObservers(params IObserver<ICloudStorageEvent>[] observers)
             {
-                Observer = new CloudStorageObserver(observers);
+                Observer = new CloudStorageInstrumentationSubject(observers);
                 return this;
             }
 
