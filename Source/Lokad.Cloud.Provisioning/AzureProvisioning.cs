@@ -32,26 +32,12 @@ namespace Lokad.Cloud.Provisioning
             ShouldRetryCommand = ProvisioningErrorHandling.RetryOnTransientErrors;
         }
 
-        HttpClient CreateHttpClient()
-        {
-            var channel = new HttpClientChannel();
-            channel.ClientCertificates.Add(_certificate);
-
-            var client = new HttpClient(string.Format("https://management.core.windows.net/{0}/", _subscriptionId))
-            {
-                Channel = channel
-            };
-
-            client.DefaultRequestHeaders.Add("x-ms-version", "2011-02-25");
-            return client;
-        }
-
         public Task<int> GetRoleInstanceCount(string serviceName, string roleName, DeploymentSlot deploymentSlot, CancellationToken cancellationToken)
         {
-            var channel = CreateHttpClient();
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<int>();
 
-            GetDeploymentConfiguration(channel, serviceName, deploymentSlot, cancellationToken).ContinuePropagateWith(
+            DoGetDeploymentConfiguration(client, serviceName, deploymentSlot, cancellationToken).ContinuePropagateWith(
                 completionSource, cancellationToken,
                 queryTask => completionSource.TrySetResult(Int32.Parse(GetInstanceCountConfigElement(queryTask.Result, roleName).Value)));
 
@@ -60,10 +46,10 @@ namespace Lokad.Cloud.Provisioning
 
         public Task<int> GetRoleInstanceCount(string serviceName, string roleName, string deploymentName, CancellationToken cancellationToken)
         {
-            var channel = CreateHttpClient();
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<int>();
 
-            GetDeploymentConfiguration(channel, serviceName, deploymentName, cancellationToken).ContinuePropagateWith(
+            DoGetDeploymentConfiguration(client, serviceName, deploymentName, cancellationToken).ContinuePropagateWith(
                 completionSource, cancellationToken,
                 queryTask => completionSource.TrySetResult(Int32.Parse(GetInstanceCountConfigElement(queryTask.Result, roleName).Value)));
 
@@ -72,12 +58,12 @@ namespace Lokad.Cloud.Provisioning
 
         public Task<int> GetCurrentInstanceCount(AzureCurrentDeployment currentDeployment, string roleName, CancellationToken cancellationToken)
         {
-            var channel = CreateHttpClient();
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<int>();
 
             currentDeployment.Discover(cancellationToken).ContinuePropagateWith(
                 completionSource, cancellationToken,
-                discoveryTask => GetDeploymentConfiguration(channel, discoveryTask.Result.HostedServiceName, discoveryTask.Result.DeploymentName, cancellationToken).ContinuePropagateWith(
+                discoveryTask => DoGetDeploymentConfiguration(client, discoveryTask.Result.HostedServiceName, discoveryTask.Result.DeploymentName, cancellationToken).ContinuePropagateWith(
                     completionSource, cancellationToken,
                     queryTask => completionSource.TrySetResult(Int32.Parse(GetInstanceCountConfigElement(queryTask.Result, roleName).Value))));
 
@@ -86,17 +72,17 @@ namespace Lokad.Cloud.Provisioning
 
         public Task UpdateRoleInstanceCount(string serviceName, string roleName, DeploymentSlot deploymentSlot, int instanceCount, CancellationToken cancellationToken)
         {
-            var channel = CreateHttpClient();
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<HttpStatusCode>();
 
-            GetDeploymentConfiguration(channel, serviceName, deploymentSlot, cancellationToken)
+            DoGetDeploymentConfiguration(client, serviceName, deploymentSlot, cancellationToken)
                 .ContinuePropagateWith(completionSource, cancellationToken, queryTask =>
                     {
                         var config = queryTask.Result;
 
                         GetInstanceCountConfigElement(config, roleName).Value = instanceCount.ToString();
 
-                        UpdateDeploymentConfiguration(channel, serviceName, deploymentSlot, config, cancellationToken)
+                        DoUpdateDeploymentConfiguration(client, serviceName, deploymentSlot, config, cancellationToken)
                             .ContinuePropagateWith(completionSource, cancellationToken, updateTask => completionSource.TrySetResult(updateTask.Result));
                     });
 
@@ -105,17 +91,17 @@ namespace Lokad.Cloud.Provisioning
 
         public Task UpdateRoleInstanceCount(string serviceName, string roleName, string deploymentName, int instanceCount, CancellationToken cancellationToken)
         {
-            var channel = CreateHttpClient();
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<HttpStatusCode>();
 
-            GetDeploymentConfiguration(channel, serviceName, deploymentName, cancellationToken)
+            DoGetDeploymentConfiguration(client, serviceName, deploymentName, cancellationToken)
                 .ContinuePropagateWith(completionSource, cancellationToken, queryTask =>
                     {
                         var config = queryTask.Result;
 
                         GetInstanceCountConfigElement(config, roleName).Value = instanceCount.ToString();
 
-                        UpdateDeploymentConfiguration(channel, serviceName, deploymentName, config, cancellationToken)
+                        DoUpdateDeploymentConfiguration(client, serviceName, deploymentName, config, cancellationToken)
                             .ContinuePropagateWith(completionSource, cancellationToken, updateTask => completionSource.TrySetResult(updateTask.Result));
                     });
 
@@ -124,19 +110,19 @@ namespace Lokad.Cloud.Provisioning
 
         public Task UpdateCurrentInstanceCount(AzureCurrentDeployment currentDeployment, string roleName, int instanceCount, CancellationToken cancellationToken)
         {
-            var channel = CreateHttpClient();
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<HttpStatusCode>();
 
             currentDeployment.Discover(cancellationToken)
                 .ContinuePropagateWith(completionSource, cancellationToken, discoveryTask =>
-                    GetDeploymentConfiguration(channel, discoveryTask.Result.HostedServiceName, discoveryTask.Result.DeploymentName, cancellationToken)
+                    DoGetDeploymentConfiguration(client, discoveryTask.Result.HostedServiceName, discoveryTask.Result.DeploymentName, cancellationToken)
                         .ContinuePropagateWith(completionSource, cancellationToken, queryTask =>
                             {
                                 var config = queryTask.Result;
 
                                 GetInstanceCountConfigElement(config, roleName).Value = instanceCount.ToString();
 
-                                UpdateDeploymentConfiguration(channel, discoveryTask.Result.HostedServiceName, discoveryTask.Result.DeploymentName, config, cancellationToken)
+                                DoUpdateDeploymentConfiguration(client, discoveryTask.Result.HostedServiceName, discoveryTask.Result.DeploymentName, config, cancellationToken)
                                     .ContinuePropagateWith(completionSource, cancellationToken, updateTask => completionSource.TrySetResult(updateTask.Result));
                             }));
 
@@ -173,7 +159,7 @@ namespace Lokad.Cloud.Provisioning
             return UpdateCurrentInstanceCount(currentDeployment, "Lokad.Cloud.WorkerRole", instanceCount, cancellationToken);
         }
 
-        private XAttribute GetInstanceCountConfigElement(XDocument xml, string roleName)
+        XAttribute GetInstanceCountConfigElement(XDocument xml, string roleName)
         {
             return xml.ServiceConfigElements("ServiceConfiguration", "Role")
                 .Single(x => x.AttributeValue("name") == roleName)
@@ -181,7 +167,7 @@ namespace Lokad.Cloud.Provisioning
                 .Attribute("count");
         }
 
-        Task<XDocument> GetDeploymentConfiguration(HttpClient client, string serviceName, string deploymentName, CancellationToken cancellationToken)
+        Task<XDocument> DoGetDeploymentConfiguration(HttpClient client, string serviceName, string deploymentName, CancellationToken cancellationToken)
         {
             return client.GetXmlAsync<XDocument>(
                 string.Format("services/hostedservices/{0}/deployments/{1}", serviceName, deploymentName),
@@ -189,7 +175,7 @@ namespace Lokad.Cloud.Provisioning
                 (xml, tcs) => tcs.TrySetResult(xml.AzureElement("Deployment").AzureConfiguration()));
         }
 
-        Task<XDocument> GetDeploymentConfiguration(HttpClient client, string serviceName, DeploymentSlot deploymentSlot, CancellationToken cancellationToken)
+        Task<XDocument> DoGetDeploymentConfiguration(HttpClient client, string serviceName, DeploymentSlot deploymentSlot, CancellationToken cancellationToken)
         {
             return client.GetXmlAsync<XDocument>(
                 string.Format("services/hostedservices/{0}/deploymentslots/{1}", serviceName, deploymentSlot.ToString().ToLower()),
@@ -197,7 +183,7 @@ namespace Lokad.Cloud.Provisioning
                 (xml, tcs) => tcs.TrySetResult(xml.AzureElement("Deployment").AzureConfiguration()));
         }
 
-        Task<HttpStatusCode> UpdateDeploymentConfiguration(HttpClient client, string serviceName, string deploymentName, XDocument configuration, CancellationToken cancellationToken)
+        Task<HttpStatusCode> DoUpdateDeploymentConfiguration(HttpClient client, string serviceName, string deploymentName, XDocument configuration, CancellationToken cancellationToken)
         {
             return client.PostXmlAsync<HttpStatusCode>(
                 string.Format("services/hostedservices/{0}/deployments/{1}/?comp=config", serviceName, deploymentName),
@@ -210,7 +196,7 @@ namespace Lokad.Cloud.Provisioning
                 });
         }
 
-        Task<HttpStatusCode> UpdateDeploymentConfiguration(HttpClient client, string serviceName, DeploymentSlot deploymentSlot, XDocument configuration, CancellationToken cancellationToken)
+        Task<HttpStatusCode> DoUpdateDeploymentConfiguration(HttpClient client, string serviceName, DeploymentSlot deploymentSlot, XDocument configuration, CancellationToken cancellationToken)
         {
             return client.PostXmlAsync<HttpStatusCode>(
                 string.Format("services/hostedservices/{0}/deploymentslots/{1}/?comp=config", serviceName, deploymentSlot),

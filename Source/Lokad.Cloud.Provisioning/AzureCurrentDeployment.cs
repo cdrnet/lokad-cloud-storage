@@ -34,6 +34,7 @@ namespace Lokad.Cloud.Provisioning
 
         public Task<DeploymentReference> Discover(CancellationToken cancellationToken)
         {
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<DeploymentReference>();
             Task<DeploymentReference> previousTask;
             var discovery = new AzureDiscovery(_subscriptionId, _certificate) { ShouldRetryQuery = ShouldRetryQuery };
@@ -54,7 +55,7 @@ namespace Lokad.Cloud.Provisioning
             // If this is the first time this is called, create a new query and return
             if (previousTask == null)
             {
-                discovery.DoDiscoverDeploymentAsync(_deploymentPrivateId, completionSource, cancellationToken);
+                discovery.DoDiscoverDeploymentAsync(client, _deploymentPrivateId, completionSource, cancellationToken);
                 return completionSource.Task;
             }
 
@@ -70,7 +71,7 @@ namespace Lokad.Cloud.Provisioning
                         // Make sure the task doesn't throw at finalization
                         task.Exception.GetBaseException();
 
-                        discovery.DoDiscoverDeploymentAsync(_deploymentPrivateId, completionSource, cancellationToken);
+                        discovery.DoDiscoverDeploymentAsync(client, _deploymentPrivateId, completionSource, cancellationToken);
                         return;
                     }
 

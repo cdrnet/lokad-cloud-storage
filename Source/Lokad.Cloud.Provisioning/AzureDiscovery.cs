@@ -29,42 +29,31 @@ namespace Lokad.Cloud.Provisioning
             ShouldRetryQuery = ProvisioningErrorHandling.RetryOnTransientErrors;
         }
 
-        HttpClient CreateHttpClient()
-        {
-            var channel = new HttpClientChannel();
-            channel.ClientCertificates.Add(_certificate);
-
-            var client = new HttpClient(string.Format("https://management.core.windows.net/{0}/", _subscriptionId))
-            {
-                Channel = channel
-            };
-
-            client.DefaultRequestHeaders.Add("x-ms-version", "2011-02-25");
-            return client;
-        }
-
         public Task<HostedServiceInfo> DiscoverHostedService(string serviceName, CancellationToken cancellationToken)
         {
-            return DiscoverHostedService(CreateHttpClient(), serviceName, cancellationToken);
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
+            return DoDiscoverHostedService(client, serviceName, cancellationToken);
         }
 
         public Task<HostedServiceInfo[]> DiscoverHostedServices(CancellationToken cancellationToken)
         {
-            return DiscoverHostedServices(CreateHttpClient(), cancellationToken);
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
+            return DoDiscoverHostedServices(client, cancellationToken);
         }
 
         public Task<DeploymentReference> DiscoverDeployment(string deploymentPrivateId, CancellationToken cancellationToken)
         {
+            var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<DeploymentReference>();
-            DoDiscoverDeploymentAsync(deploymentPrivateId, completionSource, cancellationToken);
+            DoDiscoverDeploymentAsync(client, deploymentPrivateId, completionSource, cancellationToken);
             return completionSource.Task;
         }
 
-        public void DoDiscoverDeploymentAsync(string deploymentPrivateId, TaskCompletionSource<DeploymentReference> completionSource, CancellationToken cancellationToken)
+        internal void DoDiscoverDeploymentAsync(HttpClient client, string deploymentPrivateId, TaskCompletionSource<DeploymentReference> completionSource, CancellationToken cancellationToken)
         {
             // TODO (ruegg, 2011-05-27): Weird design, refactor
 
-            DiscoverHostedServices(cancellationToken).ContinuePropagateWith(completionSource, cancellationToken, task =>
+            DoDiscoverHostedServices(client, cancellationToken).ContinuePropagateWith(completionSource, cancellationToken, task =>
             {
                 foreach (var hostedService in task.Result)
                 {
@@ -86,7 +75,7 @@ namespace Lokad.Cloud.Provisioning
             });
         }
 
-        Task<HostedServiceInfo> DiscoverHostedService(HttpClient client, string serviceName, CancellationToken cancellationToken)
+        Task<HostedServiceInfo> DoDiscoverHostedService(HttpClient client, string serviceName, CancellationToken cancellationToken)
         {
             return client.GetXmlAsync<HostedServiceInfo>(
                 string.Format("services/hostedservices/{0}?embed-detail=true", serviceName),
@@ -139,7 +128,7 @@ namespace Lokad.Cloud.Provisioning
                 });
         }
 
-        Task<HostedServiceInfo[]> DiscoverHostedServices(HttpClient client, CancellationToken cancellationToken)
+        Task<HostedServiceInfo[]> DoDiscoverHostedServices(HttpClient client, CancellationToken cancellationToken)
         {
             return client.GetXmlAsync<HostedServiceInfo[]>(
                 "services/hostedservices",
@@ -151,7 +140,7 @@ namespace Lokad.Cloud.Provisioning
                         .ToArray();
 
                     Task.Factory.ContinueWhenAll(
-                        serviceNames.Select(serviceName => DiscoverHostedService(client, serviceName, cancellationToken)).ToArray(),
+                        serviceNames.Select(serviceName => DoDiscoverHostedService(client, serviceName, cancellationToken)).ToArray(),
                         tasks =>
                         {
                             // TODO (ruegg, 2011-05-27): Check task fault state and deal with it
