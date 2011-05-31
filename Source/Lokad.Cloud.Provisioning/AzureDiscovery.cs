@@ -51,8 +51,6 @@ namespace Lokad.Cloud.Provisioning
 
         internal void DoDiscoverDeploymentAsync(HttpClient client, string deploymentPrivateId, TaskCompletionSource<DeploymentReference> completionSource, CancellationToken cancellationToken)
         {
-            // TODO (ruegg, 2011-05-27): Weird design, refactor
-
             DoDiscoverHostedServices(client, cancellationToken).ContinuePropagateWith(completionSource, cancellationToken, task =>
             {
                 foreach (var hostedService in task.Result)

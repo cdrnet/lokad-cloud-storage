@@ -56,7 +56,7 @@ namespace Lokad.Cloud.Provisioning
 
             SendXmlAsync(httpClient, request, completionSource, cancellationToken, shouldRetry(), 0, response => handle(response, completionSource));
 
-            // NOTE: when a request completes, HttpClient disposes the request content including the stream, so we don't have to.
+            // when a request completes, HttpClient disposes the request content including the stream, so we don't have to.
 
             return completionSource.Task;
         }

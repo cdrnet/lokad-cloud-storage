@@ -21,10 +21,5 @@ namespace Lokad.Cloud.Provisioning
         {
             return element.Element(_ServiceConfigNS + parentElementName).Elements(_ServiceConfigNS + itemElementName);
         }
-
-        public static string ServiceConfigValue(this XContainer element, string elementName)
-        {
-            return element.Element(_ServiceConfigNS + elementName).Value;
-        }
     }
 }

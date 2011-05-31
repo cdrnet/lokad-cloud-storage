@@ -46,7 +46,17 @@ namespace Lokad.Cloud.Management
             _provisioning = new AzureProvisioning(settings.SelfManagementSubscriptionId, certificate.Value);
             _currentDeployment = new AzureCurrentDeployment(currentDeploymentPrivateId.Value, settings.SelfManagementSubscriptionId, certificate.Value);
 
-            _currentDeployment.Discover(CancellationToken.None);
+            _currentDeployment.Discover(CancellationToken.None).ContinueWith(t =>
+                {
+                    if (ProvisioningErrorHandling.IsTransientError(t.Exception))
+                    {
+                        _log.DebugFormat(t.Exception.GetBaseException(), "Provisioning: Initial discovery failed with a transient error.");
+                    }
+                    else
+                    {
+                        _log.WarnFormat(t.Exception.GetBaseException(), "Provisioning: Initial discovery failed with a permanent error.");
+                    }
+                }, TaskContinuationOptions.OnlyOnFaulted);
         }
 
         public bool IsAvailable
