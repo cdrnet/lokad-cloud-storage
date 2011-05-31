@@ -40,7 +40,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IBlobStorageProvider _blobStorage;
         readonly IDataSerializer _serializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
-        private readonly AzurePolicies _policies;
+        private readonly RetryPolicies _policies;
         readonly ICloudStorageObserver _observer;
 
         // Instrumentation
@@ -70,7 +70,7 @@ namespace Lokad.Cloud.Storage.Azure
             ICloudStorageObserver observer = null,
             IRuntimeFinalizer runtimeFinalizer = null)
         {
-            _policies = new AzurePolicies(observer);
+            _policies = new RetryPolicies(observer);
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
             _serializer = serializer;

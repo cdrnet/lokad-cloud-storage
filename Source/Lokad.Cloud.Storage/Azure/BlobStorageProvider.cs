@@ -38,7 +38,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _serializer;
         readonly ICloudStorageObserver _observer;
-        readonly AzurePolicies _policies;
+        readonly RetryPolicies _policies;
 
         // Instrumentation
         readonly ExecutionCounter _countPutBlob;
@@ -51,7 +51,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="observer">Can be <see langword="null"/>.</param>
         public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageObserver observer = null)
         {
-            _policies = new AzurePolicies(observer);
+            _policies = new RetryPolicies(observer);
             _blobStorage = blobStorage;
             _serializer = serializer;
             _observer = observer;

@@ -198,7 +198,7 @@ namespace Lokad.Cloud.Storage
 
         CloudBlobClient BlobClient()
         {
-            var policies = new Azure.AzurePolicies(Observer);
+            var policies = new Azure.RetryPolicies(Observer);
             var blobClient = _storageAccount.CreateCloudBlobClient();
             blobClient.RetryPolicy = policies.ForAzureStorageClient;
             return blobClient;
@@ -206,7 +206,7 @@ namespace Lokad.Cloud.Storage
 
         CloudTableClient TableClient()
         {
-            var policies = new Azure.AzurePolicies(Observer);
+            var policies = new Azure.RetryPolicies(Observer);
             var tableClient = _storageAccount.CreateCloudTableClient();
             tableClient.RetryPolicy = policies.ForAzureStorageClient;
             return tableClient;
@@ -214,7 +214,7 @@ namespace Lokad.Cloud.Storage
 
         CloudQueueClient QueueClient()
         {
-            var policies = new Azure.AzurePolicies(Observer);
+            var policies = new Azure.RetryPolicies(Observer);
             var queueClient = _storageAccount.CreateCloudQueueClient();
             queueClient.RetryPolicy = policies.ForAzureStorageClient;
             return queueClient;

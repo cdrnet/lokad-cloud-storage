@@ -34,7 +34,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudTableClient _tableStorage;
         readonly IDataSerializer _serializer;
-        readonly AzurePolicies _policies;
+        readonly RetryPolicies _policies;
 
         // Instrumentation
         readonly ExecutionCounter _countQuery;
@@ -46,7 +46,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="observer">Can be <see langword="null"/>.</param>
         public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer, ICloudStorageObserver observer = null)
         {
-            _policies = new AzurePolicies(observer);
+            _policies = new RetryPolicies(observer);
             _tableStorage = tableStorage;
             _serializer = serializer;
 
@@ -211,7 +211,7 @@ namespace Lokad.Cloud.Storage.Azure
                         catch (DataServiceQueryException ex)
                         {
                             // if the table does not exist, there is nothing to return
-                            var errorCode = AzurePolicies.GetErrorCode(ex);
+                            var errorCode = RetryPolicies.GetErrorCode(ex);
                             if (TableErrorCodeStrings.TableNotFound == errorCode
                                 || StorageErrorCodeStrings.ResourceNotFound == errorCode)
                             {
@@ -294,7 +294,7 @@ namespace Lokad.Cloud.Storage.Azure
                                 // special casing the need for table instantiation
                             catch (DataServiceRequestException ex)
                             {
-                                var errorCode = AzurePolicies.GetErrorCode(ex);
+                                var errorCode = RetryPolicies.GetErrorCode(ex);
                                 if (errorCode == TableErrorCodeStrings.TableNotFound
                                     || errorCode == StorageErrorCodeStrings.ResourceNotFound)
                                 {
@@ -326,7 +326,7 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                         catch (DataServiceRequestException ex)
                         {
-                            var errorCode = AzurePolicies.GetErrorCode(ex);
+                            var errorCode = RetryPolicies.GetErrorCode(ex);
 
                             if (errorCode == StorageErrorCodeStrings.OperationTimedOut)
                             {
@@ -352,7 +352,7 @@ namespace Lokad.Cloud.Storage.Azure
                         {
                             // HACK: code duplicated
 
-                            var errorCode = AzurePolicies.GetErrorCode(ex);
+                            var errorCode = RetryPolicies.GetErrorCode(ex);
 
                             if (errorCode == StorageErrorCodeStrings.OperationTimedOut)
                             {
@@ -415,7 +415,7 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                         catch (DataServiceRequestException ex)
                         {
-                            var errorCode = AzurePolicies.GetErrorCode(ex);
+                            var errorCode = RetryPolicies.GetErrorCode(ex);
 
                             if (errorCode == StorageErrorCodeStrings.OperationTimedOut)
                             {
@@ -455,7 +455,7 @@ namespace Lokad.Cloud.Storage.Azure
                         {
                             // HACK: code duplicated
 
-                            var errorCode = AzurePolicies.GetErrorCode(ex);
+                            var errorCode = RetryPolicies.GetErrorCode(ex);
 
                             if (errorCode == StorageErrorCodeStrings.OperationTimedOut)
                             {
@@ -590,7 +590,7 @@ namespace Lokad.Cloud.Storage.Azure
                     catch (DataServiceRequestException ex)
                     {
                         // if the table is missing, no need to go on with the deletion
-                        var errorCode = AzurePolicies.GetErrorCode(ex);
+                        var errorCode = RetryPolicies.GetErrorCode(ex);
                         if (TableErrorCodeStrings.TableNotFound == errorCode)
                         {
                             _countDelete.Close(timestamp);
@@ -603,7 +603,7 @@ namespace Lokad.Cloud.Storage.Azure
                     // if some entities exist
                 catch (DataServiceRequestException ex)
                 {
-                    var errorCode = AzurePolicies.GetErrorCode(ex);
+                    var errorCode = RetryPolicies.GetErrorCode(ex);
 
                     // HACK: Table Storage both implement a bizarre non-idempotent semantic
                     // but in addition, it throws a non-documented exception as well. 

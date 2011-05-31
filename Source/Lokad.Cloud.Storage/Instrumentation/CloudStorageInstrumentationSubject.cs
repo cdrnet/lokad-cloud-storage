@@ -96,7 +96,7 @@ namespace Lokad.Cloud.Storage.Instrumentation
                             {
                                 var newObservers = new IObserver<ICloudStorageEvent>[_subject._observers.Length + 1];
                                 Array.Copy(_subject._observers, 0, newObservers, 0, idx);
-                                Array.Copy(_subject._observers, idx+1, newObservers, idx, _subject._observers.Length);
+                                Array.Copy(_subject._observers, idx + 1, newObservers, idx, _subject._observers.Length - idx - 1);
                                 _subject._observers = newObservers;
                             }
 

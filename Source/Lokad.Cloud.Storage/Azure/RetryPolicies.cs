@@ -17,7 +17,7 @@ namespace Lokad.Cloud.Storage.Azure
     /// <summary>
     /// Azure retry policies for corner-situation and server errors.
     /// </summary>
-    internal class AzurePolicies
+    internal class RetryPolicies
     {
         private readonly ICloudStorageObserver _observer;
 
@@ -25,7 +25,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// Static Constructor
         /// </summary>
         /// <param name="observer">Can be <see langword="null"/>.</param>
-        internal AzurePolicies(ICloudStorageObserver observer)
+        internal RetryPolicies(ICloudStorageObserver observer)
         {
             _observer = observer;
         }
@@ -70,8 +70,8 @@ namespace Lokad.Cloud.Storage.Azure
             Guid sequence = Guid.NewGuid();
 
             double deltaBackoff = TimeSpan.FromSeconds(0.5).TotalMilliseconds;
-            double minBackoff = RetryPolicies.DefaultMinBackoff.TotalMilliseconds;
-            double maxBackoff = RetryPolicies.DefaultMaxBackoff.TotalMilliseconds;
+            double minBackoff = Microsoft.WindowsAzure.StorageClient.RetryPolicies.DefaultMinBackoff.TotalMilliseconds;
+            double maxBackoff = Microsoft.WindowsAzure.StorageClient.RetryPolicies.DefaultMaxBackoff.TotalMilliseconds;
 
             return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
                 {
