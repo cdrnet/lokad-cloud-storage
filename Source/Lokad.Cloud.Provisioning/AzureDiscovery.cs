@@ -108,11 +108,17 @@ namespace Lokad.Cloud.Provisioning
                                     var roleName = r.AzureValue("RoleName");
                                     var roleConfig = config.ServiceConfigElements("ServiceConfiguration", "Role")
                                         .Single(role => role.AttributeValue("name") == roleName);
+                                    
+                                    int instanceCount;
+                                    if (!instanceCountPerRole.TryGetValue(roleName, out instanceCount))
+                                    {
+                                        instanceCount = 0;
+                                    }
 
                                     return new RoleInfo
                                     {
                                         RoleName = roleName,
-                                        ActualInstanceCount = instanceCountPerRole[roleName],
+                                        ActualInstanceCount = instanceCount,
                                         ConfiguredInstanceCount = Int32.Parse(roleConfig.ServiceConfigElement("Instances").AttributeValue("count")),
                                         Settings = roleConfig.ServiceConfigElements("ConfigurationSettings", "Setting").ToDictionary(
                                             x => x.AttributeValue("name"), x => x.AttributeValue("value"))
