@@ -4,31 +4,31 @@
 #endregion
 
 using System;
-using Lokad.Cloud.Storage.Instrumentation.Events;
+using Lokad.Cloud.Provisioning.Instrumentation.Events;
 
-namespace Lokad.Cloud.Storage.Instrumentation
+namespace Lokad.Cloud.Provisioning.Instrumentation
 {
     /// <summary>
     /// Cloud storage observer that implements a hot Rx Observable, forwarding all events synchronously
-    /// (similar to Rx's FastSubject). Use this class if you want an easy way to observe Lokad.Cloud.Storage
+    /// (similar to Rx's FastSubject). Use this class if you want an easy way to observe Lokad.Cloud.Provisioning
     /// using Rx. Alternatively you can implement your own storage observer instead, or not use any observers at all.
     /// </summary>
-    public class CloudStorageInstrumentationSubject : ICloudStorageObserver, IObservable<ICloudStorageEvent>, IDisposable
+    public class CloudProvisioningInstrumentationSubject : IDisposable, ICloudProvisioningObserver
     {
         readonly object _sync = new object();
         private bool _isDisposed;
 
-        readonly IObserver<ICloudStorageEvent>[] _fixedObservers;
-        IObserver<ICloudStorageEvent>[] _observers;
+        readonly IObserver<ICloudProvisioningEvent>[] _fixedObservers;
+        IObserver<ICloudProvisioningEvent>[] _observers;
 
         /// <param name="fixedObservers">Optional externally managed fixed observers, will neither be completed nor disposed by this class.</param>
-        public CloudStorageInstrumentationSubject(IObserver<ICloudStorageEvent>[] fixedObservers = null)
+        public CloudProvisioningInstrumentationSubject(IObserver<ICloudProvisioningEvent>[] fixedObservers = null)
         {
-            _fixedObservers = fixedObservers ?? new IObserver<ICloudStorageEvent>[0];
-            _observers = new IObserver<ICloudStorageEvent>[0];
+            _fixedObservers = fixedObservers ?? new IObserver<ICloudProvisioningEvent>[0];
+            _observers = new IObserver<ICloudProvisioningEvent>[0];
         }
 
-        void ICloudStorageObserver.Notify(ICloudStorageEvent @event)
+        void ICloudProvisioningObserver.Notify(ICloudProvisioningEvent @event)
         {
             // Assuming event observers are light - else we may want to do this async
 
@@ -45,7 +45,7 @@ namespace Lokad.Cloud.Storage.Instrumentation
             }
         }
 
-        public IDisposable Subscribe(IObserver<ICloudStorageEvent> observer)
+        public IDisposable Subscribe(IObserver<ICloudProvisioningEvent> observer)
         {
             if (observer == null)
             {
@@ -54,7 +54,7 @@ namespace Lokad.Cloud.Storage.Instrumentation
 
             lock (_sync)
             {
-                var newObservers = new IObserver<ICloudStorageEvent>[_observers.Length + 1];
+                var newObservers = new IObserver<ICloudProvisioningEvent>[_observers.Length + 1];
                 Array.Copy(_observers, newObservers, _observers.Length);
                 newObservers[_observers.Length] = observer;
                 _observers = newObservers;
@@ -74,10 +74,10 @@ namespace Lokad.Cloud.Storage.Instrumentation
 
         private class Subscription : IDisposable
         {
-            private readonly CloudStorageInstrumentationSubject _subject;
-            private IObserver<ICloudStorageEvent> _observer;
+            private readonly CloudProvisioningInstrumentationSubject _subject;
+            private IObserver<ICloudProvisioningEvent> _observer;
 
-            public Subscription(CloudStorageInstrumentationSubject subject, IObserver<ICloudStorageEvent> observer)
+            public Subscription(CloudProvisioningInstrumentationSubject subject, IObserver<ICloudProvisioningEvent> observer)
             {
                 _subject = subject;
                 _observer = observer;
@@ -94,9 +94,9 @@ namespace Lokad.Cloud.Storage.Instrumentation
                             int idx = Array.IndexOf(_subject._observers, _observer);
                             if (idx >= 0)
                             {
-                                var newObservers = new IObserver<ICloudStorageEvent>[_subject._observers.Length + 1];
+                                var newObservers = new IObserver<ICloudProvisioningEvent>[_subject._observers.Length + 1];
                                 Array.Copy(_subject._observers, 0, newObservers, 0, idx);
-                                Array.Copy(_subject._observers, idx+1, newObservers, idx, _subject._observers.Length);
+                                Array.Copy(_subject._observers, idx + 1, newObservers, idx, _subject._observers.Length);
                                 _subject._observers = newObservers;
                             }
 
