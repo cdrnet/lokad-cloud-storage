@@ -5,26 +5,23 @@
 
 using System;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cloud.Provisioning;
-using Lokad.Cloud.Provisioning.AzureManagement;
+using Lokad.Cloud.Provisioning.Info;
 using Microsoft.WindowsAzure;
 
 namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
 {
     public sealed class AzureDiscoveryFetcher
     {
-        private readonly X509Certificate2 _certificate;
-        private readonly string _subscriptionId;
         private readonly AzureDiscovery _discovery;
 
         public AzureDiscoveryFetcher()
         {
-            _subscriptionId = CloudConfiguration.SubscriptionId;
-            _certificate = CloudConfiguration.GetManagementCertificate();
-            _discovery = new AzureDiscovery(_subscriptionId, _certificate);
+            _discovery = new AzureDiscovery(
+                CloudConfiguration.SubscriptionId,
+                CloudConfiguration.GetManagementCertificate());
         }
 
         public Task<AzureDiscoveryInfo> FetchAsync()

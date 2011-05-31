@@ -3,12 +3,15 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 
-using Lokad.Cloud.Provisioning.AzureManagement;
-
 namespace Lokad.Cloud.Provisioning
 {
     public static class ProvisioningErrorHandling
     {
+        // NOTE (ruegg, 2011-05-24): Clone from Microsoft.WindowsAzure.StorageClient.ShouldRetry.
+        // Justification: Avoid reference to the storage client library just for this delegate type
+        public delegate bool ShouldRetry(int retryCount, Exception lastException, out TimeSpan delay);
+        public delegate ShouldRetry RetryPolicy();
+
         public static ShouldRetry RetryOnTransientErrors()
         {
             var random = new Random();

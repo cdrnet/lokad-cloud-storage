@@ -9,7 +9,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cloud.Provisioning;
-using Lokad.Cloud.Provisioning.AzureManagement;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared.Logging;
 
@@ -44,9 +43,8 @@ namespace Lokad.Cloud.Management
             }
 
             // ok
-            var managementClient = new AzureManagementClient(settings.SelfManagementSubscriptionId, certificate.Value);
-            _provisioning = new AzureProvisioning(managementClient);
-            _currentDeployment = new AzureCurrentDeployment(currentDeploymentPrivateId.Value, managementClient);
+            _provisioning = new AzureProvisioning(settings.SelfManagementSubscriptionId, certificate.Value);
+            _currentDeployment = new AzureCurrentDeployment(currentDeploymentPrivateId.Value, settings.SelfManagementSubscriptionId, certificate.Value);
 
             _currentDeployment.Discover(CancellationToken.None);
         }

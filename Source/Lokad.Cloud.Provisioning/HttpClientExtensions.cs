@@ -1,4 +1,9 @@
-﻿using System;
+﻿#region Copyright (c) Lokad 2010-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -6,12 +11,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace Lokad.Cloud.Provisioning.AzureManagement
+namespace Lokad.Cloud.Provisioning
 {
     internal static class HttpClientExtensions
     {
         /// <remarks>Only put short operations in the "handle" continuation, or do them async, because it is executed synchronously.</remarks>
-        public static Task<T> GetXmlAsync<T>(this HttpClient httpClient, string requestUri, CancellationToken cancellationToken, RetryPolicy shouldRetry, Action<XDocument, TaskCompletionSource<T>> handle)
+        public static Task<T> GetXmlAsync<T>(
+            this HttpClient httpClient, string requestUri,
+            CancellationToken cancellationToken,
+            ProvisioningErrorHandling.RetryPolicy shouldRetry,
+            Action<XDocument, TaskCompletionSource<T>> handle)
         {
             var completionSource = new TaskCompletionSource<T>();
             var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
@@ -26,7 +35,11 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
         }
 
         /// <remarks>Only put short operations in the "handle" continuation, or do them async, because it is executed synchronously.</remarks>
-        public static Task<T> PostXmlAsync<T>(this HttpClient httpClient, string requestUri, XDocument content, CancellationToken cancellationToken, RetryPolicy shouldRetry, Action<HttpResponseMessage, TaskCompletionSource<T>> handle)
+        public static Task<T> PostXmlAsync<T>(
+            this HttpClient httpClient, string requestUri, XDocument content,
+            CancellationToken cancellationToken,
+            ProvisioningErrorHandling.RetryPolicy shouldRetry,
+            Action<HttpResponseMessage, TaskCompletionSource<T>> handle)
         {
             var completionSource = new TaskCompletionSource<T>();
 
@@ -50,8 +63,9 @@ namespace Lokad.Cloud.Provisioning.AzureManagement
 
         /// <remarks>Only put short operations in the "handle" continuation, or do them async, because it is executed synchronously.</remarks>
         private static void SendXmlAsync<T>(
-            HttpClient httpClient, HttpRequestMessage request, TaskCompletionSource<T> completionSource, CancellationToken cancellationToken,
-            ShouldRetry shouldRetry, int retryCount,
+            HttpClient httpClient, HttpRequestMessage request,
+            TaskCompletionSource<T> completionSource, CancellationToken cancellationToken,
+            ProvisioningErrorHandling.ShouldRetry shouldRetry, int retryCount,
             Action<HttpResponseMessage> handle)
         {
             httpClient.SendAsync(request, cancellationToken).ContinueWith(task =>

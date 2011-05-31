@@ -1,11 +1,16 @@
-﻿using System;
-using System.Net.Http;
+﻿#region Copyright (c) Lokad 2010-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
-namespace Lokad.Cloud.Provisioning.AzureManagement
+namespace Lokad.Cloud.Console.WebRole.Framework.Discovery
 {
-    public static class TaskExtensions
+    internal static class TaskExtensions
     {
         /// <remarks>Only put short operations in this continuation, or do them async, as the continuation is executed synchronously.</remarks>
         public static void ContinuePropagateWith<TCompletion, TTask>(this Task<TTask> task, TaskCompletionSource<TCompletion> completionSource, CancellationToken cancellationToken, Action<Task<TTask>> handleCompleted)

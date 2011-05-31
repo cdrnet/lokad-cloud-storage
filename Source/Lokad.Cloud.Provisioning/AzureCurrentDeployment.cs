@@ -1,37 +1,42 @@
-﻿using System;
+﻿#region Copyright (c) Lokad 2010-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Lokad.Cloud.Provisioning.AzureManagement;
+using Lokad.Cloud.Provisioning.Info;
 
 namespace Lokad.Cloud.Provisioning
 {
     public class AzureCurrentDeployment
     {
-        public AzureCurrentDeployment(string deploymentPrivateId, AzureManagementClient client)
-        {
-            DeploymentPrivateId = deploymentPrivateId;
-            Client = client;
-        }
-
-        public AzureCurrentDeployment(string deploymentPrivateId, string subscriptionId, X509Certificate2 certificate)
-        {
-            DeploymentPrivateId = deploymentPrivateId;
-            Client = new AzureManagementClient(subscriptionId, certificate);
-        }
-
-        public string DeploymentPrivateId { get; set;}
-        public AzureManagementClient Client { get; set; }
+        readonly string _subscriptionId;
+        readonly X509Certificate2 _certificate;
+        readonly string _deploymentPrivateId;
 
         readonly object _currentDeploymentDiscoveryLock = new object();
         Task<DeploymentReference> _currentDeploymentDiscoveryTask;
         DeploymentReference _currentDeployment;
 
+        public ProvisioningErrorHandling.RetryPolicy ShouldRetryQuery { get; set; }
+
+        public AzureCurrentDeployment(string deploymentPrivateId, string subscriptionId, X509Certificate2 certificate)
+        {
+            _subscriptionId = subscriptionId;
+            _certificate = certificate;
+            _deploymentPrivateId = deploymentPrivateId;
+
+            ShouldRetryQuery = ProvisioningErrorHandling.RetryOnTransientErrors;
+        }
+
         public Task<DeploymentReference> Discover(CancellationToken cancellationToken)
         {
             var completionSource = new TaskCompletionSource<DeploymentReference>();
             Task<DeploymentReference> previousTask;
-            var discovery = new AzureDiscovery(Client);
+            var discovery = new AzureDiscovery(_subscriptionId, _certificate) { ShouldRetryQuery = ShouldRetryQuery };
 
             // If we have already succeeded, just pass on the result from the last time (shortcut)
             lock (_currentDeploymentDiscoveryLock)
@@ -49,7 +54,7 @@ namespace Lokad.Cloud.Provisioning
             // If this is the first time this is called, create a new query and return
             if (previousTask == null)
             {
-                discovery.DoDiscoverDeploymentAsync(DeploymentPrivateId, completionSource, cancellationToken);
+                discovery.DoDiscoverDeploymentAsync(_deploymentPrivateId, completionSource, cancellationToken);
                 return completionSource.Task;
             }
 
@@ -65,7 +70,7 @@ namespace Lokad.Cloud.Provisioning
                         // Make sure the task doesn't throw at finalization
                         task.Exception.GetBaseException();
 
-                        discovery.DoDiscoverDeploymentAsync(DeploymentPrivateId, completionSource, cancellationToken);
+                        discovery.DoDiscoverDeploymentAsync(_deploymentPrivateId, completionSource, cancellationToken);
                         return;
                     }
 

@@ -1,9 +1,14 @@
-﻿using System;
+﻿#region Copyright (c) Lokad 2010-2011
+// This code is released under the terms of the new BSD licence.
+// URL: http://www.lokad.com/
+#endregion
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
 
-namespace Lokad.Cloud.Provisioning.AzureManagement
+namespace Lokad.Cloud.Provisioning
 {
     internal static class AzureXml
     {
