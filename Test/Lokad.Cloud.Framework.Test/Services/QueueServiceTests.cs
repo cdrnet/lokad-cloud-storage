@@ -5,10 +5,8 @@
 
 using System;
 using System.Linq;
-using Lokad.Cloud.Mock;
 using Lokad.Cloud.ServiceFabric;
 using Lokad.Cloud.Storage;
-using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Services
@@ -19,13 +17,7 @@ namespace Lokad.Cloud.Test.Services
         [Test]
         public void SquareServiceTest()
         {
-            var providersForCloudStorage = new CloudInfrastructureProviders(
-                new MemoryBlobStorageProvider(),
-                new MemoryQueueStorageProvider(),
-                new MemoryTableStorageProvider(),
-                new MemoryLogger(),
-                null,
-                new RuntimeFinalizer());
+            var providersForCloudStorage = Standalone.CreateMockProviders();
             
             var service = new SquareQueueService { Providers = providersForCloudStorage };
             var blobStorage = providersForCloudStorage.BlobStorage;
@@ -48,7 +40,7 @@ namespace Lokad.Cloud.Test.Services
             var queueName = TypeMapper.GetStorageName(typeof(SquareMessage));
             providersForCloudStorage.QueueStorage.Put(queueName, squareMessage);
 
-            for (int i = 0 ; i < 2 ; i++)
+            for (int i = 0 ; i < 11 ; i++)
             {
                 service.StartService();
             }
