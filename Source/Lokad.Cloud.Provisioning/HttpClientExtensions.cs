@@ -23,9 +23,8 @@ namespace Lokad.Cloud.Provisioning
             Action<XDocument, TaskCompletionSource<T>> handle)
         {
             var completionSource = new TaskCompletionSource<T>();
-            var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
 
-            SendXmlAsync(httpClient, request, completionSource, cancellationToken, shouldRetry(), 0, response =>
+            SendXmlAsync(httpClient, () => new HttpRequestMessage(HttpMethod.Get, requestUri), completionSource, cancellationToken, shouldRetry(), 0, response =>
                 {
                     response.EnsureSuccessStatusCode();
                     handle(XDocument.Load(response.Content.ContentReadStream), completionSource);
@@ -43,18 +42,21 @@ namespace Lokad.Cloud.Provisioning
         {
             var completionSource = new TaskCompletionSource<T>();
 
-            // Write XML body to stream
-            var stream = new MemoryStream();
-            content.Declaration = new XDeclaration("1.0", "utf-8", "yes");
-            content.Save(stream);
-            stream.Seek(0, SeekOrigin.Begin);
+            Func<HttpRequestMessage> request = () =>
+                {
+                    // Write XML body to stream
+                    var stream = new MemoryStream();
+                    content.Declaration = new XDeclaration("1.0", "utf-8", "yes");
+                    content.Save(stream);
+                    stream.Seek(0, SeekOrigin.Begin);
 
-            // Create request with xml-stream as body
-            var streamContent = new StreamContent(stream);
-            streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/xml") { CharSet = "utf-8"};
-            var request = new HttpRequestMessage(HttpMethod.Post, requestUri) { Content = streamContent };
+                    // Create request with xml-stream as body
+                    var streamContent = new StreamContent(stream);
+                    streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/xml") { CharSet = "utf-8" };
+                    return new HttpRequestMessage(HttpMethod.Post, requestUri) { Content = streamContent };
+                };
 
-            SendXmlAsync(httpClient, request, completionSource, cancellationToken, shouldRetry(), 0, response => handle(response, completionSource));
+            SendXmlAsync(httpClient, request,completionSource, cancellationToken, shouldRetry(), 0, response => handle(response, completionSource));
 
             // when a request completes, HttpClient disposes the request content including the stream, so we don't have to.
 
@@ -63,12 +65,12 @@ namespace Lokad.Cloud.Provisioning
 
         /// <remarks>Only put short operations in the "handle" continuation, or do them async, because it is executed synchronously.</remarks>
         private static void SendXmlAsync<T>(
-            HttpClient httpClient, HttpRequestMessage request,
+            HttpClient httpClient, Func<HttpRequestMessage> request,
             TaskCompletionSource<T> completionSource, CancellationToken cancellationToken,
             RetryPolicies.ShouldRetry shouldRetry, int retryCount,
             Action<HttpResponseMessage> handle)
         {
-            httpClient.SendAsync(request, cancellationToken).ContinueWith(task =>
+            httpClient.SendAsync(request(), cancellationToken).ContinueWith(task =>
             {
                 try
                 {
