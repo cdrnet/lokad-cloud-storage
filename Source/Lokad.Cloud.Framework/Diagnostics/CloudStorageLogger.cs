@@ -42,17 +42,11 @@ namespace Lokad.Cloud.Diagnostics
                 .Buffer(TimeSpan.FromMinutes(5))
                 .Subscribe(events =>
                     {
-                        foreach (var group in events.GroupBy(e => e.Exception == null ? null : new { Type = e.Exception.GetType(), e.Exception.Message }))
+                        foreach (var group in events.GroupBy(e => e.Policy))
                         {
-                            if (group.Key == null)
-                            {
-                                TryLog(string.Format("Storage: {0} retries on worker {1}", group.Count(), CloudEnvironment.PartitionKey), level: LogLevel.Debug);
-                            }
-                            else
-                            {
-                                TryLog(string.Format("Storage: {0} retries on worker {1} because of {2}: {3}", group.Count(), CloudEnvironment.PartitionKey, group.Key.Type.Name, group.Key.Message),
-                                    group.First().Exception, LogLevel.Debug);
-                            }
+                            TryLog(string.Format("Storage: {0} retries on worker {1} for the {2} retry policy because of {3}.",
+                                group.Count(), CloudEnvironment.PartitionKey, group.Key,
+                                string.Join(", ", group.Where(e => e.Exception != null).Select(e => e.Exception.GetType().Name).Distinct().ToArray())));
                         }
                     }));
         }
