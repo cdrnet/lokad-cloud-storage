@@ -40,8 +40,11 @@ namespace Lokad.Cloud.ServiceFabric
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public bool IsBusy { get; set; }
 
-        // TODO: #130, uncomment or remove
-        //[Obsolete("Scheduling scope is fixed at compilation time and thus not a state of the service.")]
+        /// <summary>Indicates whether the services is called once
+        /// every N seconds for the entire distributed app, or
+        /// if the service is called once every N seconds on each
+        /// worker.
+        /// </summary>
         [DataMember(IsRequired = false, EmitDefaultValue = false)]
         public bool SchedulePerWorker { get; set; }
     }
@@ -54,7 +57,7 @@ namespace Lokad.Cloud.ServiceFabric
             get { return ScheduledService.ScheduleStateContainer; }
         }
 
-        /// <summary>Name of the service being refered to.</summary>
+        /// <summary>Name of the service being referred to.</summary>
         [Rank(0)] public readonly string ServiceName;
 
         /// <summary>Instantiate the reference associated to the specified service.</summary>
