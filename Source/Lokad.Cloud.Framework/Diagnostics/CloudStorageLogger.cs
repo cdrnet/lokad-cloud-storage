@@ -46,7 +46,8 @@ namespace Lokad.Cloud.Diagnostics
                         {
                             TryLog(string.Format("Storage: {0} retries on worker {1} for the {2} retry policy because of {3}.",
                                 group.Count(), CloudEnvironment.PartitionKey, group.Key,
-                                string.Join(", ", group.Where(e => e.Exception != null).Select(e => e.Exception.GetType().Name).Distinct().ToArray())));
+                                string.Join(", ", group.Where(e => e.Exception != null).Select(e => e.Exception.GetType().Name).Distinct().ToArray())),
+                                level: LogLevel.Debug);
                         }
                     }));
         }
