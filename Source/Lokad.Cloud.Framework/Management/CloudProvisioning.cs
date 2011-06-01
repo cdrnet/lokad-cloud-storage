@@ -28,6 +28,12 @@ namespace Lokad.Cloud.Management
             _log = log;
 
             // try get settings and certificate
+            if (!CloudEnvironment.IsAvailable)
+            {
+                _log.WarnFormat("Provisioning: RoleEnvironment not available on worker {0}.", CloudEnvironment.PartitionKey);
+                return;
+            }
+
             var currentDeploymentPrivateId = CloudEnvironment.AzureDeploymentId;
             Maybe<X509Certificate2> certificate = Maybe<X509Certificate2>.Empty;
             if (!String.IsNullOrWhiteSpace(settings.SelfManagementCertificateThumbprint))
@@ -48,14 +54,30 @@ namespace Lokad.Cloud.Management
 
             _currentDeployment.Discover(CancellationToken.None).ContinueWith(t =>
                 {
-                    if (ProvisioningErrorHandling.IsTransientError(t.Exception))
+                    var baseException = t.Exception.GetBaseException();
+
+                    if (ProvisioningErrorHandling.IsTransientError(baseException))
                     {
-                        _log.DebugFormat(t.Exception.GetBaseException(), "Provisioning: Initial discovery failed with a transient error.");
+                        _log.DebugFormat(baseException, "Provisioning: Initial discovery failed with a transient error.");
+                        return;
                     }
-                    else
+
+                    HttpStatusCode httpStatus;
+                    if (ProvisioningErrorHandling.TryGetHttpStatusCode(baseException, out httpStatus))
                     {
-                        _log.WarnFormat(t.Exception.GetBaseException(), "Provisioning: Initial discovery failed with a permanent error.");
+                        switch(httpStatus)
+                        {
+                            case HttpStatusCode.Forbidden:
+                                _log.WarnFormat(baseException, "Provisioning: Initial discovery failed with HTTP 403 Forbidden. We tried using subscription '{0}' and certificate '{1}' ({2}) {3} private key.",
+                                    settings.SelfManagementSubscriptionId, certificate.Value.FriendlyName, certificate.Value.Thumbprint, certificate.Value.HasPrivateKey ? "with" : "without");
+                                return;
+                            default:
+                                _log.WarnFormat(baseException, "Provisioning: Initial discovery failed with a permanent HTTP {0} {1} error.", (int)httpStatus, httpStatus);
+                                return;
+                        }
                     }
+
+                    _log.WarnFormat(baseException, "Provisioning: Initial discovery failed with a permanent error.");
                 }, TaskContinuationOptions.OnlyOnFaulted);
         }
 
@@ -70,8 +92,6 @@ namespace Lokad.Cloud.Management
         /// </remarks>
         public Task<int> GetWorkerInstanceCount(CancellationToken cancellationToken)
         {
-            var started = DateTimeOffset.UtcNow;
-
             var task = _provisioning.GetCurrentLokadCloudWorkerCount(_currentDeployment, cancellationToken);
 
             // TODO (ruegg, 2011-05-30): Replace with system events
@@ -79,12 +99,7 @@ namespace Lokad.Cloud.Management
                 {
                     try
                     {
-                        if (t.IsCompleted)
-                        {
-                            // TODO (ruegg, 2011-05-24): Drop
-                            _log.DebugFormat("Provisioning: Getting the current worker instance count succeeded ({0}s).", DateTimeOffset.UtcNow - started);
-                        }
-                        else if (t.IsFaulted)
+                        if (t.IsFaulted)
                         {
                             if (ProvisioningErrorHandling.IsTransientError(t.Exception))
                             {
@@ -117,7 +132,6 @@ namespace Lokad.Cloud.Management
             }
 
             _log.InfoFormat("Provisioning: Updating the worker instance count to {0}.", count);
-            var started = DateTimeOffset.UtcNow;
 
             var task = _provisioning.UpdateCurrentLokadCloudWorkerCount(_currentDeployment, count, cancellationToken);
 
@@ -126,12 +140,7 @@ namespace Lokad.Cloud.Management
                 {
                     try
                     {
-                        if (t.IsCompleted)
-                        {
-                            // TODO (ruegg, 2011-05-24): Drop
-                            _log.DebugFormat("Provisioning: Updated the worker instance count to {0} ({1}s).", count, DateTimeOffset.UtcNow - started);
-                        }
-                        else if (t.IsFaulted)
+                        if (t.IsFaulted)
                         {
                             HttpStatusCode httpStatus;
                             if (ProvisioningErrorHandling.TryGetHttpStatusCode(t.Exception, out httpStatus))
