@@ -107,6 +107,11 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             {
                 var log = runtimeContainer.Resolve<ILog>();
 
+                AppDomain.CurrentDomain.UnhandledException += (sender, e) => log.ErrorFormat(
+                    e.ExceptionObject as Exception,
+                    "Runtime Host: An unhandled {0} exception occurred on worker {1} in a background thread. The Runtime Host will be restarted: {2}.",
+                    e.ExceptionObject.GetType().Name, CloudEnvironment.PartitionKey, e.IsTerminating);
+
                 _runtime = null;
                 try
                 {

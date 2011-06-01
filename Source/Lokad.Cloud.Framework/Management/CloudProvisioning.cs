@@ -76,8 +76,8 @@ namespace Lokad.Cloud.Management
                         switch(httpStatus)
                         {
                             case HttpStatusCode.Forbidden:
-                                _log.WarnFormat(baseException, "Provisioning: Initial discovery failed with HTTP 403 Forbidden. We tried using subscription '{0}' and certificate '{1}' ({2}) {3} private key.",
-                                    settings.SelfManagementSubscriptionId, certificate.Value.FriendlyName, certificate.Value.Thumbprint, certificate.Value.HasPrivateKey ? "with" : "without");
+                                _log.WarnFormat(baseException, "Provisioning: Initial discovery failed with HTTP 403 Forbidden. We tried using subscription '{0}' and certificate '{1}' ({2}) {3} a private key.",
+                                    settings.SelfManagementSubscriptionId, certificate.Value.SubjectName, certificate.Value.Thumbprint, certificate.Value.HasPrivateKey ? "with" : "without");
                                 return;
                             default:
                                 _log.WarnFormat(baseException, "Provisioning: Initial discovery failed with a permanent HTTP {0} {1} error.", (int)httpStatus, httpStatus);
