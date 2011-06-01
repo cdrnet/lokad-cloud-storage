@@ -38,11 +38,38 @@ namespace Lokad.Cloud.Diagnostics
                 .Buffer(TimeSpan.FromMinutes(5))
                 .Subscribe(events =>
                     {
-                        foreach (var group in events.GroupBy(e => new { Type = e.Exception.GetType(), e.Exception.Message }))
+                        foreach (var group in events.GroupBy(e => e.Exception == null ? null : new { Type = e.Exception.GetType(), e.Exception.Message }))
                         {
-                            _log.DebugFormat(group.First().Exception, "Provisioning: {0} retries on worker {1} because of {2}: {3}", group.Count(), CloudEnvironment.PartitionKey, group.Key.Type.Name, group.Key.Message);
+                            if (group.Key == null)
+                            {
+                                TryLog(string.Format("Provisioning: {0} retries on worker {1}", group.Count(), CloudEnvironment.PartitionKey), level: LogLevel.Debug);
+                            }
+                            else
+                            {
+                                TryLog(string.Format("Provisioning: {0} retries on worker {1} because of {2}: {3}", group.Count(), CloudEnvironment.PartitionKey, group.Key.Type.Name, group.Key.Message),
+                                    group.First().Exception, LogLevel.Debug);
+                            }
                         }
                     }));
+        }
+
+        void TryLog(object message, Exception exception = null, LogLevel level = LogLevel.Warn)
+        {
+            try
+            {
+                if (exception != null)
+                {
+                    _log.Log(level, exception, message);
+                }
+                else
+                {
+                    _log.Log(level, message);
+                }
+            }
+            catch (Exception)
+            {
+                // If logging fails, ignore (we can't report)
+            }
         }
 
         public void Dispose()
