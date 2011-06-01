@@ -76,8 +76,11 @@ namespace Lokad.Cloud.Provisioning
                 .ContinuePropagateWith(completionSource, cancellationToken, queryTask =>
                     {
                         var config = queryTask.Result;
-
-                        GetInstanceCountConfigElement(config, roleName).Value = instanceCount.ToString();
+                        if (!UpdateInstanceCountConfig(config, roleName, instanceCount))
+                        {
+                            completionSource.TrySetResult(HttpStatusCode.NotModified);
+                            return;
+                        }
 
                         DoUpdateDeploymentConfiguration(client, serviceName, deploymentSlot, config, cancellationToken)
                             .ContinuePropagateWith(completionSource, cancellationToken, updateTask => completionSource.TrySetResult(updateTask.Result));
@@ -95,8 +98,11 @@ namespace Lokad.Cloud.Provisioning
                 .ContinuePropagateWith(completionSource, cancellationToken, queryTask =>
                     {
                         var config = queryTask.Result;
-
-                        GetInstanceCountConfigElement(config, roleName).Value = instanceCount.ToString();
+                        if (!UpdateInstanceCountConfig(config, roleName, instanceCount))
+                        {
+                            completionSource.TrySetResult(HttpStatusCode.NotModified);
+                            return;
+                        }
 
                         DoUpdateDeploymentConfiguration(client, serviceName, deploymentName, config, cancellationToken)
                             .ContinuePropagateWith(completionSource, cancellationToken, updateTask => completionSource.TrySetResult(updateTask.Result));
@@ -116,14 +122,39 @@ namespace Lokad.Cloud.Provisioning
                         .ContinuePropagateWith(completionSource, cancellationToken, queryTask =>
                             {
                                 var config = queryTask.Result;
-
-                                GetInstanceCountConfigElement(config, roleName).Value = instanceCount.ToString();
+                                if (!UpdateInstanceCountConfig(config, roleName, instanceCount))
+                                {
+                                    completionSource.TrySetResult(HttpStatusCode.NotModified);
+                                    return;
+                                }
 
                                 DoUpdateDeploymentConfiguration(client, discoveryTask.Result.HostedServiceName, discoveryTask.Result.DeploymentName, config, cancellationToken)
                                     .ContinuePropagateWith(completionSource, cancellationToken, updateTask => completionSource.TrySetResult(updateTask.Result));
                             }));
 
             return completionSource.Task;
+        }
+
+        bool UpdateInstanceCountConfig(XDocument configuration, string roleName, int newInstanceCount)
+        {
+            var instanceCountElement = GetInstanceCountConfigElement(configuration, roleName);
+            var newInstanceCountString = newInstanceCount.ToString();
+
+            if (instanceCountElement.Value == newInstanceCountString)
+            {
+                return false;
+            }
+
+            instanceCountElement.Value = newInstanceCountString;
+            return true;
+        }
+
+        XAttribute GetInstanceCountConfigElement(XDocument xml, string roleName)
+        {
+            return xml.ServiceConfigElements("ServiceConfiguration", "Role")
+                .Single(x => x.AttributeValue("name") == roleName)
+                .ServiceConfigElement("Instances")
+                .Attribute("count");
         }
 
         public Task<int> GetLokadCloudWorkerCount(string serviceName, DeploymentSlot deploymentSlot, CancellationToken cancellationToken)
@@ -154,14 +185,6 @@ namespace Lokad.Cloud.Provisioning
         public Task UpdateCurrentLokadCloudWorkerCount(AzureCurrentDeployment currentDeployment, int instanceCount, CancellationToken cancellationToken)
         {
             return UpdateCurrentInstanceCount(currentDeployment, "Lokad.Cloud.WorkerRole", instanceCount, cancellationToken);
-        }
-
-        XAttribute GetInstanceCountConfigElement(XDocument xml, string roleName)
-        {
-            return xml.ServiceConfigElements("ServiceConfiguration", "Role")
-                .Single(x => x.AttributeValue("name") == roleName)
-                .ServiceConfigElement("Instances")
-                .Attribute("count");
         }
 
         Task<XDocument> DoGetDeploymentConfiguration(HttpClient client, string serviceName, string deploymentName, CancellationToken cancellationToken)

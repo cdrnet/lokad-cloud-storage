@@ -153,13 +153,14 @@ namespace Lokad.Cloud.Management
                             HttpStatusCode httpStatus;
                             if (ProvisioningErrorHandling.TryGetHttpStatusCode(t.Exception, out httpStatus))
                             {
-                                if (httpStatus == HttpStatusCode.Conflict)
+                                switch(httpStatus)
                                 {
-                                    _log.DebugFormat("Provisioning: Updating the worker instance count to {0} failed because another deployment update is already in progress.", count);
-                                }
-                                else
-                                {
-                                    _log.DebugFormat("Provisioning: Updating the worker instance count failed with HTTP Status {0} ({1}).", httpStatus, (int)httpStatus);
+                                    case HttpStatusCode.Conflict:
+                                        _log.DebugFormat("Provisioning: Updating the worker instance count to {0} failed because another deployment update is already in progress.", count);
+                                        break;
+                                    default:
+                                        _log.DebugFormat("Provisioning: Updating the worker instance count failed with HTTP Status {0} ({1}).", httpStatus, (int)httpStatus);
+                                        break;
                                 }
                             }
                             else if (ProvisioningErrorHandling.IsTransientError(t.Exception))

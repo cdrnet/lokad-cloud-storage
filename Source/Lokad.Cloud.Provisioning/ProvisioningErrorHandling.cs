@@ -18,7 +18,9 @@ namespace Lokad.Cloud.Provisioning
             if (TryGetHttpStatusCode(exception, out httpStatus))
             {
                 // For HTTP Errors only retry on Server Errors: 5xx
-                return (int)httpStatus >= 500 && (int)httpStatus < 600;
+                // Exception: 403/Forbidden, which we get sporadically despide correct credentials
+                var statusCode = (int)httpStatus;
+                return statusCode == 403 || (statusCode >= 500 && statusCode < 600);
             }
 
             WebExceptionStatus webStatus;
