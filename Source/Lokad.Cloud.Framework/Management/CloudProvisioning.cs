@@ -48,6 +48,13 @@ namespace Lokad.Cloud.Management
                 return;
             }
 
+            // detect dev fabric
+            if (currentDeploymentPrivateId.Value.StartsWith("deployment("))
+            {
+                _log.DebugFormat("Provisioning: Not available in dev fabric instance '{0}'.", CloudEnvironment.AzureCurrentInstanceId.GetValue("N/A"));
+                return;
+            }
+
             // ok
             _provisioning = new AzureProvisioning(settings.SelfManagementSubscriptionId, certificate.Value);
             _currentDeployment = new AzureCurrentDeployment(currentDeploymentPrivateId.Value, settings.SelfManagementSubscriptionId, certificate.Value);
