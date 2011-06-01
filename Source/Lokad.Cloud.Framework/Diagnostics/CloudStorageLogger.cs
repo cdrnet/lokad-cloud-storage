@@ -39,12 +39,12 @@ namespace Lokad.Cloud.Diagnostics
             _subscriptions.Add(_observable.OfType<MessageProcessingFailedQuarantinedEvent>().Subscribe(e => TryLog(e)));
 
             _subscriptions.Add(_observable.OfType<StorageOperationRetriedEvent>()
-                .Buffer(TimeSpan.FromMinutes(5))
+                .Buffer(TimeSpan.FromMinutes(30))
                 .Subscribe(events =>
                     {
                         foreach (var group in events.GroupBy(e => e.Policy))
                         {
-                            TryLog(string.Format("Storage: {0} retries on worker {1} for the {2} retry policy because of {3}.",
+                            TryLog(string.Format("Storage: {0}/30min retries on worker {1} for the {2} retry policy because of {3}.",
                                 group.Count(), CloudEnvironment.PartitionKey, group.Key,
                                 string.Join(", ", group.Where(e => e.Exception != null).Select(e => e.Exception.GetType().Name).Distinct().ToArray())),
                                 level: LogLevel.Debug);
