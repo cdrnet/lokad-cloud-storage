@@ -147,6 +147,11 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
 
                     return true;
                 }
+                catch (ThreadAbortException)
+                {
+                    Thread.ResetAbort();
+                    log.DebugFormat("Runtime Host: execution was aborted on worker {0}. The Runtime is stopping.", CloudEnvironment.PartitionKey);
+                }
                 catch (Exception ex)
                 {
                     // Generic exception
