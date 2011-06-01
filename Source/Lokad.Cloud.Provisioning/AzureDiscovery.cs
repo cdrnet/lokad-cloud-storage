@@ -11,6 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cloud.Provisioning.Info;
+using Lokad.Cloud.Provisioning.Instrumentation;
 
 namespace Lokad.Cloud.Provisioning
 {
@@ -18,15 +19,13 @@ namespace Lokad.Cloud.Provisioning
     {
         readonly string _subscriptionId;
         readonly X509Certificate2 _certificate;
+        readonly RetryPolicies _policies;
 
-        public ProvisioningErrorHandling.RetryPolicy ShouldRetryQuery { get; set; }
-
-        public AzureDiscovery(string subscriptionId, X509Certificate2 certificate)
+        public AzureDiscovery(string subscriptionId, X509Certificate2 certificate, ICloudProvisioningObserver observer = null)
         {
             _subscriptionId = subscriptionId;
             _certificate = certificate;
-
-            ShouldRetryQuery = ProvisioningErrorHandling.RetryOnTransientErrors;
+            _policies = new RetryPolicies(observer);
         }
 
         public Task<HostedServiceInfo> DiscoverHostedService(string serviceName, CancellationToken cancellationToken)
@@ -77,7 +76,7 @@ namespace Lokad.Cloud.Provisioning
         {
             return client.GetXmlAsync<HostedServiceInfo>(
                 string.Format("services/hostedservices/{0}?embed-detail=true", serviceName),
-                cancellationToken, ShouldRetryQuery,
+                cancellationToken, _policies.RetryOnTransientErrors,
                 (xml, tcs) =>
                 {
                     var xmlService = xml.AzureElement("HostedService");
@@ -136,7 +135,7 @@ namespace Lokad.Cloud.Provisioning
         {
             return client.GetXmlAsync<HostedServiceInfo[]>(
                 "services/hostedservices",
-                cancellationToken, ShouldRetryQuery,
+                cancellationToken, _policies.RetryOnTransientErrors,
                 (xml, tcs) =>
                 {
                     var serviceNames = xml.AzureElements("HostedServices", "HostedService")

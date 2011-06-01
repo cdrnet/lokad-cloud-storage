@@ -7,20 +7,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using Lokad.Cloud.Storage.Instrumentation.Events;
+using Lokad.Cloud.Provisioning.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Diagnostics
 {
     // TODO (ruegg, 2011-05-30): Temporary class to maintain logging via system events for now -> rework
 
-    internal class CloudStorageLogger : Autofac.IStartable, IDisposable
+    internal class CloudProvisioningLogger : Autofac.IStartable, IDisposable
     {
-        private readonly IObservable<ICloudStorageEvent> _observable;
+        private readonly IObservable<ICloudProvisioningEvent> _observable;
         private readonly ILog _log;
         private readonly List<IDisposable> _subscriptions;
 
-        public CloudStorageLogger(IObservable<ICloudStorageEvent> observable, ILog log)
+        public CloudProvisioningLogger(IObservable<ICloudProvisioningEvent> observable, ILog log)
         {
             _observable = observable;
             _log = log;
@@ -34,17 +34,13 @@ namespace Lokad.Cloud.Diagnostics
                 return;
             }
 
-            _subscriptions.Add(_observable.OfType<BlobDeserializationFailedEvent>().Subscribe(e => _log.Warn(e.Exception, e)));
-            _subscriptions.Add(_observable.OfType<MessageDeserializationFailedQuarantinedEvent>().Subscribe(e => _log.Warn(e.Exceptions, e)));
-            _subscriptions.Add(_observable.OfType<MessageProcessingFailedQuarantinedEvent>().Subscribe(e => _log.Warn(e)));
-
-            _subscriptions.Add(_observable.OfType<StorageOperationRetriedEvent>()
+            _subscriptions.Add(_observable.OfType<ProvisioningOperationRetriedEvent>()
                 .Buffer(TimeSpan.FromMinutes(5))
                 .Subscribe(events =>
                     {
                         foreach (var group in events.GroupBy(e => new { Type = e.Exception.GetType(), e.Exception.Message }))
                         {
-                            _log.DebugFormat(group.First().Exception, "Storage: {0} retries on worker {1} because of {2}: {3}", group.Count(), CloudEnvironment.PartitionKey, group.Key.Type.Name, group.Key.Message);
+                            _log.DebugFormat(group.First().Exception, "Provisioning: {0} retries on worker {1} because of {2}: {3}", group.Count(), CloudEnvironment.PartitionKey, group.Key.Type.Name, group.Key.Message);
                         }
                     }));
         }

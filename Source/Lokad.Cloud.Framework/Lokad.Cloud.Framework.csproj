@@ -132,6 +132,7 @@
     <Compile Include="CloudModule.cs" />
     <Compile Include="Diagnostics\CloudLogger.cs" />
     <Compile Include="Diagnostics\CloudStorageLogger.cs" />
+    <Compile Include="Diagnostics\CloudProvisioningLogger.cs" />
     <Compile Include="Diagnostics\Persistence\ExecutionProfilingStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\PartitionStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\ServiceStatisticsName.cs" />

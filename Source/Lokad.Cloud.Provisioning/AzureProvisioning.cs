@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Lokad.Cloud.Provisioning.Info;
+using Lokad.Cloud.Provisioning.Instrumentation;
 
 namespace Lokad.Cloud.Provisioning
 {
@@ -19,17 +20,13 @@ namespace Lokad.Cloud.Provisioning
     {
         readonly string _subscriptionId;
         readonly X509Certificate2 _certificate;
+        readonly RetryPolicies _policies;
 
-        public ProvisioningErrorHandling.RetryPolicy ShouldRetryQuery { get; set; }
-        public ProvisioningErrorHandling.RetryPolicy ShouldRetryCommand { get; set; }
-
-        public AzureProvisioning(string subscriptionId, X509Certificate2 certificate)
+        public AzureProvisioning(string subscriptionId, X509Certificate2 certificate, ICloudProvisioningObserver observer = null)
         {
             _subscriptionId = subscriptionId;
             _certificate = certificate;
-
-            ShouldRetryQuery = ProvisioningErrorHandling.RetryOnTransientErrors;
-            ShouldRetryCommand = ProvisioningErrorHandling.RetryOnTransientErrors;
+            _policies = new RetryPolicies(observer);
         }
 
         public Task<int> GetRoleInstanceCount(string serviceName, string roleName, DeploymentSlot deploymentSlot, CancellationToken cancellationToken)
@@ -171,7 +168,7 @@ namespace Lokad.Cloud.Provisioning
         {
             return client.GetXmlAsync<XDocument>(
                 string.Format("services/hostedservices/{0}/deployments/{1}", serviceName, deploymentName),
-                cancellationToken, ShouldRetryQuery,
+                cancellationToken, _policies.RetryOnTransientErrors,
                 (xml, tcs) => tcs.TrySetResult(xml.AzureElement("Deployment").AzureConfiguration()));
         }
 
@@ -179,7 +176,7 @@ namespace Lokad.Cloud.Provisioning
         {
             return client.GetXmlAsync<XDocument>(
                 string.Format("services/hostedservices/{0}/deploymentslots/{1}", serviceName, deploymentSlot.ToString().ToLower()),
-                cancellationToken, ShouldRetryQuery,
+                cancellationToken, _policies.RetryOnTransientErrors,
                 (xml, tcs) => tcs.TrySetResult(xml.AzureElement("Deployment").AzureConfiguration()));
         }
 
@@ -188,7 +185,7 @@ namespace Lokad.Cloud.Provisioning
             return client.PostXmlAsync<HttpStatusCode>(
                 string.Format("services/hostedservices/{0}/deployments/{1}/?comp=config", serviceName, deploymentName),
                 new XDocument(AzureXml.Element("ChangeConfiguration", AzureXml.Configuration(configuration))),
-                cancellationToken, ShouldRetryCommand,
+                cancellationToken, _policies.RetryOnTransientErrors,
                 (response, tcs) =>
                 {
                     response.EnsureSuccessStatusCode();
@@ -201,7 +198,7 @@ namespace Lokad.Cloud.Provisioning
             return client.PostXmlAsync<HttpStatusCode>(
                 string.Format("services/hostedservices/{0}/deploymentslots/{1}/?comp=config", serviceName, deploymentSlot),
                 new XDocument(AzureXml.Element("ChangeConfiguration", AzureXml.Configuration(configuration))),
-                cancellationToken, ShouldRetryCommand,
+                cancellationToken, _policies.RetryOnTransientErrors,
                 (response, tcs) =>
                 {
                     response.EnsureSuccessStatusCode();

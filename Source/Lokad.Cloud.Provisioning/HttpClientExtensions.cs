@@ -19,7 +19,7 @@ namespace Lokad.Cloud.Provisioning
         public static Task<T> GetXmlAsync<T>(
             this HttpClient httpClient, string requestUri,
             CancellationToken cancellationToken,
-            ProvisioningErrorHandling.RetryPolicy shouldRetry,
+            RetryPolicies.RetryPolicy shouldRetry,
             Action<XDocument, TaskCompletionSource<T>> handle)
         {
             var completionSource = new TaskCompletionSource<T>();
@@ -38,7 +38,7 @@ namespace Lokad.Cloud.Provisioning
         public static Task<T> PostXmlAsync<T>(
             this HttpClient httpClient, string requestUri, XDocument content,
             CancellationToken cancellationToken,
-            ProvisioningErrorHandling.RetryPolicy shouldRetry,
+            RetryPolicies.RetryPolicy shouldRetry,
             Action<HttpResponseMessage, TaskCompletionSource<T>> handle)
         {
             var completionSource = new TaskCompletionSource<T>();
@@ -65,7 +65,7 @@ namespace Lokad.Cloud.Provisioning
         private static void SendXmlAsync<T>(
             HttpClient httpClient, HttpRequestMessage request,
             TaskCompletionSource<T> completionSource, CancellationToken cancellationToken,
-            ProvisioningErrorHandling.ShouldRetry shouldRetry, int retryCount,
+            RetryPolicies.ShouldRetry shouldRetry, int retryCount,
             Action<HttpResponseMessage> handle)
         {
             httpClient.SendAsync(request, cancellationToken).ContinueWith(task =>

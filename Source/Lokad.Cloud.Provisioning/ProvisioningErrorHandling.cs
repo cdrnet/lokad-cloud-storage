@@ -12,28 +12,6 @@ namespace Lokad.Cloud.Provisioning
 {
     public static class ProvisioningErrorHandling
     {
-        // NOTE (ruegg, 2011-05-24): Clone from Microsoft.WindowsAzure.StorageClient.ShouldRetry.
-        // Justification: Avoid reference to the storage client library just for this delegate type
-        public delegate bool ShouldRetry(int retryCount, Exception lastException, out TimeSpan delay);
-        public delegate ShouldRetry RetryPolicy();
-
-        public static ShouldRetry RetryOnTransientErrors()
-        {
-            var random = new Random();
-
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
-                {
-                    if (IsTransientError(lastException) && currentRetryCount <= 30)
-                    {
-                        retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
-                        return true;
-                    }
-
-                    retryInterval = TimeSpan.Zero;
-                    return false;
-                };
-        }
-
         public static bool IsTransientError(Exception exception)
         {
             HttpStatusCode httpStatus;

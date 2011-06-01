@@ -28,6 +28,7 @@ namespace Lokad.Cloud.Diagnostics
 
             // TODO (ruegg, 2011-05-30): Observer that logs system events to the log: temporary! to keep old logging behavior for now
             builder.RegisterType<CloudStorageLogger>().As<IStartable>().SingleInstance();
+            builder.RegisterType<CloudProvisioningLogger>().As<IStartable>().SingleInstance();
         }
 
         static CloudLogger CloudLogger(IComponentContext c)

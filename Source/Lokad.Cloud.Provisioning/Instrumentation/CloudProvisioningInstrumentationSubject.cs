@@ -13,7 +13,7 @@ namespace Lokad.Cloud.Provisioning.Instrumentation
     /// (similar to Rx's FastSubject). Use this class if you want an easy way to observe Lokad.Cloud.Provisioning
     /// using Rx. Alternatively you can implement your own storage observer instead, or not use any observers at all.
     /// </summary>
-    public class CloudProvisioningInstrumentationSubject : IDisposable, ICloudProvisioningObserver
+    public class CloudProvisioningInstrumentationSubject : IDisposable, ICloudProvisioningObserver, IObservable<ICloudProvisioningEvent>
     {
         readonly object _sync = new object();
         private bool _isDisposed;

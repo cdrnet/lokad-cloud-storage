@@ -53,7 +53,9 @@
     <Compile Include="HttpClientFactory.cs" />
     <Compile Include="Info\DeploymentReference.cs" />
     <Compile Include="Instrumentation\Events\ICloudProvisioningEvent.cs" />
+    <Compile Include="Instrumentation\Events\StorageOperationRetriedEvent.cs" />
     <Compile Include="ProvisioningErrorHandling.cs" />
+    <Compile Include="RetryPolicies.cs" />
     <Compile Include="ServiceConfigXml.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="AzureProvisioning.cs" />

@@ -8,6 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cloud.Provisioning.Info;
+using Lokad.Cloud.Provisioning.Instrumentation;
 
 namespace Lokad.Cloud.Provisioning
 {
@@ -16,20 +17,18 @@ namespace Lokad.Cloud.Provisioning
         readonly string _subscriptionId;
         readonly X509Certificate2 _certificate;
         readonly string _deploymentPrivateId;
+        readonly ICloudProvisioningObserver _observer;
 
         readonly object _currentDeploymentDiscoveryLock = new object();
         Task<DeploymentReference> _currentDeploymentDiscoveryTask;
         DeploymentReference _currentDeployment;
 
-        public ProvisioningErrorHandling.RetryPolicy ShouldRetryQuery { get; set; }
-
-        public AzureCurrentDeployment(string deploymentPrivateId, string subscriptionId, X509Certificate2 certificate)
+        public AzureCurrentDeployment(string deploymentPrivateId, string subscriptionId, X509Certificate2 certificate, ICloudProvisioningObserver observer = null)
         {
             _subscriptionId = subscriptionId;
             _certificate = certificate;
             _deploymentPrivateId = deploymentPrivateId;
-
-            ShouldRetryQuery = ProvisioningErrorHandling.RetryOnTransientErrors;
+            _observer = observer;
         }
 
         public Task<DeploymentReference> Discover(CancellationToken cancellationToken)
@@ -37,7 +36,7 @@ namespace Lokad.Cloud.Provisioning
             var client = HttpClientFactory.Create(_subscriptionId, _certificate);
             var completionSource = new TaskCompletionSource<DeploymentReference>();
             Task<DeploymentReference> previousTask;
-            var discovery = new AzureDiscovery(_subscriptionId, _certificate) { ShouldRetryQuery = ShouldRetryQuery };
+            var discovery = new AzureDiscovery(_subscriptionId, _certificate, _observer);
 
             // If we have already succeeded, just pass on the result from the last time (shortcut)
             lock (_currentDeploymentDiscoveryLock)

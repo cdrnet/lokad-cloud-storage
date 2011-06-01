@@ -3,8 +3,13 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Autofac;
 using Lokad.Cloud.Management.Api10;
+using Lokad.Cloud.Provisioning.Instrumentation;
+using Lokad.Cloud.Provisioning.Instrumentation.Events;
 
 namespace Lokad.Cloud.Management
 {
@@ -29,6 +34,16 @@ namespace Lokad.Cloud.Management
                     c.Resolve<Storage.Shared.Logging.ILog>()))
                 .As<CloudProvisioning, IProvisioningProvider>()
                 .SingleInstance();
+
+            builder.Register(ProvisioningObserver)
+                .As<ICloudProvisioningObserver, IObservable<ICloudProvisioningEvent>>()
+                .SingleInstance();
+        }
+
+        static CloudProvisioningInstrumentationSubject ProvisioningObserver(IComponentContext c)
+        {
+            // will include any registered storage event observers, if there are any, as fixed subscriptions
+            return new CloudProvisioningInstrumentationSubject(c.Resolve<IEnumerable<IObserver<ICloudProvisioningEvent>>>().ToArray());
         }
     }
 }
