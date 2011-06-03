@@ -207,7 +207,7 @@ namespace Lokad.Cloud.Provisioning
         {
             return client.PostXmlAsync<HttpStatusCode>(
                 string.Format("services/hostedservices/{0}/deployments/{1}/?comp=config", serviceName, deploymentName),
-                new XDocument(AzureXml.Element("ChangeConfiguration", AzureXml.Configuration(configuration))),
+                new XDocument(AzureXml.CreateElement("ChangeConfiguration", AzureXml.CreateConfiguration(configuration))),
                 cancellationToken, _policies.RetryOnTransientErrors,
                 (response, tcs) =>
                 {
@@ -220,7 +220,7 @@ namespace Lokad.Cloud.Provisioning
         {
             return client.PostXmlAsync<HttpStatusCode>(
                 string.Format("services/hostedservices/{0}/deploymentslots/{1}/?comp=config", serviceName, deploymentSlot),
-                new XDocument(AzureXml.Element("ChangeConfiguration", AzureXml.Configuration(configuration))),
+                new XDocument(AzureXml.CreateElement("ChangeConfiguration", AzureXml.CreateConfiguration(configuration))),
                 cancellationToken, _policies.RetryOnTransientErrors,
                 (response, tcs) =>
                 {

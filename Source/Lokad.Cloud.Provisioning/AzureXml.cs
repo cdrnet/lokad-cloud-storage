@@ -12,47 +12,59 @@ namespace Lokad.Cloud.Provisioning
 {
     internal static class AzureXml
     {
-        private static readonly XNamespace _AzureNS = @"http://schemas.microsoft.com/windowsazure";
+        private static readonly XNamespace _azureNs = @"http://schemas.microsoft.com/windowsazure";
 
-        public static XElement Element(string name, params object[] content)
+        public static XElement CreateElement(string name, params object[] content)
         {
-            return new XElement(_AzureNS + name, content);
+            return new XElement(_azureNs + name, content);
         }
 
-        public static XElement AzureElement(this XContainer element, string elementName)
+        public static XElement AzureElement(this XContainer container, string elementName)
         {
-            return element.Element(_AzureNS + elementName);
+            var element = container.Element(_azureNs + elementName);
+            if (element == null)
+            {
+                throw new ArgumentException(string.Format("Azure Management XML: element '{0}' has no child element '{1}'", container, elementName));
+            }
+
+            return element;
         }
 
-        public static IEnumerable<XElement> AzureElements(this XContainer element, string parentElementName, string itemElementName)
+        public static IEnumerable<XElement> AzureElements(this XContainer container, string parentElementName, string itemElementName)
         {
-            return element.Element(_AzureNS + parentElementName).Elements(_AzureNS + itemElementName);
+            return AzureElement(container, parentElementName).Elements(_azureNs + itemElementName);
         }
 
-        public static string AzureValue(this XContainer element, string elementName)
+        public static string AzureValue(this XContainer container, string elementName)
         {
-            return element.Element(_AzureNS + elementName).Value;
+            return AzureElement(container, elementName).Value;
         }
 
-        public static string AzureEncodedValue(this XContainer element, string elementName)
+        public static string AzureEncodedValue(this XContainer container, string elementName)
         {
-            return Encoding.UTF8.GetString(Convert.FromBase64String(element.Element(_AzureNS + elementName).Value));
+            return Encoding.UTF8.GetString(Convert.FromBase64String(AzureElement(container, elementName).Value));
         }
 
-        public static string AttributeValue(this XElement element, string attributeName)
+        public static string AttributeValue(this XElement container, string attributeName)
         {
-            return element.Attribute(attributeName).Value;
+            var attribute = container.Attribute(attributeName);
+            if (attribute == null)
+            {
+                throw new ArgumentException(string.Format("Azure Management XML: element '{0}' has no attribute '{1}'", container, attributeName));
+            }
+
+            return attribute.Value;
         }
 
-        public static XElement Configuration(XDocument config)
+        public static XElement CreateConfiguration(XDocument config)
         {
-            return new XElement(_AzureNS + "Configuration", Convert.ToBase64String(Encoding.UTF8.GetBytes(config.ToString(SaveOptions.OmitDuplicateNamespaces))));
+            return new XElement(_azureNs + "Configuration", Convert.ToBase64String(Encoding.UTF8.GetBytes(config.ToString(SaveOptions.OmitDuplicateNamespaces))));
         }
 
-        public static XDocument AzureConfiguration(this XContainer element)
+        public static XDocument AzureConfiguration(this XContainer container)
         {
             // Even though the XML is declared as UTF-16 it is actually encoded in UTF-8
-            return XDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(element.Element(_AzureNS + "Configuration").Value)));
+            return XDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(AzureElement(container, "Configuration").Value)));
         }
     }
 }

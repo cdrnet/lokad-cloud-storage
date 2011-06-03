@@ -3,6 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 
@@ -10,16 +11,22 @@ namespace Lokad.Cloud.Provisioning
 {
     internal static class ServiceConfigXml
     {
-        private static readonly XNamespace _ServiceConfigNS = @"http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration";
+        private static readonly XNamespace _serviceConfigNs = @"http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration";
 
-        public static XElement ServiceConfigElement(this XContainer element, string elementName)
+        public static XElement ServiceConfigElement(this XContainer container, string elementName)
         {
-            return element.Element(_ServiceConfigNS + elementName);
+            var element = container.Element(_serviceConfigNs + elementName);
+            if (element == null)
+            {
+                throw new ArgumentException(string.Format("Azure Service Config XML: element '{0}' has no child element '{1}'", container, elementName));
+            }
+
+            return element;
         }
 
-        public static IEnumerable<XElement> ServiceConfigElements(this XContainer element, string parentElementName, string itemElementName)
+        public static IEnumerable<XElement> ServiceConfigElements(this XContainer container, string parentElementName, string itemElementName)
         {
-            return element.Element(_ServiceConfigNS + parentElementName).Elements(_ServiceConfigNS + itemElementName);
+            return ServiceConfigElement(container, parentElementName).Elements(_serviceConfigNs + itemElementName);
         }
     }
 }
