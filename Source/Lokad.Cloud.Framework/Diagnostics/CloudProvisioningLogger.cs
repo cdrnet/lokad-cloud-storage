@@ -40,8 +40,8 @@ namespace Lokad.Cloud.Diagnostics
                     {
                         foreach (var group in events.GroupBy(e => e.Policy))
                         {
-                            TryLog(string.Format("Provisioning: {0}/5min retries on worker {1} for the {2} retry policy because of {3}.",
-                                group.Count(), CloudEnvironment.PartitionKey, group.Key,
+                            TryLog(string.Format("Provisioning: {0} retries in 5 min for the {1} policy on {2}. {3}",
+                                group.Count(), group.Key, CloudEnvironment.PartitionKey,
                                 string.Join(", ", group.Where(e => e.Exception != null).Select(e => e.Exception.GetType().Name).Distinct().ToArray())),
                                 level: LogLevel.Debug);
                         }
