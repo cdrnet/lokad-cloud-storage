@@ -219,6 +219,7 @@
     <Content Include="Management\ReadMe.txt" />
     <Content Include="ServiceFabric\ReadMe.txt" />
     <Content Include="ServiceFabric\Runtime\ReadMe.txt" />
+    <Content Include="Shared\_ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lokad.Cloud.Provisioning\Lokad.Cloud.Provisioning.csproj">
