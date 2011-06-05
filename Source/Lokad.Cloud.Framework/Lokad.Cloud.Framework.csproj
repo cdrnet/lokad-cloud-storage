@@ -141,11 +141,6 @@
     <Compile Include="Diagnostics\Rsm\RsmMessageReport.cs" />
     <Compile Include="Jobs\Job.cs" />
     <Compile Include="Jobs\JobManager.cs" />
-    <Compile Include="Management\Api10\ICloudAssembliesApi.cs" />
-    <Compile Include="Management\Api10\ICloudConfigurationApi.cs" />
-    <Compile Include="Management\Api10\ICloudServicesApi.cs" />
-    <Compile Include="Management\Api10\ICloudServiceSchedulingApi.cs" />
-    <Compile Include="Management\Api10\ICloudStatisticsApi.cs" />
     <Compile Include="Management\CloudProvisioning.cs" />
     <Compile Include="Management\IProvisioningProvider.cs" />
     <Compile Include="Mock\MemoryProvisioning.cs" />
@@ -183,7 +178,6 @@
     <Compile Include="Diagnostics\ServiceStatistics.cs" />
     <Compile Include="Diagnostics\TimeSegments.cs" />
     <Compile Include="Management\CloudAssemblies.cs" />
-    <Compile Include="Management\Api10\CloudAssemblyInfo.cs" />
     <Compile Include="Management\CloudConfiguration.cs" />
     <Compile Include="Management\CloudStatistics.cs" />
     <Compile Include="Management\ManagementModule.cs" />

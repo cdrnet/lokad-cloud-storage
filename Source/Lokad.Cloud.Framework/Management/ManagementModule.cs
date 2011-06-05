@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autofac;
-using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Provisioning.Instrumentation;
 using Lokad.Cloud.Provisioning.Instrumentation.Events;
 
@@ -20,12 +19,6 @@ namespace Lokad.Cloud.Management
     {
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterType<CloudConfiguration>().As<ICloudConfigurationApi>().InstancePerDependency();
-            builder.RegisterType<CloudAssemblies>().As<ICloudAssembliesApi>().InstancePerDependency();
-            builder.RegisterType<CloudServices>().As<ICloudServicesApi>().InstancePerDependency();
-            builder.RegisterType<CloudServiceScheduling>().As<ICloudServiceSchedulingApi>().InstancePerDependency();
-            builder.RegisterType<CloudStatistics>().As<ICloudStatisticsApi>().InstancePerDependency();
-
             // in some cases (like standalone mock storage) the RoleConfigurationSettings
             // will not be available. That's ok, since in this case Provisioning is not
             // available anyway and there's no need to make Provisioning resolveable.

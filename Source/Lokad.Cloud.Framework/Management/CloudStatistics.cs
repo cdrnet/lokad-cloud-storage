@@ -7,12 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Lokad.Cloud.Diagnostics;
-using Lokad.Cloud.Management.Api10;
 
 namespace Lokad.Cloud.Management
 {
 	/// <summary>Management facade for cloud configuration.</summary>
-	public class CloudStatistics : ICloudStatisticsApi 
+	public class CloudStatistics
 	{
 		readonly ICloudDiagnosticsRepository _repository;
 

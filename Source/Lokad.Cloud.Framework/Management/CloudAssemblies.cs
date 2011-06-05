@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using ICSharpCode.SharpZipLib.Zip;
 using Lokad.Cloud.Application;
-using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
 using Lokad.Cloud.Storage;
@@ -16,7 +15,7 @@ using Lokad.Cloud.Storage;
 namespace Lokad.Cloud.Management
 {
     /// <summary>Management facade for cloud assemblies.</summary>
-    public class CloudAssemblies : ICloudAssembliesApi
+    public class CloudAssemblies
     {
         readonly RuntimeProviders _runtimeProviders;
 

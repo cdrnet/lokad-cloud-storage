@@ -18,7 +18,7 @@ using Lokad.Cloud.Storage;
 namespace Lokad.Cloud.Management
 {
     /// <summary>Management facade for scheduled cloud services.</summary>
-    public class CloudServiceScheduling : ICloudServiceSchedulingApi
+    public class CloudServiceScheduling
     {
         readonly IBlobStorageProvider _blobProvider;
 

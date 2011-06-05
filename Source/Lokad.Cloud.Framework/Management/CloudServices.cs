@@ -17,7 +17,7 @@ using Lokad.Cloud.Storage;
 namespace Lokad.Cloud.Management
 {
     /// <summary>Management facade for cloud services.</summary>
-    public class CloudServices : ICloudServicesApi
+    public class CloudServices
     {
         readonly IBlobStorageProvider _blobProvider;
 

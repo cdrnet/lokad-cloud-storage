@@ -5,7 +5,6 @@
 
 using System;
 using System.Text;
-using Lokad.Cloud.Management.Api10;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
 using Lokad.Cloud.Storage;
@@ -15,7 +14,7 @@ namespace Lokad.Cloud.Management
     /// <summary>
     /// Management facade for cloud configuration.
     /// </summary>
-    public class CloudConfiguration : ICloudConfigurationApi
+    public class CloudConfiguration
     {
         readonly IBlobStorageProvider _blobProvider;
         readonly UTF8Encoding _encoding = new UTF8Encoding();
