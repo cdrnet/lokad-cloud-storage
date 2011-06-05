@@ -181,9 +181,9 @@
     <Compile Include="Management\CloudConfiguration.cs" />
     <Compile Include="Management\CloudStatistics.cs" />
     <Compile Include="Management\ManagementModule.cs" />
-    <Compile Include="Management\Api10\CloudServiceInfo.cs" />
+    <Compile Include="Management\CloudServiceInfo.cs" />
     <Compile Include="Management\CloudServices.cs" />
-    <Compile Include="Management\Api10\CloudServiceSchedulingInfo.cs" />
+    <Compile Include="Management\CloudServiceSchedulingInfo.cs" />
     <Compile Include="Management\CloudServiceScheduling.cs" />
     <Compile Include="Mock\MemoryMonitor.cs" />
     <Compile Include="Mock\MockStorageModule.cs" />

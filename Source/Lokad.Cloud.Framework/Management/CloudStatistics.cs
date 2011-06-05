@@ -10,50 +10,50 @@ using Lokad.Cloud.Diagnostics;
 
 namespace Lokad.Cloud.Management
 {
-	/// <summary>Management facade for cloud configuration.</summary>
-	public class CloudStatistics
-	{
-		readonly ICloudDiagnosticsRepository _repository;
+    /// <summary>Management facade for cloud configuration.</summary>
+    public class CloudStatistics
+    {
+        readonly ICloudDiagnosticsRepository _repository;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="CloudStatistics"/> class.
-		/// </summary>
-		public CloudStatistics(ICloudDiagnosticsRepository diagnosticsRepository)
-		{
-			_repository = diagnosticsRepository;
-		}
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloudStatistics"/> class.
+        /// </summary>
+        public CloudStatistics(ICloudDiagnosticsRepository diagnosticsRepository)
+        {
+            _repository = diagnosticsRepository;
+        }
 
-		/// <summary>Get the statistics of all cloud partitions on the provided month.</summary>
-		public List<PartitionStatistics> GetPartitionsOfMonth(DateTime? monthUtc)
-		{
-			return _repository.GetAllPartitionStatistics(TimeSegments.For(TimeSegmentPeriod.Month, new DateTimeOffset(monthUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
-		}
-		/// <summary>Get the statistics of all cloud partitions on the provided day.</summary>
-		public List<PartitionStatistics> GetPartitionsOfDay(DateTime? dayUtc)
-		{
-			return _repository.GetAllPartitionStatistics(TimeSegments.For(TimeSegmentPeriod.Day, new DateTimeOffset(dayUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
-		}
+        /// <summary>Get the statistics of all cloud partitions on the provided month.</summary>
+        public List<PartitionStatistics> GetPartitionsOfMonth(DateTime? monthUtc)
+        {
+            return _repository.GetAllPartitionStatistics(TimeSegments.For(TimeSegmentPeriod.Month, new DateTimeOffset(monthUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
+        }
+        /// <summary>Get the statistics of all cloud partitions on the provided day.</summary>
+        public List<PartitionStatistics> GetPartitionsOfDay(DateTime? dayUtc)
+        {
+            return _repository.GetAllPartitionStatistics(TimeSegments.For(TimeSegmentPeriod.Day, new DateTimeOffset(dayUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
+        }
 
-		/// <summary>Get the statistics of all cloud services on the provided month.</summary>
-		public List<ServiceStatistics> GetServicesOfMonth(DateTime? monthUtc)
-		{
-			return _repository.GetAllServiceStatistics(TimeSegments.For(TimeSegmentPeriod.Month, new DateTimeOffset(monthUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
-		}
-		/// <summary>Get the statistics of all cloud services on the provided day.</summary>
-		public List<ServiceStatistics> GetServicesOfDay(DateTime? dayUtc)
-		{
-			return _repository.GetAllServiceStatistics(TimeSegments.For(TimeSegmentPeriod.Day, new DateTimeOffset(dayUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
-		}
+        /// <summary>Get the statistics of all cloud services on the provided month.</summary>
+        public List<ServiceStatistics> GetServicesOfMonth(DateTime? monthUtc)
+        {
+            return _repository.GetAllServiceStatistics(TimeSegments.For(TimeSegmentPeriod.Month, new DateTimeOffset(monthUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
+        }
+        /// <summary>Get the statistics of all cloud services on the provided day.</summary>
+        public List<ServiceStatistics> GetServicesOfDay(DateTime? dayUtc)
+        {
+            return _repository.GetAllServiceStatistics(TimeSegments.For(TimeSegmentPeriod.Day, new DateTimeOffset(dayUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
+        }
 
-		/// <summary>Get the statistics of all execution profiles on the provided month.</summary>
-		public List<ExecutionProfilingStatistics> GetProfilesOfMonth(DateTime? monthUtc)
-		{
-			return _repository.GetExecutionProfilingStatistics(TimeSegments.For(TimeSegmentPeriod.Month, new DateTimeOffset(monthUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
-		}
-		/// <summary>Get the statistics of all execution profiles on the provided day.</summary>
-		public List<ExecutionProfilingStatistics> GetProfilesOfDay(DateTime? dayUtc)
-		{
-			return _repository.GetExecutionProfilingStatistics(TimeSegments.For(TimeSegmentPeriod.Day, new DateTimeOffset(dayUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
-		}
-	}
+        /// <summary>Get the statistics of all execution profiles on the provided month.</summary>
+        public List<ExecutionProfilingStatistics> GetProfilesOfMonth(DateTime? monthUtc)
+        {
+            return _repository.GetExecutionProfilingStatistics(TimeSegments.For(TimeSegmentPeriod.Month, new DateTimeOffset(monthUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
+        }
+        /// <summary>Get the statistics of all execution profiles on the provided day.</summary>
+        public List<ExecutionProfilingStatistics> GetProfilesOfDay(DateTime? dayUtc)
+        {
+            return _repository.GetExecutionProfilingStatistics(TimeSegments.For(TimeSegmentPeriod.Day, new DateTimeOffset(dayUtc ?? DateTime.UtcNow, TimeSpan.Zero))).ToList();
+        }
+    }
 }
