@@ -6,7 +6,7 @@
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.Internal
 {
     internal static class HttpClientFactory
     {

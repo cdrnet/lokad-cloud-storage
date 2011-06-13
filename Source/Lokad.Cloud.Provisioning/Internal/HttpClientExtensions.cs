@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.Internal
 {
     internal static class HttpClientExtensions
     {

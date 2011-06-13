@@ -7,8 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.Internal
 {
+    /// <summary>
+    /// <c>Xml</c> Traversing and factory helpers for the Windows Azure service configuration schema.
+    /// </summary>
     internal static class ServiceConfigXml
     {
         private static readonly XNamespace _serviceConfigNs = @"http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration";

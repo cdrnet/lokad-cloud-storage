@@ -9,9 +9,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cloud.Provisioning.Info;
 using Lokad.Cloud.Provisioning.Instrumentation;
+using Lokad.Cloud.Provisioning.Internal;
 
 namespace Lokad.Cloud.Provisioning
 {
+    /// <summary>
+    /// <para>
+    /// Due to a an Azure runtime design decision it is hard to discover the absolute
+    /// identity of the currently running hosted service instance (self; who-am-i).
+    /// Yet the absolute identity is required to be able to manage it using the
+    /// Azure management API, e.g. to automatically provision more worker instances on high demand.
+    /// </para>
+    /// <para>
+    /// This class implements an async way to discover the absolute identity of the current
+    /// hosted service and deployment. A successful discovery will be cached, subsequent
+    /// calls to <see cref="Discover"/> will return the result immediately, or retry
+    /// if the previous attempt had failed.
+    /// </para>
+    /// </summary>
     public class AzureCurrentDeployment
     {
         readonly string _subscriptionId;

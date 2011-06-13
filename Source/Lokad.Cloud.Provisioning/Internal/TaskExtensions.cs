@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.Internal
 {
     internal static class TaskExtensions
     {

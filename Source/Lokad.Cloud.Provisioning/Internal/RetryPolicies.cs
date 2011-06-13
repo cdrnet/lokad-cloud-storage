@@ -7,7 +7,7 @@ using System;
 using Lokad.Cloud.Provisioning.Instrumentation;
 using Lokad.Cloud.Provisioning.Instrumentation.Events;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.Internal
 {
     /// <summary>
     /// Azure management api retry policies for corner-situation and server errors.

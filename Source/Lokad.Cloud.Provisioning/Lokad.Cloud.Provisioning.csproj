@@ -49,21 +49,21 @@
       <Link>Properties\VersionAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AzureDiscovery.cs" />
-    <Compile Include="AzureXml.cs" />
-    <Compile Include="HttpClientFactory.cs" />
+    <Compile Include="Internal\AzureXml.cs" />
+    <Compile Include="Internal\HttpClientFactory.cs" />
     <Compile Include="Info\DeploymentReference.cs" />
     <Compile Include="Instrumentation\Events\ICloudProvisioningEvent.cs" />
     <Compile Include="Instrumentation\Events\ProvisioningOperationRetriedEvent.cs" />
     <Compile Include="ProvisioningErrorHandling.cs" />
-    <Compile Include="RetryPolicies.cs" />
-    <Compile Include="ServiceConfigXml.cs" />
-    <Compile Include="TaskExtensions.cs" />
+    <Compile Include="Internal\RetryPolicies.cs" />
+    <Compile Include="Internal\ServiceConfigXml.cs" />
+    <Compile Include="Internal\TaskExtensions.cs" />
     <Compile Include="AzureProvisioning.cs" />
     <Compile Include="Info\DeploymentInfo.cs" />
     <Compile Include="Info\DeploymentSlot.cs" />
     <Compile Include="Info\DeploymentStatus.cs" />
     <Compile Include="Info\HostedServiceInfo.cs" />
-    <Compile Include="HttpClientExtensions.cs" />
+    <Compile Include="Internal\HttpClientExtensions.cs" />
     <Compile Include="AzureCurrentDeployment.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Info\RoleInfo.cs" />
@@ -76,6 +76,7 @@
   <ItemGroup>
     <Content Include="Instrumentation\_readme.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -8,8 +8,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
 
-namespace Lokad.Cloud.Provisioning
+namespace Lokad.Cloud.Provisioning.Internal
 {
+    /// <summary>
+    /// <c>Xml</c> Traversing and factory helpers for the Windows Azure Management API schema.
+    /// </summary>
     internal static class AzureXml
     {
         private static readonly XNamespace _azureNs = @"http://schemas.microsoft.com/windowsazure";

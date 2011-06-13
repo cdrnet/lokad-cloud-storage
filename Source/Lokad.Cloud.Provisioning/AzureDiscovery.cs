@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lokad.Cloud.Provisioning.Info;
 using Lokad.Cloud.Provisioning.Instrumentation;
+using Lokad.Cloud.Provisioning.Internal;
 
 namespace Lokad.Cloud.Provisioning
 {
