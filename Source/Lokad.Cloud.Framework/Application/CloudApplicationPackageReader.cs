@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.SharpZipLib.Zip;
+using Mono.Cecil;
 
 namespace Lokad.Cloud.Application
 {
@@ -87,7 +88,11 @@ namespace Lokad.Cloud.Application
 
                     try
                     {
-                        assemblyInfo.Version = AssemblyVersionInspector.Inspect(bytes).Version;
+                        using (var assemblyStream = new MemoryStream(bytes))
+                        {
+                            var definition = AssemblyDefinition.ReadAssembly(assemblyStream);
+                            assemblyInfo.Version = definition.Name.Version;
+                        }
                     }
                     catch (Exception)
                     {

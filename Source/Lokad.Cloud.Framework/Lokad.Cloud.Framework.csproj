@@ -110,7 +110,6 @@
       <Link>Properties\VersionAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Application\AssemblyResolver.cs" />
-    <Compile Include="Application\AssemblyVersionInspector.cs" />
     <Compile Include="Application\CloudApplicationAssemblyInfo.cs" />
     <Compile Include="Application\CloudApplicationInspector.cs" />
     <Compile Include="Application\CloudApplicationPackage.cs" />
