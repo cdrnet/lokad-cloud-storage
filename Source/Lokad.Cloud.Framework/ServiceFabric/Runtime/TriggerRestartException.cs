@@ -11,28 +11,28 @@ using System.Runtime.Serialization;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
 {
-	///<summary>Throw this exception in order to force a worker restart.</summary>
-	[Serializable]
-	public class TriggerRestartException : ApplicationException
-	{
-		/// <summary>Empty constructor.</summary>
-		public TriggerRestartException()
-		{
-		}
+    ///<summary>Throw this exception in order to force a worker restart.</summary>
+    [Serializable]
+    public class TriggerRestartException : ApplicationException
+    {
+        /// <summary>Empty constructor.</summary>
+        public TriggerRestartException()
+        {
+        }
 
-		/// <summary>Constructor with message.</summary>
-		public TriggerRestartException(string message) : base(message)
-		{
-		}
+        /// <summary>Constructor with message.</summary>
+        public TriggerRestartException(string message) : base(message)
+        {
+        }
 
-		/// <summary>Constructor with message and inner exception.</summary>
-		public TriggerRestartException(string message, Exception inner) : base(message, inner)
-		{	
-		}
+        /// <summary>Constructor with message and inner exception.</summary>
+        public TriggerRestartException(string message, Exception inner) : base(message, inner)
+        {	
+        }
 
-		/// <summary>Deserialization constructor.</summary>
-		public TriggerRestartException(SerializationInfo info, StreamingContext context) : base(info, context)
-		{
-		}
-	}
+        /// <summary>Deserialization constructor.</summary>
+        public TriggerRestartException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+    }
 }

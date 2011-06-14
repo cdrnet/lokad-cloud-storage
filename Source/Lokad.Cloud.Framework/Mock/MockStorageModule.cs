@@ -4,7 +4,6 @@
 #endregion
 
 using Autofac;
-
 using Lokad.Cloud.Diagnostics;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Storage;

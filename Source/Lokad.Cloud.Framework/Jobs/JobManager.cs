@@ -6,9 +6,9 @@ namespace Lokad.Cloud.Jobs
     /// <summary>NOT IMPLEMENTED YET.</summary>
     public class JobManager
     {
-        private readonly Storage.Shared.Logging.ILog _log;
+        private readonly ILog _log;
 
-        public JobManager(Storage.Shared.Logging.ILog log)
+        public JobManager(ILog log)
         {
             _log = log;
         }

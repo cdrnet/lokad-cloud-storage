@@ -51,11 +51,11 @@ namespace Lokad.Cloud.Console.WebRole.Controllers
             switch ((Path.GetExtension(package.FileName) ?? string.Empty).ToLowerInvariant())
             {
                 case ".dll":
-                    cloudAssemblies.UploadAssemblyDll(bytes, package.FileName);
+                    cloudAssemblies.UploadApplicationSingleDll(bytes, package.FileName);
                     break;
 
                 default:
-                    cloudAssemblies.UploadAssemblyZipContainer(bytes);
+                    cloudAssemblies.UploadApplicationZipContainer(bytes);
                     break;
             }
 

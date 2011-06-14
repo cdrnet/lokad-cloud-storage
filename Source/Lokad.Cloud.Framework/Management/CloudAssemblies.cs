@@ -3,9 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using ICSharpCode.SharpZipLib.Zip;
 using Lokad.Cloud.Application;
 using Lokad.Cloud.Runtime;
@@ -34,24 +32,9 @@ namespace Lokad.Cloud.Management
         }
 
         /// <summary>
-        /// Enumerate infos of all configured cloud service assemblies.
-        /// </summary>
-        public List<CloudApplicationAssemblyInfo> GetAssemblies()
-        {
-            var maybe = GetApplicationDefinition();
-            if(maybe.HasValue)
-            {
-                return maybe.Value.Assemblies.ToList();
-            }
-
-            // empty list
-            return new List<CloudApplicationAssemblyInfo>();
-        }
-
-        /// <summary>
         /// Configure a .dll assembly file as the new cloud service assembly.
         /// </summary>
-        public void UploadAssemblyDll(byte[] data, string fileName)
+        public void UploadApplicationSingleDll(byte[] data, string fileName)
         {
             using (var tempStream = new MemoryStream())
             {
@@ -62,14 +45,14 @@ namespace Lokad.Cloud.Management
                     zip.CloseEntry();
                 }
 
-                UploadAssemblyZipContainer(tempStream.ToArray());
+                UploadApplicationZipContainer(tempStream.ToArray());
             }
         }
 
         /// <summary>
         /// Configure a zip container with one or more assemblies as the new cloud services.
         /// </summary>
-        public void UploadAssemblyZipContainer(byte[] data)
+        public void UploadApplicationZipContainer(byte[] data)
         {
             _runtimeProviders.BlobStorage.PutBlob(
                 AssemblyLoader.ContainerName,

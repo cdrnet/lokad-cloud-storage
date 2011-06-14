@@ -107,17 +107,6 @@ namespace Lokad.Cloud.Management
         }
 
         /// <summary>
-        /// Toggle the state of a cloud service
-        /// </summary>
-        public void ToggleServiceState(string serviceName)
-        {
-            _blobProvider.UpsertBlob(
-                new CloudServiceStateName(serviceName),
-                () => CloudServiceState.Started,
-                state => state == CloudServiceState.Started ? CloudServiceState.Stopped : CloudServiceState.Started);
-        }
-
-        /// <summary>
         /// Remove the state information of a cloud service
         /// </summary>
         public void ResetServiceState(string serviceName)

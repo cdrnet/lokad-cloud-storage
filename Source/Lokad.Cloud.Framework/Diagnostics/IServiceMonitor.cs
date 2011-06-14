@@ -8,14 +8,14 @@ using Lokad.Cloud.ServiceFabric;
 
 namespace Lokad.Cloud.Diagnostics
 {
-	/// <summary>
-	/// Cloud Service Monitoring Instrumentation
-	/// </summary>
-	public interface IServiceMonitor
-	{
-		/// <summary>
-		/// Monitor starting a server, dispose once its stopped.
-		/// </summary>
-		IDisposable Monitor(CloudService service);
-	}
+    /// <summary>
+    /// Cloud Service Monitoring Instrumentation
+    /// </summary>
+    public interface IServiceMonitor
+    {
+        /// <summary>
+        /// Monitor starting a server, dispose once its stopped.
+        /// </summary>
+        IDisposable Monitor(CloudService service);
+    }
 }

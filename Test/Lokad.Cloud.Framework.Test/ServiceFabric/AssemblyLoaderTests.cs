@@ -10,8 +10,6 @@ using Autofac;
 using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric.Runtime;
-using Lokad.Cloud.Storage;
-
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.ServiceFabric
@@ -52,7 +50,7 @@ namespace Lokad.Cloud.Test.ServiceFabric
 
             // validate using management class
             var cloudAssemblies = new CloudAssemblies(runtimeProviders);
-            Assert.That(cloudAssemblies.GetAssemblies().Any(a => a.AssemblyName.StartsWith("sample")));
+            Assert.That(cloudAssemblies.GetApplicationDefinition().Value.Assemblies.Any(a => a.AssemblyName.StartsWith("sample")));
 
             // no update, checking
             try
@@ -65,7 +63,7 @@ namespace Lokad.Cloud.Test.ServiceFabric
             }
 
             // forcing update, this time using the management class
-            cloudAssemblies.UploadAssemblyZipContainer(buffer);
+            cloudAssemblies.UploadApplicationZipContainer(buffer);
 
             // update, re-checking
             try

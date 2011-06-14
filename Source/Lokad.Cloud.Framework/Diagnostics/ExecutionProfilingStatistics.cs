@@ -9,15 +9,15 @@ using Lokad.Diagnostics.Persist;
 
 namespace Lokad.Cloud.Diagnostics
 {
-	[Serializable]
-	[DataContract]
-	public class ExecutionProfilingStatistics
-	{
-		[DataMember]
-		public string Name { get; set; }
+    [Serializable]
+    [DataContract]
+    public class ExecutionProfilingStatistics
+    {
+        [DataMember]
+        public string Name { get; set; }
 
-		[DataMember]
-		public ExecutionData[] Statistics { get; set; }
-	}
+        [DataMember]
+        public ExecutionData[] Statistics { get; set; }
+    }
 }
 

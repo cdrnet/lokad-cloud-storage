@@ -4,24 +4,25 @@
 #endregion
 
 using System;
+using Lokad.Cloud.Storage.Shared.Logging;
 
 namespace Lokad.Cloud.Mock
 {
-    public class MemoryLogger : Storage.Shared.Logging.ILog
-	{
-        public bool IsEnabled(Storage.Shared.Logging.LogLevel level)
-		{
-			return false;
-		}
+    public class MemoryLogger : ILog
+    {
+        public bool IsEnabled(LogLevel level)
+        {
+            return false;
+        }
 
-        public void Log(Storage.Shared.Logging.LogLevel level, Exception ex, object message)
-		{
-			//do nothing
-		}
+        public void Log(LogLevel level, Exception ex, object message)
+        {
+            //do nothing
+        }
 
-        public void Log(Storage.Shared.Logging.LogLevel level, object message)
-		{
-			Log(level, null, message);
-		}
-	}
+        public void Log(LogLevel level, object message)
+        {
+            Log(level, null, message);
+        }
+    }
 }
