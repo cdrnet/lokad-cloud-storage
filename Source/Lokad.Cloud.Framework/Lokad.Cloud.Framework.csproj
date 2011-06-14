@@ -115,7 +115,6 @@
     <Compile Include="Application\CloudApplicationPackage.cs" />
     <Compile Include="Application\CloudApplicationPackageReader.cs" />
     <Compile Include="Application\CloudApplicationDefinition.cs" />
-    <Compile Include="Application\ServiceInspector.cs" />
     <Compile Include="CloudConfigurationModule.cs" />
     <Compile Include="CloudEnvironment.cs" />
     <Compile Include="CloudModule.cs" />
