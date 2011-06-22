@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -15,7 +16,6 @@ using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
@@ -40,13 +40,6 @@ namespace Lokad.Cloud.Storage.Azure
         readonly ICloudStorageObserver _observer;
         readonly RetryPolicies _policies;
 
-        // Instrumentation
-        readonly ExecutionCounter _countPutBlob;
-        readonly ExecutionCounter _countGetBlob;
-        readonly ExecutionCounter _countGetBlobIfModified;
-        readonly ExecutionCounter _countUpsertBlobOrSkip;
-        readonly ExecutionCounter _countDeleteBlob;
-
         /// <summary>IoC constructor.</summary>
         /// <param name="observer">Can be <see langword="null"/>.</param>
         public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer serializer, ICloudStorageObserver observer = null)
@@ -55,16 +48,6 @@ namespace Lokad.Cloud.Storage.Azure
             _blobStorage = blobStorage;
             _serializer = serializer;
             _observer = observer;
-
-            // Instrumentation
-            ExecutionCounters.Default.RegisterRange(new[]
-                {
-                    _countPutBlob = new ExecutionCounter("BlobStorageProvider.PutBlob", 0, 0),
-                    _countGetBlob = new ExecutionCounter("BlobStorageProvider.GetBlob", 0, 0),
-                    _countGetBlobIfModified = new ExecutionCounter("BlobStorageProvider.GetBlobIfModified", 0, 0),
-                    _countUpsertBlobOrSkip = new ExecutionCounter("BlobStorageProvider.UpdateBlob", 0, 0),
-                    _countDeleteBlob = new ExecutionCounter("BlobStorageProvider.DeleteBlob", 0, 0),
-                });
         }
 
         /// <remarks></remarks>
@@ -215,7 +198,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         public bool DeleteBlobIfExist(string containerName, string blobName)
         {
-            var timestamp = _countDeleteBlob.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             var container = _blobStorage.GetContainerReference(containerName);
 
@@ -223,7 +206,8 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 var blob = container.GetBlockBlobReference(blobName);
                 Retry.Do(_policies.TransientServerErrorBackOff, blob.Delete);
-                _countDeleteBlob.Close(timestamp);
+
+                NotifySucceeded(StorageOperationType.BlobDelete, stopwatch);
                 return true;
             }
             catch (StorageClientException ex) // no such container, return false
@@ -232,6 +216,8 @@ namespace Lokad.Cloud.Storage.Azure
                     || ex.ErrorCode == StorageErrorCode.BlobNotFound
                         || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
                 {
+                    // success anyway since the condition was not met
+                    NotifySucceeded(StorageOperationType.BlobDelete, stopwatch);
                     return false;
                 }
                 throw;
@@ -265,7 +251,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
         {
-            var timestamp = _countGetBlob.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             var container = _blobStorage.GetContainerReference(containerName);
             var blob = container.GetBlockBlobReference(blobName);
@@ -301,11 +287,16 @@ namespace Lokad.Cloud.Storage.Azure
                 stream.Seek(0, SeekOrigin.Begin);
                 var deserialized = _serializer.TryDeserialize(stream, type);
 
-                _countGetBlob.Close(timestamp);
-
-                if (!deserialized.IsSuccess && _observer != null)
+                if (_observer != null)
                 {
-                    _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                    if (!deserialized.IsSuccess)
+                    {
+                        _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                    }
+                    else
+                    {
+                        NotifySucceeded(StorageOperationType.BlobGet, stopwatch);
+                    }
                 }
 
                 return deserialized.IsSuccess ? new Maybe<object>(deserialized.Value) : Maybe<object>.Empty;
@@ -389,7 +380,7 @@ namespace Lokad.Cloud.Storage.Azure
                 return GetBlob<T>(containerName, blobName, out newEtag);
             }
 
-            var timestamp = _countGetBlobIfModified.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             newEtag = null;
 
@@ -417,11 +408,16 @@ namespace Lokad.Cloud.Storage.Azure
                     stream.Seek(0, SeekOrigin.Begin);
                     var deserialized = _serializer.TryDeserializeAs<T>(stream);
 
-                    _countGetBlobIfModified.Close(timestamp);
-
-                    if (!deserialized.IsSuccess && _observer != null)
+                    if (_observer != null)
                     {
-                        _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                        if (!deserialized.IsSuccess)
+                        {
+                            _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                        }
+                        else
+                        {
+                            NotifySucceeded(StorageOperationType.BlobGetIfModified, stopwatch);
+                        }
                     }
 
                     return deserialized.IsSuccess ? deserialized.Value : Maybe<T>.Empty;
@@ -502,7 +498,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string outEtag)
         {
-            var timestamp = _countPutBlob.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             using (var stream = new MemoryStream())
             {
@@ -530,7 +526,7 @@ namespace Lokad.Cloud.Storage.Azure
                     }
 
                     outEtag = result.Value;
-                    _countPutBlob.Close(timestamp);
+                    NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
                     return true;
                 }
                 catch (StorageClientException ex)
@@ -551,11 +547,13 @@ namespace Lokad.Cloud.Storage.Azure
                         if (!tentativeEtag.HasValue)
                         {
                             outEtag = null;
+                            // success because it behaved as excpected - the expected etag was not matching so it was not overwritten
+                            NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
                             return false;
                         }
 
                         outEtag = tentativeEtag.Value;
-                        _countPutBlob.Close(timestamp);
+                        NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
                         return true;
                     }
 
@@ -565,6 +563,8 @@ namespace Lokad.Cloud.Storage.Azure
                         // and http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/86b9f184-c329-4c30-928f-2991f31e904b/
 
                         outEtag = null;
+                        // success because it behaved as excpected - the expected etag was not matching so it was not overwritten
+                        NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
                         return false;
                     }
 
@@ -572,11 +572,13 @@ namespace Lokad.Cloud.Storage.Azure
                     if (!result.HasValue)
                     {
                         outEtag = null;
+                        // success because it behaved as excpected - the expected etag was not matching so it was not overwritten
+                        NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
                         return false;
                     }
 
                     outEtag = result.Value;
-                    _countPutBlob.Close(timestamp);
+                    NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
                     return true;
                 }
             }
@@ -671,7 +673,7 @@ namespace Lokad.Cloud.Storage.Azure
         public Maybe<T> UpsertBlobOrSkip<T>(
             string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
         {
-            var timestamp = _countUpsertBlobOrSkip.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             var container = _blobStorage.GetContainerReference(containerName);
             var blob = container.GetBlockBlobReference(blobName);
@@ -748,7 +750,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 if (!output.HasValue)
                 {
-                    _countUpsertBlobOrSkip.Close(timestamp);
+                    NotifySucceeded(StorageOperationType.BlobUpsertOrSkip, stopwatch);
                     return output;
                 }
 
@@ -769,7 +771,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     if (succeeded)
                     {
-                        _countUpsertBlobOrSkip.Close(timestamp);
+                        NotifySucceeded(StorageOperationType.BlobUpsertOrSkip, stopwatch);
                         return output;
                     }
                 }
@@ -933,6 +935,14 @@ namespace Lokad.Cloud.Storage.Azure
             finally
             {
                 response.Close();
+            }
+        }
+
+        private void NotifySucceeded(StorageOperationType operationType, Stopwatch stopwatch)
+        {
+            if (_observer != null)
+            {
+                _observer.Notify(new StorageOperationSucceededEvent(operationType, stopwatch.Elapsed));
             }
         }
     }

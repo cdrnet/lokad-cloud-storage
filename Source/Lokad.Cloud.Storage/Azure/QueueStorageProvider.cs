@@ -5,13 +5,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
-using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -40,17 +40,8 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IBlobStorageProvider _blobStorage;
         readonly IDataSerializer _serializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
-        private readonly RetryPolicies _policies;
+        readonly RetryPolicies _policies;
         readonly ICloudStorageObserver _observer;
-
-        // Instrumentation
-        readonly ExecutionCounter _countGetMessage;
-        readonly ExecutionCounter _countPutMessage;
-        readonly ExecutionCounter _countDeleteMessage;
-        readonly ExecutionCounter _countAbandonMessage;
-        readonly ExecutionCounter _countPersistMessage;
-        readonly ExecutionCounter _countWrapMessage;
-        readonly ExecutionCounter _countUnwrapMessage;
 
         // messages currently being processed (boolean property indicates if the message is overflowing)
         /// <summary>Mapping object --> Queue Message Id. Use to delete messages afterward.</summary>
@@ -85,18 +76,6 @@ namespace Lokad.Cloud.Storage.Azure
             }
 
             _inProcessMessages = new Dictionary<object, InProcessMessage>(20);
-
-            // Instrumentation
-            ExecutionCounters.Default.RegisterRange(new[]
-                {
-                    _countGetMessage = new ExecutionCounter("QueueStorageProvider.Get", 0, 0),
-                    _countPutMessage = new ExecutionCounter("QueueStorageProvider.PutSingle", 0, 0),
-                    _countDeleteMessage = new ExecutionCounter("QueueStorageProvider.DeleteSingle", 0, 0),
-                    _countAbandonMessage = new ExecutionCounter("QueueStorageProvider.AbandonSingle", 0, 0),
-                    _countPersistMessage = new ExecutionCounter("QueueStorageProvider.PersistSingle", 0, 0),
-                    _countWrapMessage = new ExecutionCounter("QueueStorageProvider.WrapSingle", 0, 0),
-                    _countUnwrapMessage = new ExecutionCounter("QueueStorageProvider.UnwrapSingle", 0, 0),
-                });
         }
 
         /// <summary>
@@ -118,7 +97,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials)
         {
-            var timestamp = _countGetMessage.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             var queue = _queueStorage.GetQueueReference(queueName);
 
@@ -146,7 +125,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             if (null == rawMessages)
             {
-                _countGetMessage.Close(timestamp);
+                NotifySucceeded(StorageOperationType.QueueGet, stopwatch);
                 return new T[0];
             }
 
@@ -242,9 +221,10 @@ namespace Lokad.Cloud.Storage.Azure
 
             // 4. UNWRAP WRAPPED MESSAGES
 
+            var unwrapStopwatch = new Stopwatch();
             foreach (var mw in wrappedMessages)
             {
-                var unwrapTimestamp = _countUnwrapMessage.Open();
+                unwrapStopwatch.Restart();
 
                 string ignored;
                 var blobContent = _blobStorage.GetBlob(mw.ContainerName, mw.BlobName, typeof(T), out ignored);
@@ -272,10 +252,10 @@ namespace Lokad.Cloud.Storage.Azure
                 CheckOutRelink(mw, innerMessage);
 
                 messages.Add(innerMessage);
-                _countUnwrapMessage.Close(unwrapTimestamp);
+                NotifySucceeded(StorageOperationType.QueueUnwrap, unwrapStopwatch);
             }
 
-            _countGetMessage.Close(timestamp);
+            NotifySucceeded(StorageOperationType.QueueGet, stopwatch);
 
             // 5. RETURN LIST OF MESSAGES
 
@@ -292,10 +272,11 @@ namespace Lokad.Cloud.Storage.Azure
         public void PutRange<T>(string queueName, IEnumerable<T> messages)
         {
             var queue = _queueStorage.GetQueueReference(queueName);
+            var stopwatch = new Stopwatch();
 
             foreach (var message in messages)
             {
-                var timestamp = _countPutMessage.Open();
+                stopwatch.Restart();
                 using (var stream = new MemoryStream())
                 {
                     _serializer.Serialize(message, stream);
@@ -322,13 +303,13 @@ namespace Lokad.Cloud.Storage.Azure
 
                     PutRawMessage(queueMessage, queue);
                 }
-                _countPutMessage.Close(timestamp);
+                NotifySucceeded(StorageOperationType.QueuePut, stopwatch);
             }
         }
 
         byte[] PutOverflowingMessageAndWrap<T>(string queueName, T message)
         {
-            var timestamp = _countWrapMessage.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             var blobRef = OverflowingMessageBlobName<T>.GetNew(queueName);
 
@@ -346,7 +327,7 @@ namespace Lokad.Cloud.Storage.Azure
                 _serializer.Serialize(mw, stream);
                 var serializerWrapper = stream.ToArray();
 
-                _countWrapMessage.Close(timestamp);
+                NotifySucceeded(StorageOperationType.QueueWrap, stopwatch);
 
                 return serializerWrapper;
             }
@@ -390,10 +371,11 @@ namespace Lokad.Cloud.Storage.Azure
         public int DeleteRange<T>(IEnumerable<T> messages)
         {
             int deletionCount = 0;
+            var stopwatch = new Stopwatch();
 
             foreach (var message in messages)
             {
-                var timestamp = _countDeleteMessage.Open();
+                stopwatch.Restart();
 
                 // 1. GET RAW MESSAGE & QUEUE, OR SKIP IF NOT AVAILABLE/ALREADY DELETED
 
@@ -441,7 +423,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 CheckInMessage(message);
 
-                _countDeleteMessage.Close(timestamp);
+                NotifySucceeded(StorageOperationType.QueueDelete, stopwatch);
             }
 
             return deletionCount;
@@ -457,10 +439,11 @@ namespace Lokad.Cloud.Storage.Azure
         public int AbandonRange<T>(IEnumerable<T> messages)
         {
             int abandonCount = 0;
+            var stopwatch = new Stopwatch();
 
             foreach (var message in messages)
             {
-                var timestamp = _countAbandonMessage.Open();
+                stopwatch.Restart();
 
                 // 1. GET RAW MESSAGE & QUEUE, OR SKIP IF NOT AVAILABLE/ALREADY DELETED
 
@@ -533,7 +516,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 CheckInMessage(message);
 
-                _countAbandonMessage.Close(timestamp);
+                NotifySucceeded(StorageOperationType.QueueAbandon, stopwatch);
             }
 
             return abandonCount;
@@ -730,7 +713,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         void PersistRawMessage(CloudQueueMessage message, byte[] data, string queueName, string storeName, string reason)
         {
-            var timestamp = _countPersistMessage.Open();
+            var stopwatch = Stopwatch.StartNew();
 
             var queue = _queueStorage.GetQueueReference(queueName);
 
@@ -753,7 +736,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             DeleteRawMessage(message, queue);
 
-            _countPersistMessage.Close(timestamp);
+            NotifySucceeded(StorageOperationType.QueuePersist, stopwatch);
         }
 
         bool DeleteRawMessage(CloudQueueMessage message, CloudQueue queue)
@@ -952,6 +935,14 @@ namespace Lokad.Cloud.Storage.Azure
 
             // don't return negative values when clocks are slightly out of sync 
             return latency > TimeSpan.Zero ? latency : TimeSpan.Zero;
+        }
+
+        private void NotifySucceeded(StorageOperationType operationType, Stopwatch stopwatch)
+        {
+            if (_observer != null)
+            {
+                _observer.Notify(new StorageOperationSucceededEvent(operationType, stopwatch.Elapsed));
+            }
         }
     }
 

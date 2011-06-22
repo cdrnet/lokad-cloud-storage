@@ -70,8 +70,10 @@
     <Compile Include="CloudStorageProviders.cs" />
     <Compile Include="DataSerializerExtensions.cs" />
     <Compile Include="Instrumentation\Events\BlobDeserializationFailedEvent.cs" />
+    <Compile Include="Instrumentation\Events\StorageOperationSucceededEvent.cs" />
     <Compile Include="Instrumentation\Events\MessageDeserializationFailedQuarantinedEvent.cs" />
     <Compile Include="Instrumentation\Events\MessageProcessingFailedQuarantinedEvent.cs" />
+    <Compile Include="Instrumentation\Events\StorageOperationType.cs" />
     <Compile Include="Instrumentation\ICloudStorageObserver.cs" />
     <Compile Include="Instrumentation\Events\StorageOperationRetriedEvent.cs" />
     <Compile Include="Instrumentation\CloudStorageInstrumentationSubject.cs" />
@@ -85,11 +87,6 @@
     <Compile Include="Queues\MessageEnvelope.cs" />
     <Compile Include="Queues\MessageWrapper.cs" />
     <Compile Include="Queues\QueueStorageExtensions.cs" />
-    <Compile Include="Shared\Diagnostics\ExceptionCounters.cs" />
-    <Compile Include="Shared\Diagnostics\ExecutionCounter.cs" />
-    <Compile Include="Shared\Diagnostics\ExecutionStatistics.cs" />
-    <Compile Include="Shared\Diagnostics\Persistence\ConvertionExtensions.cs" />
-    <Compile Include="Shared\Diagnostics\Persistence\ExecutionData.cs" />
     <Compile Include="Shared\FormatUtil.cs" />
     <Compile Include="Shared\Monads\Maybe.1.cs" />
     <Compile Include="Shared\Monads\Result.1.cs" />

@@ -176,6 +176,11 @@
     <Compile Include="Services\AssemblyConfigurationUpdateService.cs" />
     <Compile Include="Services\MonitoringDataRetentionService.cs" />
     <Compile Include="Services\MonitoringService.cs" />
+    <Compile Include="Shared\Diagnostics\ExceptionCounters.cs" />
+    <Compile Include="Shared\Diagnostics\ExecutionCounter.cs" />
+    <Compile Include="Shared\Diagnostics\ExecutionStatistics.cs" />
+    <Compile Include="Shared\Diagnostics\Persistence\ConvertionExtensions.cs" />
+    <Compile Include="Shared\Diagnostics\Persistence\ExecutionData.cs" />
     <Compile Include="Shared\Logging\ILog.cs" />
     <Compile Include="Shared\Logging\ILogExtensions.cs" />
     <Compile Include="Shared\Logging\ILogProvider.cs" />

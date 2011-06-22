@@ -11,8 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Web;
 using Lokad.Cloud.Storage.Instrumentation;
+using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared;
-using Lokad.Cloud.Storage.Shared.Diagnostics;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -34,13 +34,8 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudTableClient _tableStorage;
         readonly IDataSerializer _serializer;
+        readonly ICloudStorageObserver _observer;
         readonly RetryPolicies _policies;
-
-        // Instrumentation
-        readonly ExecutionCounter _countQuery;
-        readonly ExecutionCounter _countInsert;
-        readonly ExecutionCounter _countUpdate;
-        readonly ExecutionCounter _countDelete;
 
         /// <summary>IoC constructor.</summary>
         /// <param name="observer">Can be <see langword="null"/>.</param>
@@ -49,15 +44,7 @@ namespace Lokad.Cloud.Storage.Azure
             _policies = new RetryPolicies(observer);
             _tableStorage = tableStorage;
             _serializer = serializer;
-
-            // Instrumentation
-            ExecutionCounters.Default.RegisterRange(new[]
-                {
-                    _countQuery = new ExecutionCounter("TableStorageProvider.QuerySegment", 0, 0),
-                    _countInsert = new ExecutionCounter("TableStorageProvider.InsertSlice", 0, 0),
-                    _countUpdate = new ExecutionCounter("TableStorageProvider.UpdateSlice", 0, 0),
-                    _countDelete = new ExecutionCounter("TableStorageProvider.DeleteSlice", 0, 0),
-                });
+            _observer = observer;
         }
 
         /// <remarks></remarks>
@@ -178,7 +165,8 @@ namespace Lokad.Cloud.Storage.Azure
         {
             string continuationRowKey = null;
             string continuationPartitionKey = null;
-            var timestamp = _countQuery.Open();
+
+            var stopwatch = Stopwatch.StartNew();
 
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
@@ -223,7 +211,7 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                     });
 
-                _countQuery.Close(timestamp);
+                NotifySucceeded(StorageOperationType.TableQuery, stopwatch);
 
                 foreach (var fatEntity in fatEntities)
                 {
@@ -239,7 +227,7 @@ namespace Lokad.Cloud.Storage.Azure
                     continuationRowKey = response.Headers[ContinuationNextRowKeyToken];
                     continuationPartitionKey = response.Headers[ContinuationNextPartitionKeyToken];
 
-                    timestamp = _countQuery.Open();
+                    stopwatch.Restart();
                 }
                 else
                 {
@@ -266,13 +254,15 @@ namespace Lokad.Cloud.Storage.Azure
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
+            var stopwatch = new Stopwatch();
+
             var fatEntities = entities.Select(e => Tuple.Create(FatEntity.Convert(e, _serializer), e));
 
             var noBatchMode = false;
 
             foreach (var slice in SliceEntities(fatEntities, e => e.Item1.GetPayload()))
             {
-                var timestamp = _countInsert.Open();
+                stopwatch.Restart();
 
                 var cloudEntityOfFatEntity = new Dictionary<object, CloudEntity<T>>();
                 foreach (var fatEntity in slice)
@@ -369,7 +359,7 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                     });
 
-                _countInsert.Close(timestamp);
+                NotifySucceeded(StorageOperationType.TableInsert, stopwatch);
             }
         }
 
@@ -389,13 +379,15 @@ namespace Lokad.Cloud.Storage.Azure
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
+            var stopwatch = new Stopwatch();
+
             var fatEntities = entities.Select(e => Tuple.Create(FatEntity.Convert(e, _serializer), e));
 
             var noBatchMode = false;
 
             foreach (var slice in SliceEntities(fatEntities, e => e.Item1.GetPayload()))
             {
-                var timestamp = _countUpdate.Open();
+                stopwatch.Restart();
 
                 var cloudEntityOfFatEntity = new Dictionary<object, CloudEntity<T>>();
                 foreach (var fatEntity in slice)
@@ -472,7 +464,7 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                     });
 
-                _countUpdate.Close(timestamp);
+                NotifySucceeded(StorageOperationType.TableUpdate, stopwatch);
             }
         }
 
@@ -552,6 +544,8 @@ namespace Lokad.Cloud.Storage.Azure
         {
             var context = _tableStorage.GetDataServiceContext();
 
+            var stopwatch = new Stopwatch();
+
             // CAUTION: make sure to get rid of potential duplicate in rowkeys.
             // (otherwise insertion in 'context' is likely to fail)
             foreach (var s in Slice(rowKeysAndETags
@@ -559,7 +553,7 @@ namespace Lokad.Cloud.Storage.Azure
                                     .ToLookup(p => p.Item1, p => p).Select(g => g.First()), 
                                     MaxEntityTransactionCount))
             {
-                var timestamp = _countDelete.Open();
+                stopwatch.Restart();
 
                 var slice = s;
 
@@ -593,7 +587,7 @@ namespace Lokad.Cloud.Storage.Azure
                         var errorCode = RetryPolicies.GetErrorCode(ex);
                         if (TableErrorCodeStrings.TableNotFound == errorCode)
                         {
-                            _countDelete.Close(timestamp);
+                            NotifySucceeded(StorageOperationType.TableDelete, stopwatch);
                             return;
                         }
 
@@ -622,7 +616,7 @@ namespace Lokad.Cloud.Storage.Azure
                     goto DeletionStart;
                 }
 
-                _countDelete.Close(timestamp);
+                NotifySucceeded(StorageOperationType.TableDelete, stopwatch);
             }
         }
 
@@ -673,6 +667,14 @@ namespace Lokad.Cloud.Storage.Azure
 
             if (list.Count > 0)
                 yield return list.ToArray();
+        }
+
+        private void NotifySucceeded(StorageOperationType operationType, Stopwatch stopwatch)
+        {
+            if (_observer != null)
+            {
+                _observer.Notify(new StorageOperationSucceededEvent(operationType, stopwatch.Elapsed));
+            }
         }
     }
 }
