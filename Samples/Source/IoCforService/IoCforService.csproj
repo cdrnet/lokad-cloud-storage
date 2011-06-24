@@ -54,8 +54,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Autofac">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Resource\Library\Autofac.dll</HintPath>
+      <HintPath>..\..\Library\Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Lokad.Cloud.Framework, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
