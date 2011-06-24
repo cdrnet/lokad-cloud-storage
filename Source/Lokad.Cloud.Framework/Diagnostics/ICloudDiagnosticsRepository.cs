@@ -14,13 +14,6 @@ namespace Lokad.Cloud.Diagnostics
     /// </summary>
     public interface ICloudDiagnosticsRepository
     {
-        /// <summary>Get the statistics of all execution profiles.</summary>
-        IEnumerable<ExecutionProfilingStatistics> GetExecutionProfilingStatistics(string timeSegment);
-        /// <summary>Update the statistics of an execution profile.</summary>
-        void UpdateExecutionProfilingStatistics(string timeSegment, string contextName, Func<Maybe<ExecutionProfilingStatistics>, ExecutionProfilingStatistics> updater);
-        /// <summary>Remove old statistics of execution profiles.</summary>
-        void RemoveExecutionProfilingStatistics(string timeSegmentPrefix, string timeSegmentBefore);
-
         /// <summary>Get the statistics of all cloud partitions.</summary>
         IEnumerable<PartitionStatistics> GetAllPartitionStatistics(string timeSegment);
         /// <summary>Update the statistics of a cloud partition.</summary>

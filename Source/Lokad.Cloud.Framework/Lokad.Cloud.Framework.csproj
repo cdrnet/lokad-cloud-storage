@@ -121,7 +121,6 @@
     <Compile Include="Diagnostics\CloudLogger.cs" />
     <Compile Include="Diagnostics\CloudStorageLogger.cs" />
     <Compile Include="Diagnostics\CloudProvisioningLogger.cs" />
-    <Compile Include="Diagnostics\Persistence\ExecutionProfilingStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\PartitionStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\ServiceStatisticsName.cs" />
     <Compile Include="Instrumentation\CloudRuntimeInstrumentationSubject.cs" />
@@ -156,9 +155,6 @@
     <Compile Include="CloudInfrastructureProviders.cs" />
     <Compile Include="Diagnostics\DiagnosticsAcquisition.cs" />
     <Compile Include="Diagnostics\DiagnosticsModule.cs" />
-    <Compile Include="Diagnostics\ExecutionProfilingMonitor.cs" />
-    <Compile Include="Diagnostics\ExecutionProfilingStatistics.cs" />
-    <Compile Include="Diagnostics\ICloudDiagnosticsSource.cs" />
     <Compile Include="Diagnostics\PartitionMonitor.cs" />
     <Compile Include="Diagnostics\PartitionStatistics.cs" />
     <Compile Include="Diagnostics\ICloudDiagnosticsRepository.cs" />
@@ -181,11 +177,6 @@
     <Compile Include="Services\AssemblyConfigurationUpdateService.cs" />
     <Compile Include="Services\MonitoringDataRetentionService.cs" />
     <Compile Include="Services\MonitoringService.cs" />
-    <Compile Include="Shared\Diagnostics\ExceptionCounters.cs" />
-    <Compile Include="Shared\Diagnostics\ExecutionCounter.cs" />
-    <Compile Include="Shared\Diagnostics\ExecutionStatistics.cs" />
-    <Compile Include="Shared\Diagnostics\Persistence\ConvertionExtensions.cs" />
-    <Compile Include="Shared\Diagnostics\Persistence\ExecutionData.cs" />
     <Compile Include="Shared\Logging\ILog.cs" />
     <Compile Include="Shared\Logging\ILogExtensions.cs" />
     <Compile Include="Shared\Logging\ILogProvider.cs" />

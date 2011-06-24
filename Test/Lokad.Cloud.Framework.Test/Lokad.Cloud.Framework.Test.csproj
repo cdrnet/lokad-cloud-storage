@@ -88,7 +88,6 @@
     </None>
     <Compile Include="CloudStorageTests.cs" />
     <Compile Include="Diagnostics\CloudLoggerTests.cs" />
-    <Compile Include="Diagnostics\ExecutionCounterTests.cs" />
     <Compile Include="GlobalSetup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceFabric\AssemblyLoaderTests.cs" />

@@ -4,8 +4,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using Lokad.Diagnostics.Persist;
 
 namespace Lokad.Cloud.Diagnostics
 {
@@ -14,16 +12,11 @@ namespace Lokad.Cloud.Diagnostics
     /// </summary>
     public class DiagnosticsAcquisition
     {
-        readonly ExecutionProfilingMonitor _executionProfiling;
         readonly PartitionMonitor _partitionMonitor;
         readonly ServiceMonitor _serviceMonitor;
 
-        /// <remarks>IoC Injected, but optional</remarks>
-        public ICloudDiagnosticsSource DiagnosticsSource { get; set; }
-
         public DiagnosticsAcquisition(ICloudDiagnosticsRepository repository)
         {
-            _executionProfiling = new ExecutionProfilingMonitor(repository);
             _partitionMonitor = new PartitionMonitor(repository);
             _serviceMonitor = new ServiceMonitor(repository);
         }
@@ -34,15 +27,8 @@ namespace Lokad.Cloud.Diagnostics
         /// </summary>
         public void CollectStatistics()
         {
-            _executionProfiling.UpdateDefaultStatistics();
-
             _partitionMonitor.UpdateStatistics();
             _serviceMonitor.UpdateStatistics();
-
-            if (DiagnosticsSource != null)
-            {
-                DiagnosticsSource.GetIncrementalStatistics(_executionProfiling.Update);
-            }
         }
 
         /// <summary>
@@ -51,7 +37,6 @@ namespace Lokad.Cloud.Diagnostics
         /// </summary>
         public void RemoveStatisticsBefore(DateTimeOffset before)
         {
-            _executionProfiling.RemoveStatisticsBefore(before);
             _partitionMonitor.RemoveStatisticsBefore(before);
             _serviceMonitor.RemoveStatisticsBefore(before);
         }
@@ -62,17 +47,8 @@ namespace Lokad.Cloud.Diagnostics
         /// </summary>
         public void RemoveStatisticsBefore(int numberOfPeriods)
         {
-            _executionProfiling.RemoveStatisticsBefore(numberOfPeriods);
             _partitionMonitor.RemoveStatisticsBefore(numberOfPeriods);
             _serviceMonitor.RemoveStatisticsBefore(numberOfPeriods);
-        }
-
-        /// <summary>
-        /// Push incremental statistics for external execution profiles.
-        /// </summary>
-        public void PushExecutionProfilingStatistics(string context, IEnumerable<ExecutionData> additionalData)
-        {
-            _executionProfiling.Update(context, additionalData);
         }
     }
 }
