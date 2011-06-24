@@ -3,8 +3,13 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Autofac;
 using Lokad.Cloud.Diagnostics.Persistence;
+using Lokad.Cloud.Instrumentation;
+using Lokad.Cloud.Instrumentation.Events;
 using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Microsoft.WindowsAzure;
@@ -25,6 +30,11 @@ namespace Lokad.Cloud.Diagnostics
             builder.RegisterType<DiagnosticsAcquisition>()
                 .PropertiesAutowired(true)
                 .InstancePerDependency();
+
+            // Runtime Observer Subject
+            builder.Register(RuntimeObserver)
+                .As<ICloudRuntimeObserver, IObservable<ICloudRuntimeEvent>>()
+                .SingleInstance();
 
             // TODO (ruegg, 2011-05-30): Observer that logs system events to the log: temporary! to keep old logging behavior for now
             builder.RegisterType<CloudStorageLogger>().As<IStartable>().SingleInstance();
@@ -54,6 +64,12 @@ namespace Lokad.Cloud.Diagnostics
                 .ForAzureAccount(c.Resolve<CloudStorageAccount>())
                 .WithDataSerializer(new CloudFormatter())
                 .BuildBlobStorage();
+        }
+
+        static CloudRuntimeInstrumentationSubject RuntimeObserver(IComponentContext c)
+        {
+            // will include any registered storage event observers, if there are any, as fixed subscriptions
+            return new CloudRuntimeInstrumentationSubject(c.Resolve<IEnumerable<IObserver<ICloudRuntimeEvent>>>().ToArray());
         }
     }
 }

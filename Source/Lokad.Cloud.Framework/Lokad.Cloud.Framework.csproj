@@ -124,6 +124,11 @@
     <Compile Include="Diagnostics\Persistence\ExecutionProfilingStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\PartitionStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\ServiceStatisticsName.cs" />
+    <Compile Include="Instrumentation\CloudRuntimeInstrumentationSubject.cs" />
+    <Compile Include="Instrumentation\Events\CloudRuntimeBusyEvent.cs" />
+    <Compile Include="Instrumentation\Events\ICloudRuntimeEvent.cs" />
+    <Compile Include="Instrumentation\Events\CloudRuntimeIdleEvent.cs" />
+    <Compile Include="Instrumentation\ICloudRuntimeObserver.cs" />
     <Compile Include="Jobs\Job.cs" />
     <Compile Include="Jobs\JobManager.cs" />
     <Compile Include="Management\CloudProvisioning.cs" />

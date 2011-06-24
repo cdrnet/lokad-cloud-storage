@@ -36,6 +36,7 @@ namespace Lokad.Cloud.Storage.Azure
             builder.Register(CloudStorageProviders);
             builder.Register(CloudInfrastructureProviders);
 
+            // Storage Observer Subject
             builder.Register(StorageObserver)
                 .As<ICloudStorageObserver, IObservable<ICloudStorageEvent>>()
                 .SingleInstance();

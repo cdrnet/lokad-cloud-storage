@@ -11,6 +11,7 @@ using System.Threading;
 using Autofac;
 using Autofac.Configuration;
 using Lokad.Cloud.Diagnostics;
+using Lokad.Cloud.Instrumentation;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage.Shared.Logging;
 
@@ -22,6 +23,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         readonly RuntimeProviders _runtimeProviders;
         readonly IRuntimeFinalizer _runtimeFinalizer;
         readonly ILog _log;
+        readonly ICloudRuntimeObserver _observer;
 
         readonly IServiceMonitor _monitoring;
         readonly DiagnosticsAcquisition _diagnostics;
@@ -39,11 +41,12 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         public IContainer RuntimeContainer { get; set; }
 
         /// <summary>IoC constructor.</summary>
-        public Runtime(RuntimeProviders runtimeProviders, ICloudConfigurationSettings settings, ICloudDiagnosticsRepository diagnosticsRepository)
+        public Runtime(RuntimeProviders runtimeProviders, ICloudConfigurationSettings settings, ICloudDiagnosticsRepository diagnosticsRepository, ICloudRuntimeObserver observer = null)
         {
             _runtimeProviders = runtimeProviders;
             _runtimeFinalizer = runtimeProviders.RuntimeFinalizer;
             _log = runtimeProviders.Log;
+            _observer = observer;
 
             _settings = settings;
             _monitoring = new ServiceMonitor(diagnosticsRepository);
@@ -67,7 +70,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
                     // Give the application a chance to override external diagnostics sources
                     applicationContainer.InjectProperties(_diagnostics);
                     _applicationFinalizer = applicationContainer.ResolveOptional<IRuntimeFinalizer>();
-                    _scheduler = new Scheduler(services, RunService);
+                    _scheduler = new Scheduler(services, RunService, _observer);
 
                     foreach (var action in _scheduler.Schedule())
                     {

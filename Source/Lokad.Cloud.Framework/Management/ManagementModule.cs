@@ -28,6 +28,7 @@ namespace Lokad.Cloud.Management
                 .As<CloudProvisioning, IProvisioningProvider>()
                 .SingleInstance();
 
+            // Provisioning Observer Subject
             builder.Register(ProvisioningObserver)
                 .As<ICloudProvisioningObserver, IObservable<ICloudProvisioningEvent>>()
                 .SingleInstance();

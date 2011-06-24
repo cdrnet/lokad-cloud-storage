@@ -6,7 +6,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Lokad.Cloud.Storage.Shared.Diagnostics;
+using Lokad.Cloud.Instrumentation;
+using Lokad.Cloud.Instrumentation.Events;
 
 namespace Lokad.Cloud.ServiceFabric.Runtime
 {
@@ -18,6 +19,8 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
     /// </summary>
     public class Scheduler
     {
+        readonly ICloudRuntimeObserver _observer;
+
         readonly List<CloudService> _services;
         readonly Func<CloudService, ServiceExecutionFeedback> _schedule;
         readonly object _sync = new object();
@@ -31,26 +34,16 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
         CloudService _currentService;
         volatile bool _isRunning;
 
-        // Instrumentation
-        readonly ExecutionCounter _countIdleSleep;
-        readonly ExecutionCounter _countBusyExecute;
-
         /// <summary>
         /// Creates a new instance of the Scheduler class.
         /// </summary>
         /// <param name="services">cloud services</param>
         /// <param name="schedule">Action to be invoked when a service is scheduled to run</param>
-        public Scheduler(List<CloudService> services, Func<CloudService, ServiceExecutionFeedback> schedule)
+        public Scheduler(List<CloudService> services, Func<CloudService, ServiceExecutionFeedback> schedule, ICloudRuntimeObserver observer = null)
         {
+            _observer = observer;
             _services = services;
             _schedule = schedule;
-
-            // Instrumentation
-            ExecutionCounters.Default.RegisterRange(new[]
-                {
-                    _countIdleSleep = new ExecutionCounter("Runtime.IdleSleep", 0, 0),
-                    _countBusyExecute = new ExecutionCounter("Runtime.BusyExecute", 0, 0)
-                });
         }
 
         public CloudService CurrentlyScheduledService
@@ -65,6 +58,11 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
             var skippedConsecutively = 0;
 
             _isRunning = true;
+
+            if (_observer != null)
+            {
+                _observer.Notify(new CloudRuntimeBusyEvent(DateTimeOffset.UtcNow));
+            }
 
             while (_isRunning)
             {
@@ -83,9 +81,7 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
                 {
                     yield return () =>
                         {
-                            var busyExecuteTimestamp = _countBusyExecute.Open();
                             result = _schedule(_currentService);
-                            _countBusyExecute.Close(busyExecuteTimestamp);
                         };
                     isRunOnce |= WasSuccessfullyExecuted(result);
                 }
@@ -96,12 +92,20 @@ namespace Lokad.Cloud.ServiceFabric.Runtime
                     // We are not using 'Thread.Sleep' because we want the worker
                     // to terminate fast if 'Stop' is requested.
 
-                    var idleSleepTimestamp = _countIdleSleep.Open();
+                    if (_observer != null)
+                    {
+                        _observer.Notify(new CloudRuntimeIdleEvent(DateTimeOffset.UtcNow));
+                    }
+
                     lock (_sync)
                     {
                         Monitor.Wait(_sync, _idleSleep);
                     }
-                    _countIdleSleep.Close(idleSleepTimestamp);
+
+                    if (_observer != null)
+                    {
+                        _observer.Notify(new CloudRuntimeBusyEvent(DateTimeOffset.UtcNow));
+                    }
 
                     skippedConsecutively = 0;
                 }
