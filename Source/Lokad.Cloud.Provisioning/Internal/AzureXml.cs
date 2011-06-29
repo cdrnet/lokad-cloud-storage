@@ -35,7 +35,13 @@ namespace Lokad.Cloud.Provisioning.Internal
 
         public static IEnumerable<XElement> AzureElements(this XContainer container, string parentElementName, string itemElementName)
         {
-            return AzureElement(container, parentElementName).Elements(_azureNs + itemElementName);
+            var parentElement = container.Element(_azureNs + parentElementName);
+            if (parentElement == null)
+            {
+                return new XElement[0];
+            }
+
+            return parentElement.Elements(_azureNs + itemElementName);
         }
 
         public static string AzureValue(this XContainer container, string elementName)

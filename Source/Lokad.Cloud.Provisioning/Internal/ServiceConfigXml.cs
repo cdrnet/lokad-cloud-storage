@@ -29,7 +29,13 @@ namespace Lokad.Cloud.Provisioning.Internal
 
         public static IEnumerable<XElement> ServiceConfigElements(this XContainer container, string parentElementName, string itemElementName)
         {
-            return ServiceConfigElement(container, parentElementName).Elements(_serviceConfigNs + itemElementName);
+            var parentElement = container.Element(_serviceConfigNs + parentElementName);
+            if (parentElement == null)
+            {
+                return new XElement[0];
+            }
+
+            return parentElement.Elements(_serviceConfigNs + itemElementName);
         }
     }
 }
