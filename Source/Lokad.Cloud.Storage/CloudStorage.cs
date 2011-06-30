@@ -120,10 +120,24 @@ namespace Lokad.Cloud.Storage
             /// <remarks></remarks>
             public CloudStorageProviders BuildStorageProviders()
             {
+                var blobStorage = BuildBlobStorage();
+                var queueStorage = BuildQueueStorage();
+                var tableStorage = BuildTableStorage();
+
+                var originalSerializer = DataSerializer;
+                DataSerializer = new CloudFormatter();
+                var neutralBlobStorage = BuildBlobStorage();
+                var neutralQueueStorage = BuildQueueStorage();
+                var neutralTableStorage = BuildTableStorage();
+                DataSerializer = originalSerializer;
+
                 return new CloudStorageProviders(
-                    BuildBlobStorage(),
-                    BuildQueueStorage(),
-                    BuildTableStorage(),
+                    blobStorage,
+                    queueStorage,
+                    tableStorage,
+                    neutralBlobStorage,
+                    neutralQueueStorage,
+                    neutralTableStorage,
                     RuntimeFinalizer);
             }
         }
