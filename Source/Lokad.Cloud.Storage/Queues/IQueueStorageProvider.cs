@@ -38,6 +38,10 @@ namespace Lokad.Cloud.Storage
         IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials);
 
         /// <summary>Put a message on a queue.</summary>
+        /// <typeparam name="T">Type of the messages.</typeparam>
+        /// <param name="queueName">Identifier of the queue where messages are put.</param>
+        /// <param name="message">Message to be put.</param>
+        /// <remarks>If the queue does not exist, it gets created.</remarks>
         void Put<T>(string queueName, T message);
 
         /// <summary>Put messages on a queue.</summary>
