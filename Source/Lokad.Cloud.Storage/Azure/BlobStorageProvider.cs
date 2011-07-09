@@ -15,7 +15,6 @@ using System.Threading;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
-using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
@@ -502,7 +501,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             using (var stream = new MemoryStream())
             {
-                _serializer.Serialize(item, stream);
+                _serializer.Serialize(item, stream, type);
 
                 var container = _blobStorage.GetContainerReference(containerName);
 
@@ -758,7 +757,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 using (var writeStream = new MemoryStream())
                 {
-                    _serializer.Serialize(output.Value, writeStream);
+                    _serializer.Serialize(output.Value, writeStream, typeof(T));
                     writeStream.Seek(0, SeekOrigin.Begin);
 
                     // Semantics:

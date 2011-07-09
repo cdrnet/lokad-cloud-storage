@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using Lokad.Cloud.Storage.Shared;
 
 namespace Lokad.Cloud.Storage.InMemory
 {
@@ -196,7 +195,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
             using (var stream = new MemoryStream())
             {
-                formatter.Serialize(data, stream);
+                formatter.Serialize(data, stream, data.GetType());
                 stream.Position = 0;
                 return formatter.UnpackXml(stream);
             }
@@ -304,7 +303,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
                         using (var stream = new MemoryStream())
                         {
-                            DataSerializer.Serialize(item, stream);
+                            DataSerializer.Serialize(item, stream, type);
                         }
 
                         Containers[containerName].SetBlob(blobName, item);
@@ -326,7 +325,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
                 using (var stream = new MemoryStream())
                 {
-                    DataSerializer.Serialize(item, stream);
+                    DataSerializer.Serialize(item, stream, type);
                 }
 
                 Containers[containerName].AddBlob(blobName, item);

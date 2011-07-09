@@ -2,10 +2,11 @@
 // Company: http://www.lokad.com
 // This code is released under the terms of the new BSD licence
 #endregion
+
 using System;
 using System.IO;
 
-namespace Lokad.Cloud.Storage.Shared
+namespace Lokad.Cloud.Storage
 {
     /// <summary>
     /// Generic data serializer interface.
@@ -15,7 +16,8 @@ namespace Lokad.Cloud.Storage.Shared
         /// <summary>Serializes the object to the specified stream.</summary>
         /// <param name="instance">The instance.</param>
         /// <param name="destinationStream">The destination stream.</param>
-        void Serialize(object instance, Stream destinationStream);
+        /// <param name="type">The type of the object to serialize (can be a base type of the provided instance).</param>
+        void Serialize(object instance, Stream destinationStream, Type type);
         
         /// <summary>Deserializes the object from specified source stream.</summary>
         /// <param name="sourceStream">The source stream.</param>

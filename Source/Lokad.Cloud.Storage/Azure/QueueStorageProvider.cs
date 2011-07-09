@@ -12,7 +12,6 @@ using System.Runtime.Serialization;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
-using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -279,7 +278,7 @@ namespace Lokad.Cloud.Storage.Azure
                 stopwatch.Restart();
                 using (var stream = new MemoryStream())
                 {
-                    _serializer.Serialize(message, stream);
+                    _serializer.Serialize(message, stream, typeof(T));
 
                     // Caution: MaxMessageSize is not related to the number of bytes
                     // but the number of characters when Base64-encoded:
@@ -324,7 +323,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             using (var stream = new MemoryStream())
             {
-                _serializer.Serialize(mw, stream);
+                _serializer.Serialize(mw, stream, typeof(MessageWrapper));
                 var serializerWrapper = stream.ToArray();
 
                 NotifySucceeded(StorageOperationType.QueueWrap, stopwatch);
@@ -483,7 +482,7 @@ namespace Lokad.Cloud.Storage.Azure
                 CloudQueueMessage newRawMessage = null;
                 using (var stream = new MemoryStream())
                 {
-                    _serializer.Serialize(envelope, stream);
+                    _serializer.Serialize(envelope, stream, typeof(MessageEnvelope));
                     if (stream.Length < (CloudQueueMessage.MaxMessageSize - 1)/4*3)
                     {
                         try
@@ -498,7 +497,7 @@ namespace Lokad.Cloud.Storage.Azure
                         envelope.RawMessage = PutOverflowingMessageAndWrap(queueName, message);
                         using (var wrappedStream = new MemoryStream())
                         {
-                            _serializer.Serialize(envelope, wrappedStream);
+                            _serializer.Serialize(envelope, wrappedStream, typeof(MessageEnvelope));
                             newRawMessage = new CloudQueueMessage(wrappedStream.ToArray());
                         }
                     }

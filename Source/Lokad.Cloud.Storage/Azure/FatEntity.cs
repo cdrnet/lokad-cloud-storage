@@ -2,11 +2,11 @@
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Lokad.Cloud.Storage.Shared;
 using Microsoft.WindowsAzure.StorageClient;
 
 namespace Lokad.Cloud.Storage.Azure
@@ -185,7 +185,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             using (var stream = new MemoryStream())
             {
-                serializer.Serialize(cloudEntity.Value, stream);
+                serializer.Serialize(cloudEntity.Value, stream, typeof(T));
                 fatEntity.SetData(stream.ToArray());
                 return fatEntity;
             }

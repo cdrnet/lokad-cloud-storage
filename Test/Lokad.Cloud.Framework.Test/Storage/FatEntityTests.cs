@@ -7,11 +7,10 @@ using System;
 using System.Runtime.Serialization;
 using Autofac;
 using Lokad.Cloud.Storage.Azure;
-using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Test;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Tests
+namespace Lokad.Cloud.Storage.Test
 {
     [TestFixture]
     public class FatEntityTests

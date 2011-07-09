@@ -6,7 +6,6 @@
 using System.IO;
 using Autofac;
 using Lokad.Cloud.Storage;
-using Lokad.Cloud.Storage.Shared;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Storage
@@ -23,7 +22,7 @@ namespace Lokad.Cloud.Test.Storage
             var stream = new MemoryStream();
             var serializer = GlobalSetup.Container.Resolve<IDataSerializer>();
 
-            serializer.Serialize(om, stream);
+            serializer.Serialize(om, stream, om.GetType());
             stream.Position = 0;
             var omBis = (MessageWrapper) serializer.Deserialize(stream, typeof (MessageWrapper));
 

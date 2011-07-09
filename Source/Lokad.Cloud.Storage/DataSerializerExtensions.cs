@@ -7,7 +7,6 @@ using System;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
-using Lokad.Cloud.Storage.Shared;
 
 namespace Lokad.Cloud.Storage
 {

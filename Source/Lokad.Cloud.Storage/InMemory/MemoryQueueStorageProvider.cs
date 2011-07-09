@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Lokad.Cloud.Storage.Shared;
 using Tu = System.Tuple<string, object, System.Collections.Generic.List<byte[]>>;
 
 namespace Lokad.Cloud.Storage.InMemory
@@ -79,7 +78,7 @@ namespace Lokad.Cloud.Storage.InMemory
                 byte[] messageBytes;
                 using (var stream = new MemoryStream())
                 {
-                    DataSerializer.Serialize(message, stream);
+                    DataSerializer.Serialize(message, stream, typeof(T));
                     messageBytes = stream.ToArray();
                 }
 
