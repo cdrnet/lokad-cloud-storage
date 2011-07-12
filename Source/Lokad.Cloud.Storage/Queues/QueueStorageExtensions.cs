@@ -96,6 +96,31 @@ namespace Lokad.Cloud.Storage
             provider.PutRange(GetDefaultStorageName(typeof(T)), messages);
         }
 
+        /// <summary>Clear all the messages from a queue (derived from the message type T).</summary>
+        public static void Clear<T>(this IQueueStorageProvider provider)
+        {
+            provider.Clear(GetDefaultStorageName(typeof(T)));
+        }
+
+        /// <summary>Deletes a queue (derived from the message type T).</summary>
+        /// <returns><c>true</c> if the queue name has been actually deleted.</returns>
+        public static bool DeleteQueue<T>(this IQueueStorageProvider provider)
+        {
+            return provider.DeleteQueue(GetDefaultStorageName(typeof(T)));
+        }
+
+        /// <summary>Gets the approximate number of items in a queue (derived from the message type T).</summary>
+        public static int GetApproximateCount<T>(this IQueueStorageProvider provider)
+        {
+            return provider.GetApproximateCount(GetDefaultStorageName(typeof(T)));
+        }
+
+        /// <summary>Gets the approximate age of the top message in a queue (derived from the message type T).</summary>
+        public static Maybe<TimeSpan> GetApproximateLatency<T>(this IQueueStorageProvider provider)
+        {
+            return provider.GetApproximateLatency(GetDefaultStorageName(typeof(T)));
+        }
+
         public static string GetDefaultStorageName(Type type)
         {
             var name = type.FullName.ToLowerInvariant().Replace(".", "-");
