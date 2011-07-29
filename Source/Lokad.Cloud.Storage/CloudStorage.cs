@@ -125,10 +125,15 @@ namespace Lokad.Cloud.Storage
                 var tableStorage = BuildTableStorage();
 
                 var originalSerializer = DataSerializer;
+
                 DataSerializer = new CloudFormatter();
                 var neutralBlobStorage = BuildBlobStorage();
                 var neutralQueueStorage = BuildQueueStorage();
                 var neutralTableStorage = BuildTableStorage();
+
+                DataSerializer = new RawFormatter();
+                var rawBlobStorage = BuildBlobStorage();
+
                 DataSerializer = originalSerializer;
 
                 return new CloudStorageProviders(
@@ -138,6 +143,7 @@ namespace Lokad.Cloud.Storage
                     neutralBlobStorage,
                     neutralQueueStorage,
                     neutralTableStorage,
+                    rawBlobStorage,
                     RuntimeFinalizer);
             }
         }

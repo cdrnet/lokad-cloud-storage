@@ -26,6 +26,9 @@ namespace Lokad.Cloud.Storage
         /// <summary>Format-Neutral Table Storage Abstraction.</summary>
         public ITableStorageProvider NeutralTableStorage { get; private set; }
 
+        /// <summary>Raw bytearray-only Blob Storage Abstraction.</summary>
+        public IBlobStorageProvider RawBlobStorage { get; private set; }
+
         /// <summary>Abstracts the finalizer (used for fast resource release
         /// in case of runtime shutdown).</summary>
         public IRuntimeFinalizer RuntimeFinalizer { get; private set; }
@@ -38,6 +41,7 @@ namespace Lokad.Cloud.Storage
             IBlobStorageProvider neutralBlobStorage,
             IQueueStorageProvider neutralQueueStorage,
             ITableStorageProvider neutralTableStorage,
+            IBlobStorageProvider rawBlobStorage,
             IRuntimeFinalizer runtimeFinalizer = null)
         {
             BlobStorage = blobStorage;
@@ -46,6 +50,7 @@ namespace Lokad.Cloud.Storage
             NeutralBlobStorage = neutralBlobStorage;
             NeutralQueueStorage = neutralQueueStorage;
             NeutralTableStorage = neutralTableStorage;
+            RawBlobStorage = rawBlobStorage;
             RuntimeFinalizer = runtimeFinalizer;
         }
 
@@ -59,6 +64,7 @@ namespace Lokad.Cloud.Storage
             NeutralBlobStorage = copyFrom.NeutralBlobStorage;
             NeutralQueueStorage = copyFrom.NeutralQueueStorage;
             NeutralTableStorage = copyFrom.NeutralTableStorage;
+            RawBlobStorage = copyFrom.RawBlobStorage;
             RuntimeFinalizer = copyFrom.RuntimeFinalizer;
         }
     }
