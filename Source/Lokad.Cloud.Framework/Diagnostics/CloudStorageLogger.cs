@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Linq;
 using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared.Logging;
@@ -39,16 +38,17 @@ namespace Lokad.Cloud.Diagnostics
             _subscriptions.Add(_observable.OfType<MessageProcessingFailedQuarantinedEvent>().Subscribe(e => TryLog(e)));
 
             _subscriptions.Add(_observable.OfType<StorageOperationRetriedEvent>()
-                .Buffer(TimeSpan.FromHours(1))
-                .Subscribe(events =>
+                .ThrottleTokenBucket(TimeSpan.FromMinutes(15), 2)
+                .Subscribe(@event =>
                     {
-                        foreach (var group in events.GroupBy(e => e.Policy))
-                        {
-                            TryLog(string.Format("Storage: {0} retries per hour for the {1} policy on {2}. {3}",
-                                group.Count(), group.Key, CloudEnvironment.PartitionKey,
-                                string.Join(", ", group.Where(e => e.Exception != null).Select(e => e.Exception.GetType().Name).Distinct().ToArray())),
-                                level: LogLevel.Debug);
-                        }
+                        var e = @event.Item;
+                        TryLog(string.Format("Storage: Retried on policy {0} because of {1} on {2}{3} {4}",
+                            e.Policy,
+                            e.Exception != null ? e.Exception.GetType().Name : "an unknown error",
+                            CloudEnvironment.PartitionKey,
+                            @event.DroppedItems > 0 ? string.Format(". There have been {0} similar events in the last 15 minutes:", @event.DroppedItems) : ":",
+                            e.Exception != null ? e.ToString() : string.Empty),
+                            e.Exception, LogLevel.Debug);
                     }));
         }
 

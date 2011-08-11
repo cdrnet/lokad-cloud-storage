@@ -127,6 +127,7 @@
     <Compile Include="Diagnostics\CloudProvisioningLogger.cs" />
     <Compile Include="Diagnostics\Persistence\PartitionStatisticsName.cs" />
     <Compile Include="Diagnostics\Persistence\ServiceStatisticsName.cs" />
+    <Compile Include="Diagnostics\TockenBucketThrottling.cs" />
     <Compile Include="Instrumentation\CloudRuntimeInstrumentationSubject.cs" />
     <Compile Include="Instrumentation\Events\CloudRuntimeBusyEvent.cs" />
     <Compile Include="Instrumentation\Events\ICloudRuntimeEvent.cs" />
