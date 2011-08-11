@@ -68,7 +68,7 @@ namespace Lokad.Cloud.Storage.Instrumentation
             lock (_sync)
             {
                 _isDisposed = true;
-                _observers = null;
+                _observers = new IObserver<ICloudStorageEvent>[0];
             }
         }
 

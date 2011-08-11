@@ -68,7 +68,7 @@ namespace Lokad.Cloud.Provisioning.Instrumentation
             lock (_sync)
             {
                 _isDisposed = true;
-                _observers = null;
+                _observers = new IObserver<ICloudProvisioningEvent>[0];
             }
         }
 

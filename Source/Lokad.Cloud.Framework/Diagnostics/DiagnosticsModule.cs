@@ -34,7 +34,7 @@ namespace Lokad.Cloud.Diagnostics
             // Runtime Observer Subject
             builder.Register(RuntimeObserver)
                 .As<ICloudRuntimeObserver, IObservable<ICloudRuntimeEvent>>()
-                .SingleInstance();
+                .ExternallyOwned().SingleInstance();
 
             // TODO (ruegg, 2011-05-30): Observer that logs system events to the log: temporary! to keep old logging behavior for now
             builder.RegisterType<CloudStorageLogger>().As<IStartable>().SingleInstance();

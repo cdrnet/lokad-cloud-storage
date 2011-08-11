@@ -31,7 +31,7 @@ namespace Lokad.Cloud.Management
             // Provisioning Observer Subject
             builder.Register(ProvisioningObserver)
                 .As<ICloudProvisioningObserver, IObservable<ICloudProvisioningEvent>>()
-                .SingleInstance();
+                .ExternallyOwned().SingleInstance();
         }
 
         static CloudProvisioningInstrumentationSubject ProvisioningObserver(IComponentContext c)
