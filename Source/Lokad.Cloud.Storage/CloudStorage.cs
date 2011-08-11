@@ -217,6 +217,7 @@ namespace Lokad.Cloud.Storage
             var policies = new Azure.RetryPolicies(Observer);
             var queueClient = _storageAccount.CreateCloudQueueClient();
             queueClient.RetryPolicy = policies.ForAzureStorageClient;
+            queueClient.Timeout = TimeSpan.FromSeconds(300);
             return queueClient;
         }
     }

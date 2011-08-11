@@ -4,5 +4,6 @@ obj
 *.suo
 *.vsdoc
 *.cache
+*.build.csdef
 _ReSharper*
 
