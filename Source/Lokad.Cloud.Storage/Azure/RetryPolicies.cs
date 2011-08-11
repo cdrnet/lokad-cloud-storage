@@ -244,6 +244,14 @@ namespace Lokad.Cloud.Storage.Azure
                 return false;
             }
 
+            var webException = exception as WebException;
+            if (webException != null &&
+                (webException.Status == WebExceptionStatus.ConnectionClosed ||
+                 webException.Status == WebExceptionStatus.Timeout))
+            {
+                return true;
+            }
+
             // HACK: StorageClient does not catch internal errors very well.
             // Hence we end up here manually catching exception that should have been correctly 
             // typed by the StorageClient:
@@ -287,18 +295,20 @@ namespace Lokad.Cloud.Storage.Azure
                 }
             }
 
-            // HACK: StorageClient does not catch internal errors very well.
-            // Hence we end up here manually catching exception that should have been correctly 
-            // typed by the StorageClient:
-
-            // The remote server returned an error: (500) Internal Server Error.
+            // The remote server returned an error: (500) Internal Server Error, or some timeout
+            // The server should not timeout in theory (that's why there are limits and pagination)
             var webException = exception as WebException;
-            if (null != webException &&
+            if (webException != null &&
                 (webException.Status == WebExceptionStatus.ProtocolError ||
-                 webException.Status == WebExceptionStatus.ConnectionClosed))
+                 webException.Status == WebExceptionStatus.ConnectionClosed ||
+                 webException.Status == WebExceptionStatus.Timeout))
             {
                 return true;
             }
+
+            // HACK: StorageClient does not catch internal errors very well.
+            // Hence we end up here manually catching exception that should have been correctly 
+            // typed by the StorageClient:
 
             // System.Net.InternalException is internal, but uncaught on some race conditions.
             // We therefore assume this is a transient error and retry.
