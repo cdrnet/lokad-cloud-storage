@@ -5,8 +5,11 @@
 
 using System;
 using System.Linq;
+using Lokad.Cloud.Mock;
+using Lokad.Cloud.Runtime;
 using Lokad.Cloud.ServiceFabric;
 using Lokad.Cloud.Storage;
+using Lokad.Cloud.Storage.Shared.Logging;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Test.Services
@@ -17,17 +20,18 @@ namespace Lokad.Cloud.Test.Services
         [Test]
         public void SquareServiceTest()
         {
-            var providersForCloudStorage = Standalone.CreateMockProviders();
+            var storage = CloudStorage.ForInMemoryStorage().BuildStorageProviders();
+            var runtimeStorage = CloudStorage.ForInMemoryStorage().BuildRuntimeProviders();
+            var legacyProviders = new CloudInfrastructureProviders(storage, new MemoryProvisioning(), NullLog.Instance);
             
-            var service = new SquareQueueService { Providers = providersForCloudStorage };
-            var blobStorage = providersForCloudStorage.BlobStorage;
+            var service = new SquareQueueService { Providers = legacyProviders, RuntimeProviders = runtimeStorage };
 
             const string containerName = "mockcontainer";
 
             //filling blobs to be processed.
             for (int i = 0; i < 10; i++)
             {
-                blobStorage.PutBlob(containerName, "blob" + i, (double) i);
+                storage.BlobStorage.PutBlob(containerName, "blob" + i, (double) i);
             }
 
             var squareMessage = new SquareMessage
@@ -38,14 +42,14 @@ namespace Lokad.Cloud.Test.Services
                 };
 
             var queueName = TypeMapper.GetStorageName(typeof(SquareMessage));
-            providersForCloudStorage.QueueStorage.Put(queueName, squareMessage);
+            storage.QueueStorage.Put(queueName, squareMessage);
 
             for (int i = 0 ; i < 11 ; i++)
             {
                 service.StartService();
             }
 
-            var sum = providersForCloudStorage.BlobStorage.ListBlobs<double>(containerName).Sum();
+            var sum = storage.BlobStorage.ListBlobs<double>(containerName).Sum();
  
             //0*0+1*1+2*2+3*3+...+9*9 = 285
             Assert.AreEqual(285, sum, "result is different from expected.");	

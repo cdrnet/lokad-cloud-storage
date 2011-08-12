@@ -12,7 +12,6 @@ using Lokad.Cloud.Management;
 using Lokad.Cloud.Runtime;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
-using Lokad.Cloud.Storage.Shared;
 using Lokad.Cloud.Storage.Shared.Logging;
 using Microsoft.WindowsAzure;
 

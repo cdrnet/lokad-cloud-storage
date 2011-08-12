@@ -96,7 +96,6 @@
     <Compile Include="Shared\Monads\MaybeTests.cs" />
     <Compile Include="Shared\Range.cs" />
     <Compile Include="Shared\Threading\WaitForTests.cs" />
-    <Compile Include="StandaloneTests.cs" />
     <Compile Include="Storage\BlobNameTests.cs" />
     <Compile Include="Storage\BlobCounterTests.cs" />
     <Compile Include="Storage\BlobStorageProviderTests.cs" />
