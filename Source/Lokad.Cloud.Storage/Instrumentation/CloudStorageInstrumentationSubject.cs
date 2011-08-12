@@ -30,6 +30,12 @@ namespace Lokad.Cloud.Storage.Instrumentation
 
         void ICloudStorageObserver.Notify(ICloudStorageEvent @event)
         {
+            if (_isDisposed)
+            {
+                // make lifetime issues visible
+                throw new ObjectDisposedException("CloudStorageInstrumentationSubject");
+            }
+
             // Assuming event observers are light - else we may want to do this async
 
             foreach (var observer in _fixedObservers)
@@ -47,6 +53,12 @@ namespace Lokad.Cloud.Storage.Instrumentation
 
         public IDisposable Subscribe(IObserver<ICloudStorageEvent> observer)
         {
+            if (_isDisposed)
+            {
+                // make lifetime issues visible
+                throw new ObjectDisposedException("CloudStorageInstrumentationSubject");
+            }
+
             if (observer == null)
             {
                 throw new ArgumentNullException("observer");
@@ -68,7 +80,7 @@ namespace Lokad.Cloud.Storage.Instrumentation
             lock (_sync)
             {
                 _isDisposed = true;
-                _observers = new IObserver<ICloudStorageEvent>[0];
+                _observers = null;
             }
         }
 

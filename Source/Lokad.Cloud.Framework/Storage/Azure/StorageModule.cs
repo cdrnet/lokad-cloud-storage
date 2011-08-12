@@ -38,7 +38,7 @@ namespace Lokad.Cloud.Storage.Azure
             // Storage Observer Subject
             builder.Register(StorageObserver)
                 .As<ICloudStorageObserver, IObservable<ICloudStorageEvent>>()
-                .ExternallyOwned().SingleInstance();
+                .SingleInstance();
         }
 
         private static CloudStorageAccount StorageAccountFromSettings(IComponentContext c)
