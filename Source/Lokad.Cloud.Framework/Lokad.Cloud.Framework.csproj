@@ -187,6 +187,7 @@
     <Compile Include="Shared\Logging\ILogProvider.cs" />
     <Compile Include="Shared\Logging\LogLevel.cs" />
     <Compile Include="Shared\Logging\NullLog.cs" />
+    <Compile Include="Shared\Threading\WaitFor.cs" />
     <Compile Include="Storage\Azure\StorageModule.cs" />
     <Compile Include="Storage\BlobCounter.cs" />
     <Compile Include="Storage\DelayedQueue.cs" />
