@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Lokad.Cloud.Shared.Threading;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Shared.Threading.Tests

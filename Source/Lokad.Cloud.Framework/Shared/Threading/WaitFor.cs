@@ -7,13 +7,13 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Lokad.Cloud.Storage.Shared.Threading
+namespace Lokad.Cloud.Shared.Threading
 {
     /// <summary>
     /// Helper class for invoking tasks with timeout.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
-    public sealed class WaitFor<TResult>
+    internal sealed class WaitFor<TResult>
     {
         readonly TimeSpan _timeout;
 
@@ -22,7 +22,7 @@ namespace Lokad.Cloud.Storage.Shared.Threading
         /// using the specified timeout for all operations.
         /// </summary>
         /// <param name="timeout">The timeout.</param>
-        public WaitFor(TimeSpan timeout)
+        private WaitFor(TimeSpan timeout)
         {
             _timeout = timeout;
         }
@@ -41,7 +41,7 @@ namespace Lokad.Cloud.Storage.Shared.Threading
         /// </remarks>
         /// <exception cref="ArgumentNullException">if function is null</exception>
         /// <exception cref="TimeoutException">if the function does not finish in time </exception>
-        public TResult Run(Func<TResult> function)
+        private TResult Run(Func<TResult> function)
         {
             if (function == null)
             {

@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Lokad.Cloud.Jobs;
 using Lokad.Cloud.Runtime;
+using Lokad.Cloud.Shared.Threading;
 using Lokad.Cloud.Storage;
-using Lokad.Cloud.Storage.Shared.Threading;
 
 namespace Lokad.Cloud.ServiceFabric
 {
