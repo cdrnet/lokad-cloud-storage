@@ -4,14 +4,13 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Lokad.Cloud.Storage.Shared.Threading
 {
-    // HACK: imported back from Lokad.Shared
-
     /// <summary>
-    /// Helper class for invoking tasks with timeout. Overhead is 0,005 ms.
+    /// Helper class for invoking tasks with timeout.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
     public sealed class WaitFor<TResult>
@@ -44,29 +43,45 @@ namespace Lokad.Cloud.Storage.Shared.Threading
         /// <exception cref="TimeoutException">if the function does not finish in time </exception>
         public TResult Run(Func<TResult> function)
         {
-            if (function == null) throw new ArgumentNullException("function");
+            if (function == null)
+            {
+                throw new ArgumentNullException("function");
+            }
+
+            // CAUTION: do not refactor unless you know what you're doing.
 
             var sync = new object();
+
+            // run has finished
+            // only written to in main thread
             var isCompleted = false;
+            
+            // run was cancelled because of a timeout
+            // only written to in the watcher thread
+            var isCancelled = false;
+
+            var stopwatch = Stopwatch.StartNew();
 
             WaitCallback watcher = obj =>
             {
-                var watchedThread = obj as Thread;
+                var watchedThread = (Thread)obj;
 
                 lock (sync)
                 {
+                    // ReSharper disable AccessToModifiedClosure
                     if (!isCompleted)
                     {
-                        Monitor.Wait(sync, _timeout);
+                        isCancelled = !Monitor.Wait(sync, _timeout);
                     }
+
+                    if (isCompleted)
+                    {
+                        isCancelled = false;
+                    }
+                    // ReSharper restore AccessToModifiedClosure
                 }
 
-                // CAUTION: the call to Abort() can be blocking in rare situations
-                // http://msdn.microsoft.com/en-us/library/ty8d3wta.aspx
-                // Hence, it should not be called with the 'lock' as it could deadlock
-                // with the 'finally' block below.
-
-                if (!isCompleted)
+                if (isCancelled)
                 {
                     watchedThread.Abort();
                 }
@@ -79,10 +94,20 @@ namespace Lokad.Cloud.Storage.Shared.Threading
             }
             catch (ThreadAbortException)
             {
-                // This is our own exception.
-                Thread.ResetAbort();
+                bool cancelled;
+                lock (sync)
+                {
+                    cancelled = isCancelled;
+                }
 
-                throw new TimeoutException(string.Format("The operation has timed out after {0}.", _timeout));
+                if (!cancelled)
+                {
+                    // This is not our own exception.
+                    throw;
+                }
+
+                Thread.ResetAbort();
+                throw new TimeoutException(string.Format("The operation with timeout {0} has been aborted after {1}.", _timeout, stopwatch.Elapsed));
             }
             finally
             {

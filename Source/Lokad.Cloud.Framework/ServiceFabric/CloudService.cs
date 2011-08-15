@@ -186,8 +186,7 @@ namespace Lokad.Cloud.ServiceFabric
                 return ServiceExecutionFeedback.Skipped;
             }
 
-            var waitFor = new WaitFor<ServiceExecutionFeedback>(ExecutionTimeout);
-            return waitFor.Run(StartImpl);
+            return WaitFor<ServiceExecutionFeedback>.Run(ExecutionTimeout, StartImpl);
         }
 
         /// <summary>

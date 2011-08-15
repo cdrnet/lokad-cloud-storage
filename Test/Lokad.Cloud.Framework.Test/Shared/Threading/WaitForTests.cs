@@ -23,8 +23,7 @@ namespace Lokad.Cloud.Storage.Shared.Threading.Tests
                 return 1;
             };
 
-            var waitFor = new WaitFor<int>(TimeSpan.FromMilliseconds(1));
-            waitFor.Run(longRequest);
+            WaitFor<int>.Run(TimeSpan.FromMilliseconds(1), longRequest);
         }
 
         [Test]
@@ -36,7 +35,30 @@ namespace Lokad.Cloud.Storage.Shared.Threading.Tests
                 throw new ArgumentOutOfRangeException();
             };
 
-            new WaitFor<int>(TimeSpan.FromMinutes(1)).Run(request);
+            WaitFor<int>.Run(TimeSpan.FromMinutes(1), request);
+        }
+
+        [Test]
+        public void External_Thread_Abortion_Is_Propagated()
+        {
+            // Note: NUnit ExcpectException and Assert.Throw are broken for ThreadAbortException.
+
+            try
+            {
+                WaitFor<int>.Run(
+                    TimeSpan.FromMinutes(1),
+                    () =>
+                        {
+                            Thread.CurrentThread.Abort();
+                            return 0;
+                        });
+                Assert.Fail("ThreadAbortException expected.");
+            }
+            catch (ThreadAbortException)
+            {
+                Thread.ResetAbort();
+                return;
+            }
         }
 
         [Test]
@@ -48,8 +70,7 @@ namespace Lokad.Cloud.Storage.Shared.Threading.Tests
                 return 1;
             };
 
-            var waitFor = new WaitFor<int>(TimeSpan.FromMinutes(1));
-            var result = waitFor.Run(request);
+            var result = WaitFor<int>.Run(TimeSpan.FromMinutes(1), request);
             Assert.AreEqual(1, result);
         }
 
@@ -59,11 +80,9 @@ namespace Lokad.Cloud.Storage.Shared.Threading.Tests
             int counter = 0;
             Func<int> request = () => counter++;
 
-            var waitFor = new WaitFor<int>(TimeSpan.FromMinutes(1));
-
             foreach (var n in Enumerable.Range(0, 5))
             {
-                Assert.AreEqual(n, waitFor.Run(request));
+                Assert.AreEqual(n, WaitFor<int>.Run(TimeSpan.FromMinutes(1), request));
             }
 
             Assert.AreEqual(5, counter);
@@ -73,14 +92,12 @@ namespace Lokad.Cloud.Storage.Shared.Threading.Tests
         [Explicit]
         public void Count_OverHead()
         {
-            var waitFor = new WaitFor<int>(TimeSpan.FromMinutes(1));
-
             var watch = Stopwatch.StartNew();
 
             const int count = 10000;
             for (int i = 0; i < count; i++)
             {
-                waitFor.Run(() => 1);
+                WaitFor<int>.Run(TimeSpan.FromMinutes(1), () => 1);
             }
             var ticks = watch.ElapsedTicks;
             Console.WriteLine("Overhead is {0} ms", TimeSpan.FromTicks(ticks / count).TotalMilliseconds);
@@ -94,7 +111,6 @@ namespace Lokad.Cloud.Storage.Shared.Threading.Tests
         [Test]
         public void Stack_Is_Persisted()
         {
-
             try
             {
                 WaitFor<int>.Run(TimeSpan.FromMinutes(10), LocalStack);
