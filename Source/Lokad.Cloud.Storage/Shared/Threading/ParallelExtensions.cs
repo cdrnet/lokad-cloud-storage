@@ -12,7 +12,7 @@ namespace Lokad.Cloud.Storage.Shared.Threading
     ///<summary>
     /// Quick alternatives to PLinq with minimal overhead and simple implementations.
     ///</summary>
-    public static class ParallelExtensions
+    internal static class ParallelExtensions
     {
         static int ThreadCount = Environment.ProcessorCount;
 

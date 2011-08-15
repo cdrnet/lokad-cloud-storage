@@ -7,7 +7,6 @@ using System;
 using System.Linq;
 using Autofac;
 using Lokad.Cloud.Shared.Test;
-using Lokad.Cloud.Storage.Shared.Threading;
 using Lokad.Cloud.Test;
 using NUnit.Framework;
 
@@ -233,11 +232,10 @@ namespace Lokad.Cloud.Storage.Test
             _blobStorage.PutBlob(ContainerName, BlobName, 0);
 
             var array = new Maybe<int>[8];
-            array = array.SelectInParallel(
-                k => _blobStorage.UpsertBlobOrSkip<int>(
-                    ContainerName, BlobName,
-                    () => 1,
-                    i => i + 1), array.Length);
+            array = array
+                .AsParallel()
+                .Select(k => _blobStorage.UpsertBlobOrSkip<int>(ContainerName, BlobName, () => 1, i => i + 1))
+                .ToArray();
 
             Assert.IsFalse(array.Any(x => !x.HasValue), "No skips");
 
