@@ -5,6 +5,7 @@
 
 using System;
 using System.Data.Services.Client;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -252,6 +253,12 @@ namespace Lokad.Cloud.Storage.Azure
                 return true;
             }
 
+            var ioException = exception as IOException;
+            if (ioException != null)
+            {
+                return true;
+            }
+
             // HACK: StorageClient does not catch internal errors very well.
             // Hence we end up here manually catching exception that should have been correctly 
             // typed by the StorageClient:
@@ -302,6 +309,12 @@ namespace Lokad.Cloud.Storage.Azure
                 (webException.Status == WebExceptionStatus.ProtocolError ||
                  webException.Status == WebExceptionStatus.ConnectionClosed ||
                  webException.Status == WebExceptionStatus.Timeout))
+            {
+                return true;
+            }
+
+            var ioException = exception as IOException;
+            if (ioException != null)
             {
                 return true;
             }
