@@ -1,6 +1,0 @@
-﻿@model Lokad.Cloud.Console.WebRole.Models.Shared.NavigationModel
-<ul id="menu">
-	@foreach (var item in Model.HostedServiceNames) {
-		@Html.DeploymentMenuEntry(Model, item, item)
-	}
-</ul>

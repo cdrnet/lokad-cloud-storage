@@ -18,4 +18,4 @@ using System.Runtime.InteropServices;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("f1c9ee22-a41c-47ce-8d7e-bcacd3954986")]
 
-[assembly: InternalsVisibleTo("Lokad.Cloud.Framework.Test")]
+[assembly: InternalsVisibleTo("Lokad.Cloud.Storage.Test")]

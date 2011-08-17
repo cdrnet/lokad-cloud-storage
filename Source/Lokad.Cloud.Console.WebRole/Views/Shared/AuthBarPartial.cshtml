@@ -1,8 +1,0 @@
-﻿<ul>
-@if (Request.IsAuthenticated) {
-	<li>Welcome <b>@HttpContext.Current.User.Identity.Name</b> &nbsp;&nbsp;&nbsp;&nbsp; @Html.ActionLink("Logout", "Logout", "Account")</li>
-}
-else {
-	<li>@Html.ActionLink("Login", "Login", "Account")</li>
-}
-</ul>
