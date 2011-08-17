@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Data.Services.Client;
 using System.Linq;
 using Lokad.Cloud.Storage.Azure;
-using Lokad.Cloud.Storage.Shared;
 
 namespace Lokad.Cloud.Storage.InMemory
 {

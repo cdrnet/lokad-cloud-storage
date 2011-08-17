@@ -13,86 +13,81 @@ using NUnit.Framework;
 namespace Lokad.Cloud.Storage.Test.Blobs
 {
     [TestFixture]
-    public class BlobStorageTests
+    public abstract class BlobStorageTests
     {
         private const string ContainerName = "tests-blobstorageprovider-mycontainer";
         private const string BlobName = "myprefix/myblob";
 
-        private readonly IBlobStorageProvider _blobStorage;
-
-        public BlobStorageTests()
-            : this(CloudStorage.ForDevelopmentStorage().BuildStorageProviders())
-        {
-        }
+        protected readonly IBlobStorageProvider BlobStorage;
 
         protected BlobStorageTests(CloudStorageProviders storage)
         {
-            _blobStorage = storage.BlobStorage;
+            BlobStorage = storage.BlobStorage;
         }
 
         [TestFixtureSetUp]
         public void Setup()
         {
-            _blobStorage.CreateContainerIfNotExist(ContainerName);
-            _blobStorage.DeleteBlobIfExist(ContainerName, BlobName);
+            BlobStorage.CreateContainerIfNotExist(ContainerName);
+            BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
         }
 
         [Test]
         public void CanListContainers()
         {
-            Assert.IsTrue(_blobStorage.ListContainers().Contains(ContainerName));
-            Assert.IsTrue(_blobStorage.ListContainers(ContainerName.Substring(0, 5)).Contains(ContainerName));
-            Assert.IsFalse(_blobStorage.ListContainers("another-prefix").Contains(ContainerName));
+            Assert.IsTrue(BlobStorage.ListContainers().Contains(ContainerName));
+            Assert.IsTrue(BlobStorage.ListContainers(ContainerName.Substring(0, 5)).Contains(ContainerName));
+            Assert.IsFalse(BlobStorage.ListContainers("another-prefix").Contains(ContainerName));
         }
 
         [Test]
         public void GetAndDelete()
         {
-            _blobStorage.DeleteBlobIfExist(ContainerName, BlobName);
-            Assert.IsFalse(_blobStorage.GetBlob<int>(ContainerName, BlobName).HasValue, "#A00");
+            BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
+            Assert.IsFalse(BlobStorage.GetBlob<int>(ContainerName, BlobName).HasValue, "#A00");
         }
 
         [Test]
         public void BlobHasEtag()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
-            var etag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
             Assert.IsNotNull(etag, "#A00");
         }
 
         [Test]
         public void MissingBlobHasNoEtag()
         {
-            _blobStorage.DeleteBlobIfExist(ContainerName, BlobName);
-            var etag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
+            BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
             Assert.IsNull(etag, "#A00");
         }
 
         [Test]
         public void PutBlobEnforceNoOverwrite()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
 
             string etag;
-            var isSaved = _blobStorage.PutBlob(ContainerName, BlobName, 6, false, out etag);
+            var isSaved = BlobStorage.PutBlob(ContainerName, BlobName, 6, false, out etag);
             Assert.IsFalse(isSaved, "#A00");
             Assert.IsNull(etag, "#A01");
 
-            Assert.IsTrue(_blobStorage.GetBlob<int>(ContainerName, BlobName).HasValue, "#A02");
-            Assert.AreEqual(1, _blobStorage.GetBlob<int>(ContainerName, BlobName).Value, "#A03");
+            Assert.IsTrue(BlobStorage.GetBlob<int>(ContainerName, BlobName).HasValue, "#A02");
+            Assert.AreEqual(1, BlobStorage.GetBlob<int>(ContainerName, BlobName).Value, "#A03");
         }
 
         [Test]
         public void PutBlobEnforceOverwrite()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
 
             string etag;
-            var isSaved = _blobStorage.PutBlob(ContainerName, BlobName, 6, true, out etag);
+            var isSaved = BlobStorage.PutBlob(ContainerName, BlobName, 6, true, out etag);
             Assert.IsTrue(isSaved, "#A00");
             Assert.IsNotNull(etag, "#A01");
 
-            var maybe = _blobStorage.GetBlob<int>(ContainerName, BlobName);
+            var maybe = BlobStorage.GetBlob<int>(ContainerName, BlobName);
             Assert.IsTrue(maybe.HasValue, "#A02");
             Assert.AreEqual(6, maybe.Value, "#A03");
         }
@@ -110,8 +105,8 @@ namespace Lokad.Cloud.Storage.Test.Blobs
                 var buffer = new byte[(i* 1000000)];
                 rand.NextBytes(buffer);
 
-                _blobStorage.PutBlob(ContainerName, BlobName, buffer);
-                var maybe = _blobStorage.GetBlob<byte[]>(ContainerName, BlobName);
+                BlobStorage.PutBlob(ContainerName, BlobName, buffer);
+                var maybe = BlobStorage.GetBlob<byte[]>(ContainerName, BlobName);
 
                 Assert.IsTrue(maybe.HasValue);
 
@@ -125,44 +120,44 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         [Test]
         public void PutBlobEnforceMatchingEtag()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
 
-            var etag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
-            var isUpdated = _blobStorage.PutBlob(ContainerName, BlobName, 2, Guid.NewGuid().ToString());
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
+            var isUpdated = BlobStorage.PutBlob(ContainerName, BlobName, 2, Guid.NewGuid().ToString());
 
             Assert.IsTrue(!isUpdated, "#A00 Blob shouldn't be updated if etag is not matching");
 
-            isUpdated = _blobStorage.PutBlob(ContainerName, BlobName, 3, etag);
+            isUpdated = BlobStorage.PutBlob(ContainerName, BlobName, 3, etag);
             Assert.IsTrue(isUpdated, "#A01 Blob should have been updated");
         }
 
         [Test]
         public void EtagChangesOnlyWithBlogChange()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
-            var etag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
-            var newEtag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
+            var newEtag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
             Assert.AreEqual(etag, newEtag, "#A00");
         }
 
         [Test]
         public void EtagChangesWithBlogChange()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
-            var etag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
-            var newEtag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var newEtag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
             Assert.AreNotEqual(etag, newEtag, "#A00.");
         }
 
         [Test]
         public void GetBlobIfNotModifiedNoChangeNoRetrieval()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1);
-            var etag = _blobStorage.GetBlobEtag(ContainerName, BlobName);
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
 
             string newEtag;
-            var output = _blobStorage.GetBlobIfModified<MyBlob>(ContainerName, BlobName, etag, out newEtag);
+            var output = BlobStorage.GetBlobIfModified<MyBlob>(ContainerName, BlobName, etag, out newEtag);
 
             Assert.IsNull(newEtag, "#A00");
             Assert.IsFalse(output.HasValue, "#A01");
@@ -171,10 +166,10 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         [Test]
         public void GetBlobIfNotModifiedWithTypeMistmatch()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 1); // pushing Int32
+            BlobStorage.PutBlob(ContainerName, BlobName, 1); // pushing Int32
 
             string newEtag; // pulling MyBlob
-            var output = _blobStorage.GetBlobIfModified<MyBlob>(ContainerName, BlobName, "dummy", out newEtag);
+            var output = BlobStorage.GetBlobIfModified<MyBlob>(ContainerName, BlobName, "dummy", out newEtag);
             Assert.IsFalse(output.HasValue);
         }
 
@@ -185,38 +180,38 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public void UpsertBlockOrSkipNoStress()
         {
             var blobName = "test" + Guid.NewGuid().ToString("N");
-            Assert.IsFalse(_blobStorage.GetBlob<int>(ContainerName, blobName).HasValue);
+            Assert.IsFalse(BlobStorage.GetBlob<int>(ContainerName, blobName).HasValue);
 
             int inserted = 0, updated = 10;
 
 // ReSharper disable AccessToModifiedClosure
 
             // skip insert
-            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip(ContainerName, blobName, () => Maybe<int>.Empty, x => ++updated).HasValue);
+            Assert.IsFalse(BlobStorage.UpsertBlobOrSkip(ContainerName, blobName, () => Maybe<int>.Empty, x => ++updated).HasValue);
             Assert.AreEqual(0, inserted);
             Assert.AreEqual(10, updated);
-            Assert.IsFalse(_blobStorage.GetBlob<int>(ContainerName, blobName).HasValue);
+            Assert.IsFalse(BlobStorage.GetBlob<int>(ContainerName, blobName).HasValue);
 
             // do insert
-            Assert.IsTrue(_blobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => ++updated).HasValue);
+            Assert.IsTrue(BlobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => ++updated).HasValue);
             Assert.AreEqual(1, inserted);
             Assert.AreEqual(10, updated);
-            Assert.AreEqual(1, _blobStorage.GetBlob<int>(ContainerName, blobName).Value);
+            Assert.AreEqual(1, BlobStorage.GetBlob<int>(ContainerName, blobName).Value);
 
             // skip update
-            Assert.IsFalse(_blobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => Maybe<int>.Empty).HasValue);
+            Assert.IsFalse(BlobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => Maybe<int>.Empty).HasValue);
             Assert.AreEqual(1, inserted);
             Assert.AreEqual(10, updated);
-            Assert.AreEqual(1, _blobStorage.GetBlob<int>(ContainerName, blobName).Value);
+            Assert.AreEqual(1, BlobStorage.GetBlob<int>(ContainerName, blobName).Value);
 
             // do update
-            Assert.IsTrue(_blobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => ++updated).HasValue);
+            Assert.IsTrue(BlobStorage.UpsertBlobOrSkip<int>(ContainerName, blobName, () => ++inserted, x => ++updated).HasValue);
             Assert.AreEqual(1, inserted);
             Assert.AreEqual(11, updated);
-            Assert.AreEqual(11, _blobStorage.GetBlob<int>(ContainerName, blobName).Value);
+            Assert.AreEqual(11, BlobStorage.GetBlob<int>(ContainerName, blobName).Value);
 
             // cleanup
-            _blobStorage.DeleteBlobIfExist(ContainerName, blobName);
+            BlobStorage.DeleteBlobIfExist(ContainerName, blobName);
 
 // ReSharper restore AccessToModifiedClosure
         }
@@ -227,12 +222,12 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         [Test]
         public void UpsertBlockOrSkipWithStress()
         {
-            _blobStorage.PutBlob(ContainerName, BlobName, 0);
+            BlobStorage.PutBlob(ContainerName, BlobName, 0);
 
             var array = new Maybe<int>[8];
             array = array
                 .AsParallel()
-                .Select(k => _blobStorage.UpsertBlobOrSkip<int>(ContainerName, BlobName, () => 1, i => i + 1))
+                .Select(k => BlobStorage.UpsertBlobOrSkip<int>(ContainerName, BlobName, () => 1, i => i + 1))
                 .ToArray();
 
             Assert.IsFalse(array.Any(x => !x.HasValue), "No skips");
@@ -254,7 +249,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         {
             var privateContainerName = "test-" + Guid.NewGuid().ToString("N");
 
-            _blobStorage.CreateContainerIfNotExist(privateContainerName);
+            BlobStorage.CreateContainerIfNotExist(privateContainerName);
 
             var blobNames = new[]
             {
@@ -274,11 +269,11 @@ namespace Lokad.Cloud.Storage.Test.Blobs
 
             for(int i = 0; i < blobNames.Length; i++)
             {
-                _blobStorage.PutBlob(privateContainerName, blobNames[i], inputBlobs[i]);
+                BlobStorage.PutBlob(privateContainerName, blobNames[i], inputBlobs[i]);
             }
 
             string[] allEtags;
-            var allBlobs = _blobStorage.GetBlobRange<MyBlob>(privateContainerName, blobNames, out allEtags);
+            var allBlobs = BlobStorage.GetBlobRange<MyBlob>(privateContainerName, blobNames, out allEtags);
 
             Assert.AreEqual(blobNames.Length, allEtags.Length, "Wrong etags array length");
             Assert.AreEqual(blobNames.Length, allBlobs.Length, "Wrong blobs array length");
@@ -295,7 +290,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             Array.Copy(blobNames, wrongBlobNames, blobNames.Length);
             wrongBlobNames[wrongBlobNames.Length - 1] = "inexistent-blob";
 
-            allBlobs = _blobStorage.GetBlobRange<MyBlob>(privateContainerName, wrongBlobNames, out allEtags);
+            allBlobs = BlobStorage.GetBlobRange<MyBlob>(privateContainerName, wrongBlobNames, out allEtags);
 
             Assert.AreEqual(wrongBlobNames.Length, allEtags.Length, "Wrong etags array length");
             Assert.AreEqual(wrongBlobNames.Length, allBlobs.Length, "Wrong blobs array length");
@@ -309,7 +304,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             Assert.IsNull(allEtags[allEtags.Length - 1], "Etag should be null");
             Assert.IsFalse(allBlobs[allBlobs.Length - 1].HasValue, "Blob should not have a value");
 
-            _blobStorage.DeleteContainerIfExist(privateContainerName);
+            BlobStorage.DeleteContainerIfExist(privateContainerName);
         }
 
 
@@ -318,21 +313,21 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         {
             var privateContainerName = "test-" + Guid.NewGuid().ToString("N");
 
-            _blobStorage.CreateContainerIfNotExist(privateContainerName);
+            BlobStorage.CreateContainerIfNotExist(privateContainerName);
 
             int? value1 = 10;
             int? value2 = null;
 
-            _blobStorage.PutBlob(privateContainerName, "test1", value1);
-            _blobStorage.PutBlob(privateContainerName, "test2", value1);
+            BlobStorage.PutBlob(privateContainerName, "test1", value1);
+            BlobStorage.PutBlob(privateContainerName, "test2", value1);
 
-            var output1 = _blobStorage.GetBlob<int?>(privateContainerName, "test1");
-            var output2 = _blobStorage.GetBlob<int?>(privateContainerName, "test2");
+            var output1 = BlobStorage.GetBlob<int?>(privateContainerName, "test1");
+            var output2 = BlobStorage.GetBlob<int?>(privateContainerName, "test2");
 
             Assert.AreEqual(value1.Value, output1.Value);
             Assert.IsFalse(value2.HasValue);
 
-            _blobStorage.DeleteContainerIfExist(privateContainerName);
+            BlobStorage.DeleteContainerIfExist(privateContainerName);
         }
 
         [Test]
@@ -345,15 +340,15 @@ namespace Lokad.Cloud.Storage.Test.Blobs
 
             foreach (var n in prefixed)
             {
-                _blobStorage.PutBlob(ContainerName, n, n);
+                BlobStorage.PutBlob(ContainerName, n, n);
             }
 
             foreach (var n in unprefixed)
             {
-                _blobStorage.PutBlob(ContainerName, n, n);
+                BlobStorage.PutBlob(ContainerName, n, n);
             }
 
-            var list = _blobStorage.ListBlobNames(ContainerName, prefix).ToArray();
+            var list = BlobStorage.ListBlobNames(ContainerName, prefix).ToArray();
 
             Assert.AreEqual(prefixed.Length, list.Length, "#A00");
 
@@ -374,15 +369,15 @@ namespace Lokad.Cloud.Storage.Test.Blobs
 
             foreach (var n in prefixed)
             {
-                _blobStorage.PutBlob(ContainerName, n, n);
+                BlobStorage.PutBlob(ContainerName, n, n);
             }
 
             foreach (var n in unprefixed)
             {
-                _blobStorage.PutBlob(ContainerName, n, n);
+                BlobStorage.PutBlob(ContainerName, n, n);
             }
 
-            var list = _blobStorage.ListBlobs<string>(ContainerName, prefix).ToArray();
+            var list = BlobStorage.ListBlobs<string>(ContainerName, prefix).ToArray();
 
             Assert.AreEqual(prefixed.Length, list.Length, "#A00");
 
@@ -397,11 +392,11 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public void GetBlobXml()
         {
             var data = new MyBlob();
-            _blobStorage.PutBlob(ContainerName, BlobName, data, true);
+            BlobStorage.PutBlob(ContainerName, BlobName, data, true);
 
             string ignored;
-            var blob = _blobStorage.GetBlobXml(ContainerName, BlobName, out ignored);
-            _blobStorage.DeleteBlobIfExist(ContainerName, BlobName);
+            var blob = BlobStorage.GetBlobXml(ContainerName, BlobName, out ignored);
+            BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
 
             Assert.IsTrue(blob.HasValue);
             var xml = blob.Value;
@@ -412,7 +407,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         private string CreateNewBlob()
         {
             var name = "x" + Guid.NewGuid().ToString("N");
-            _blobStorage.PutBlob(ContainerName, name, name);
+            BlobStorage.PutBlob(ContainerName, name, name);
             return name;
         }
 
@@ -420,7 +415,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public void CanAcquireBlobLease()
         {
             var blobName = CreateNewBlob();
-            var result = _blobStorage.TryAcquireLease(ContainerName, blobName);
+            var result = BlobStorage.TryAcquireLease(ContainerName, blobName);
             Assert.IsTrue(result.IsSuccess);
             Assert.IsNotNullOrEmpty(result.Value);
         }
@@ -429,12 +424,12 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public void CanNotAcquireBlobLeaseOnLockedBlob()
         {
             var blobName = CreateNewBlob();
-            var result = _blobStorage.TryAcquireLease(ContainerName, blobName);
+            var result = BlobStorage.TryAcquireLease(ContainerName, blobName);
             Assert.IsTrue(result.IsSuccess);
             Assert.IsNotNullOrEmpty(result.Value);
 
             // Second trial should fail
-            result = _blobStorage.TryAcquireLease(ContainerName, blobName);
+            result = BlobStorage.TryAcquireLease(ContainerName, blobName);
             Assert.IsFalse(result.IsSuccess);
             Assert.AreEqual("Conflict", result.Error);
         }
@@ -443,23 +438,23 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public void CanReleaseLockedBlobWithMatchingLeaseId()
         {
             var blobName = CreateNewBlob();
-            var lease = _blobStorage.TryAcquireLease(ContainerName, blobName);
-            Assert.IsTrue(_blobStorage.TryReleaseLease(ContainerName, blobName, lease.Value));
+            var lease = BlobStorage.TryAcquireLease(ContainerName, blobName);
+            Assert.IsTrue(BlobStorage.TryReleaseLease(ContainerName, blobName, lease.Value));
         }
 
         [Test]
         public void CanNotReleaseLockedBlobWithoutMatchingLeaseId()
         {
             var blobName = CreateNewBlob();
-            _blobStorage.TryAcquireLease(ContainerName, blobName);
-            Assert.IsFalse(_blobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
+            BlobStorage.TryAcquireLease(ContainerName, blobName);
+            Assert.IsFalse(BlobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
         }
 
         [Test]
         public void CanNotReleaseUnleasedBlob()
         {
             var blobName = CreateNewBlob();
-            Assert.IsFalse(_blobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
+            Assert.IsFalse(BlobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
         }
     }
 

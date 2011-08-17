@@ -6,87 +6,101 @@
 using System;
 using System.Linq;
 using System.Threading;
-using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Test.Blobs
 {
     [TestFixture]
+    [Category("InMemoryStorage")]
     public class MemoryBlobStorageTests : BlobStorageTests
     {
+        private const string ContainerName1 = "container-1";
+        private const string ContainerName2 = "container-2";
+        private const string ContainerName3 = "container-3";
+
         public MemoryBlobStorageTests()
             : base(CloudStorage.ForInMemoryStorage().BuildStorageProviders())
         {
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            BlobStorage.DeleteContainerIfExist(ContainerName1);
+            BlobStorage.DeleteContainerIfExist(ContainerName2);
+            BlobStorage.DeleteContainerIfExist(ContainerName3);
+        }
+
         [Test]
         public void BlobsGetCreatedMonoThread()
         {
-            const string containerName1 = "container-1";
-            const string containerName2 = "container-2";
-            const string containerName3 = "container-3";
             const string blobPrefix = "mockBlobPrefix";
             const string secondBlobPrefix = "sndBlobPrefix";
 
-            var storage = new MemoryBlobStorageProvider();
+            BlobStorage.CreateContainerIfNotExist(ContainerName1);
+            BlobStorage.CreateContainerIfNotExist(ContainerName2);
+            BlobStorage.CreateContainerIfNotExist(ContainerName3);
 
-            storage.CreateContainerIfNotExist(containerName1);
-            storage.CreateContainerIfNotExist(containerName2);
-            storage.CreateContainerIfNotExist(containerName3);
+            BlobStorage.PutBlob(ContainerName1, blobPrefix + "/" + "blob1", new DateTime(2009, 08, 27));
+            BlobStorage.PutBlob(ContainerName1, blobPrefix + "/" + "blob2", new DateTime(2009, 08, 28));
+            BlobStorage.PutBlob(ContainerName1, blobPrefix + "/" + "blob3", new DateTime(2009, 08, 29));
+            BlobStorage.PutBlob(ContainerName2, blobPrefix + "/" + "blob2", new DateTime(1984, 07, 06));
+            BlobStorage.PutBlob(ContainerName1, secondBlobPrefix + "/" + "blob1", new DateTime(2009, 08, 30));
 
-            storage.PutBlob(containerName1, blobPrefix + "/" + "blob1", new DateTime(2009,08,27));
-            storage.PutBlob(containerName1, blobPrefix + "/" + "blob2", new DateTime(2009, 08, 28));
-            storage.PutBlob(containerName1, blobPrefix + "/" + "blob3", new DateTime(2009, 08, 29));
-            storage.PutBlob(containerName2, blobPrefix + "/" + "blob2", new DateTime(1984, 07, 06));
-            storage.PutBlob(containerName1, secondBlobPrefix + "/" + "blob1", new DateTime(2009, 08, 30));
-
-            Assert.AreEqual(3, storage.ListBlobNames(containerName1, blobPrefix).Count(),
+            Assert.AreEqual(
+                3,
+                BlobStorage.ListBlobNames(ContainerName1, blobPrefix).Count(),
                 "first container with first prefix does not hold 3 blobs");
 
-            Assert.AreEqual(1, storage.ListBlobNames(containerName2, blobPrefix).Count(),
+            Assert.AreEqual(
+                1,
+                BlobStorage.ListBlobNames(ContainerName2, blobPrefix).Count(),
                 "second container with first prefix does not hold 1 blobs");
 
-            Assert.AreEqual(0, storage.ListBlobNames(containerName3, blobPrefix).Count(),
+            Assert.AreEqual(
+                0,
+                BlobStorage.ListBlobNames(ContainerName3, blobPrefix).Count(),
                 "third container with first prefix does not hold 0 blob");
 
-            Assert.AreEqual(1, storage.ListBlobNames(containerName1, secondBlobPrefix).Count(),
+            Assert.AreEqual(
+                1,
+                BlobStorage.ListBlobNames(ContainerName1, secondBlobPrefix).Count(),
                 "first container with second prefix does not hold 1 blobs");
         }
 
         [Test]
         public void BlobsGetCreatedMultiThread()
         {
-            const string containerNamePrefix = "container-";
-            
             const string blobPrefix = "mockBlobPrefix";
 
-            var storage = new MemoryBlobStorageProvider();
-            storage.CreateContainerIfNotExist(containerNamePrefix + 1);
-            storage.CreateContainerIfNotExist(containerNamePrefix + 2);
+            BlobStorage.CreateContainerIfNotExist(ContainerName1);
+            BlobStorage.CreateContainerIfNotExist(ContainerName2);
 
-            var threads = Enumerable.Range(0, 32)
-                                    .Select(i=> 
-                                        new Thread(AddValueToContainer))
-                                    .ToArray();
-            
-            var threadParameters = Enumerable.Range(0, 32).Select(i => 
-                i<=15
-                ? new ThreadParameters("threadId" + i, "container-1", storage)
-                : new ThreadParameters("threadId" + i, "container-2", storage)).ToArray();
+            var threads = Enumerable.Range(0, 32).Select(i => new Thread(AddValueToContainer)).ToArray();
+
+            var threadParameters =
+                Enumerable.Range(0, 32).Select(
+                    i =>
+                    i <= 15
+                        ? new ThreadParameters("threadId" + i, ContainerName1, BlobStorage)
+                        : new ThreadParameters("threadId" + i, ContainerName2, BlobStorage)).ToArray();
 
             foreach (var i in Enumerable.Range(0, 32))
             {
                 threads[i].Start(threadParameters[i]);
             }
-            
+
             Thread.Sleep(2000);
 
-            Assert.AreEqual(1600, storage.ListBlobNames("container-1", blobPrefix).Count(),
+            Assert.AreEqual(
+                1600,
+                BlobStorage.ListBlobNames(ContainerName1, blobPrefix).Count(),
                 "first container with corresponding prefix does not hold 3 blobs");
 
-            Assert.AreEqual(1600, storage.ListBlobNames("container-2", blobPrefix).Count(),
+            Assert.AreEqual(
+                1600,
+                BlobStorage.ListBlobNames(ContainerName2, blobPrefix).Count(),
                 "second container with corresponding prefix does not hold 1 blobs");
-
         }
 
         private static void AddValueToContainer(object parameters)
@@ -97,19 +111,23 @@ namespace Lokad.Cloud.Storage.Test.Blobs
                 var random = new Random();
                 for (int i = 0; i < 100; i++)
                 {
-                    castedParameters.BlobStorage.PutBlob(castedParameters.ContainerName, 
-                        "mockBlobPrefix" + castedParameters.ThreadId + "/blob" + i, random.NextDouble());
+                    castedParameters.BlobStorage.PutBlob(
+                        castedParameters.ContainerName,
+                        "mockBlobPrefix" + castedParameters.ThreadId + "/blob" + i,
+                        random.NextDouble());
                 }
             }
         }
 
-        class ThreadParameters
+        private class ThreadParameters
         {
-            public MemoryBlobStorageProvider BlobStorage { get; set; }
-            public string ThreadId { get; set; }
-            public string ContainerName { get; set; }
+            public IBlobStorageProvider BlobStorage { get; private set; }
 
-            public ThreadParameters(string threadId, string containerName, MemoryBlobStorageProvider blobStorage)
+            public string ThreadId { get; private set; }
+
+            public string ContainerName { get; private set; }
+
+            public ThreadParameters(string threadId, string containerName, IBlobStorageProvider blobStorage)
             {
                 BlobStorage = blobStorage;
                 ThreadId = threadId;

@@ -15,11 +15,11 @@ using NUnit.Framework;
 namespace Lokad.Cloud.Storage.Test.Tables
 {
     [TestFixture]
-    public class TableStorageTests
+    public abstract class TableStorageTests
     {
         readonly static Random Rand = new Random();
 
-        readonly ITableStorageProvider _tableStorage;
+        protected readonly ITableStorageProvider TableStorage;
 
         const string TableName = "teststablestorageprovidermytable";
 
@@ -30,43 +30,38 @@ namespace Lokad.Cloud.Storage.Test.Tables
 
         protected TableStorageTests(CloudStorageProviders storage)
         {
-            _tableStorage = storage.TableStorage;
-        }
-
-        [TestFixtureSetUp]
-        public void Setup()
-        {
-            _tableStorage.CreateTable(TableName);
+            TableStorage = storage.TableStorage;
         }
 
         [TestFixtureTearDown]
         public void TearDown()
         {
-            _tableStorage.DeleteTable(TableName);
+            TableStorage.DeleteTable(TableName);
         }
 
         [Test]
         public void CreateDeleteTables()
         {
             var name = "n" + Guid.NewGuid().ToString("N");
-            Assert.IsTrue(_tableStorage.CreateTable(name), "#A01");
-            Assert.IsFalse(_tableStorage.CreateTable(name), "#A02");
-            Assert.IsTrue(_tableStorage.DeleteTable(name), "#A03");
+            Assert.IsTrue(TableStorage.CreateTable(name), "#A01");
+            Assert.IsFalse(TableStorage.CreateTable(name), "#A02");
+            Assert.IsTrue(TableStorage.DeleteTable(name), "#A03");
 
             // replicating the test a 2nd time, to check for slow table deletion
-            Assert.IsTrue(_tableStorage.CreateTable(name), "#A04");
-            Assert.IsTrue(_tableStorage.DeleteTable(name), "#A05");
+            Assert.IsTrue(TableStorage.CreateTable(name), "#A04");
+            Assert.IsTrue(TableStorage.DeleteTable(name), "#A05");
 
-            Assert.IsFalse(_tableStorage.DeleteTable(name), "#A06");
+            Assert.IsFalse(TableStorage.DeleteTable(name), "#A06");
 
             const string name2 = "IamNotATable";
-            Assert.IsFalse(_tableStorage.DeleteTable(name2), "#A07");
+            Assert.IsFalse(TableStorage.DeleteTable(name2), "#A07");
         }
 
         [Test]
         public void GetTables()
         {
-            var tables = _tableStorage.GetTables();
+            TableStorage.CreateTable(TableName);
+            var tables = TableStorage.GetTables();
             Assert.IsTrue(tables.Contains(TableName), "#B07");
         }
 
@@ -76,19 +71,19 @@ namespace Lokad.Cloud.Storage.Test.Tables
             var missingTableName = "t" + Guid.NewGuid().ToString("N");
 
             // checking the 4 overloads
-            var enumerable = _tableStorage.Get<string>(missingTableName);
+            var enumerable = TableStorage.Get<string>(missingTableName);
             int count = enumerable.Count();
             Assert.AreEqual(0, count, "#A00");
 
-            enumerable = _tableStorage.Get<string>(missingTableName, "my-partition");
+            enumerable = TableStorage.Get<string>(missingTableName, "my-partition");
             count = enumerable.Count();
             Assert.AreEqual(0, count, "#A01");
 
-            enumerable = _tableStorage.Get<string>(missingTableName, "my-partition", "start", "end");
+            enumerable = TableStorage.Get<string>(missingTableName, "my-partition", "start", "end");
             count = enumerable.Count();
             Assert.AreEqual(0, count, "#A02");
 
-            enumerable = _tableStorage.Get<string>(missingTableName, "my-partition", new[] { "my-key" });
+            enumerable = TableStorage.Get<string>(missingTableName, "my-partition", new[] { "my-key" });
             count = enumerable.Count();
             Assert.AreEqual(0, count, "#A03");
         }
@@ -97,23 +92,23 @@ namespace Lokad.Cloud.Storage.Test.Tables
         public void GetOnJustDeletedTableShouldWork()
         {
             var missingTableName = "t" + Guid.NewGuid().ToString("N");
-            Assert.IsTrue(_tableStorage.CreateTable(missingTableName), "#A01");
-            Assert.IsTrue(_tableStorage.DeleteTable(missingTableName), "#A02");
+            Assert.IsTrue(TableStorage.CreateTable(missingTableName), "#A01");
+            Assert.IsTrue(TableStorage.DeleteTable(missingTableName), "#A02");
 
             // checking the 4 overloads
-            var enumerable = _tableStorage.Get<string>(missingTableName);
+            var enumerable = TableStorage.Get<string>(missingTableName);
             int count = enumerable.Count();
             Assert.AreEqual(0, count, "#A00");
 
-            enumerable = _tableStorage.Get<string>(missingTableName, "my-partition");
+            enumerable = TableStorage.Get<string>(missingTableName, "my-partition");
             count = enumerable.Count();
             Assert.AreEqual(0, count, "#A01");
 
-            enumerable = _tableStorage.Get<string>(missingTableName, "my-partition", "start", "end");
+            enumerable = TableStorage.Get<string>(missingTableName, "my-partition", "start", "end");
             count = enumerable.Count();
             Assert.AreEqual(0, count, "#A02");
 
-            enumerable = _tableStorage.Get<string>(missingTableName, "my-partition", new[] { "my-key" });
+            enumerable = TableStorage.Get<string>(missingTableName, "my-partition", new[] { "my-key" });
             count = enumerable.Count();
             Assert.AreEqual(0, count, "#A03");
         }
@@ -123,13 +118,13 @@ namespace Lokad.Cloud.Storage.Test.Tables
         {
             var missingPartition = Guid.NewGuid().ToString("N");
 
-            var enumerable = _tableStorage.Get<string>(TableName, missingPartition);
+            var enumerable = TableStorage.Get<string>(TableName, missingPartition);
             Assert.That(enumerable.Count() == 0, "#D01");
 
-            var enumerable2 = _tableStorage.Get<string>(TableName, missingPartition, "dummyRowKeyA", "dummyRowKeyB");
+            var enumerable2 = TableStorage.Get<string>(TableName, missingPartition, "dummyRowKeyA", "dummyRowKeyB");
             Assert.That(enumerable2.Count() == 0, "#D02");
 
-            var enumerable3 = _tableStorage.Get<string>(TableName, missingPartition, new[] { "dummyRowKeyA", "dummyRowKeyB" });
+            var enumerable3 = TableStorage.Get<string>(TableName, missingPartition, new[] { "dummyRowKeyA", "dummyRowKeyB" });
             Assert.That(enumerable3.Count() == 0, "#D02");
         }
 
@@ -137,32 +132,32 @@ namespace Lokad.Cloud.Storage.Test.Tables
         public void InsertOnMissingTableShouldWork()
         {
             var missingTableName = "t" + Guid.NewGuid().ToString("N");
-            _tableStorage.Insert(missingTableName, Entities(1, "my-key", 10));
+            TableStorage.Insert(missingTableName, Entities(1, "my-key", 10));
 
             // tentative clean-up
-            _tableStorage.DeleteTable(missingTableName);
+            TableStorage.DeleteTable(missingTableName);
         }
 
         [Test]
         public void InsertOnJustDeletedTableShouldWork()
         {
             var missingTableName = "t" + Guid.NewGuid().ToString("N");
-            Assert.IsTrue(_tableStorage.CreateTable(missingTableName), "#A01");
-            Assert.IsTrue(_tableStorage.DeleteTable(missingTableName), "#A02");
-            _tableStorage.Insert(missingTableName, Entities(1, "my-key", 10));
+            Assert.IsTrue(TableStorage.CreateTable(missingTableName), "#A01");
+            Assert.IsTrue(TableStorage.DeleteTable(missingTableName), "#A02");
+            TableStorage.Insert(missingTableName, Entities(1, "my-key", 10));
 
             // tentative clean-up
-            _tableStorage.DeleteTable(missingTableName);
+            TableStorage.DeleteTable(missingTableName);
         }
 
         [Test]
         public void UpsertOnMissingTableShouldWork()
         {
             var missingTableName = "t" + Guid.NewGuid().ToString("N");
-            _tableStorage.Upsert(missingTableName, Entities(1, "my-key", 10));
+            TableStorage.Upsert(missingTableName, Entities(1, "my-key", 10));
 
             // tentative clean-up
-            _tableStorage.DeleteTable(missingTableName);
+            TableStorage.DeleteTable(missingTableName);
         }
 
         [Test]
@@ -176,10 +171,10 @@ namespace Lokad.Cloud.Storage.Test.Tables
                 entities[i].RowKey = "series+" + i;	
             }
 
-            _tableStorage.Upsert(TableName, entities);
-            _tableStorage.Upsert(TableName, entities); // idempotence
+            TableStorage.Upsert(TableName, entities);
+            TableStorage.Upsert(TableName, entities); // idempotence
 
-            var list = _tableStorage.Get<string>(TableName, p1).ToArray();
+            var list = TableStorage.Get<string>(TableName, p1).ToArray();
             Assert.AreEqual(entities.Length, list.Length, "#A00");
         }
 
@@ -193,13 +188,13 @@ namespace Lokad.Cloud.Storage.Test.Tables
             var e2 = Entities(25, p2, 10);
             var e1And2 = e1.Union(e2).ToArray();
 
-            _tableStorage.Upsert(TableName, e1);
-            _tableStorage.Upsert(TableName, e1And2);
+            TableStorage.Upsert(TableName, e1);
+            TableStorage.Upsert(TableName, e1And2);
 
-            var count1 = _tableStorage.Get<string>(TableName, p1).Count();
+            var count1 = TableStorage.Get<string>(TableName, p1).Count();
             Assert.AreEqual(e1.Length, count1, "#A00");
 
-            var count2 = _tableStorage.Get<string>(TableName, p2).Count();
+            var count2 = TableStorage.Get<string>(TableName, p2).Count();
             Assert.AreEqual(e2.Length, count2, "#A01");
         }
 
@@ -213,7 +208,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             var e2 = Entities(25, p2, 10);
             var e1And2 = e1.Union(e2);
 
-            _tableStorage.Insert(TableName, e1And2);
+            TableStorage.Insert(TableName, e1And2);
         }
 
         [Test]
@@ -226,9 +221,9 @@ namespace Lokad.Cloud.Storage.Test.Tables
             var e2 = Entities(25, p2, 10);
             var e1And2 = e1.Union(e2);
 
-            _tableStorage.Insert(TableName, e1And2);
+            TableStorage.Insert(TableName, e1And2);
 
-            var list1 = _tableStorage.Get<string>(TableName, p1).ToArray();
+            var list1 = TableStorage.Get<string>(TableName, p1).ToArray();
             var count1 = list1.Length;
             Assert.AreEqual(e1.Length, count1, "#A00");
         }
@@ -237,23 +232,23 @@ namespace Lokad.Cloud.Storage.Test.Tables
         public void DeleteOnMissingTableShouldWork()
         {
             var missingTableName = "t" + Guid.NewGuid().ToString("N");
-            _tableStorage.Delete<string>(missingTableName, "my-part", new[] { "my-key" });
+            TableStorage.Delete<string>(missingTableName, "my-part", new[] { "my-key" });
         }
 
         [Test]
         public void DeleteOnJustDeletedTableShouldWork()
         {
             var missingTableName = "t" + Guid.NewGuid().ToString("N");
-            Assert.IsTrue(_tableStorage.CreateTable(missingTableName), "#A01");
-            Assert.IsTrue(_tableStorage.DeleteTable(missingTableName), "#A02");
-            _tableStorage.Delete<string>(missingTableName, "my-part", new[] { "my-key" });
+            Assert.IsTrue(TableStorage.CreateTable(missingTableName), "#A01");
+            Assert.IsTrue(TableStorage.DeleteTable(missingTableName), "#A02");
+            TableStorage.Delete<string>(missingTableName, "my-part", new[] { "my-key" });
         }
 
         [Test]
         public void DeleteOnMissingPartitionShouldWork()
         {
             var missingPartition = Guid.NewGuid().ToString("N");
-            _tableStorage.Delete<string>(TableName, missingPartition, new[] { "my-key" });
+            TableStorage.Delete<string>(TableName, missingPartition, new[] { "my-key" });
         }
 
         [Test]
@@ -262,7 +257,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             try
             {
                 var missingTableName = "t" + Guid.NewGuid().ToString("N");
-                _tableStorage.Update(missingTableName, Entities(1, "my-key", 10));
+                TableStorage.Update(missingTableName, Entities(1, "my-key", 10));
                 Assert.Fail("#A00");
             }
             catch (InvalidOperationException)
@@ -276,9 +271,9 @@ namespace Lokad.Cloud.Storage.Test.Tables
             try
             {
                 var missingTableName = "t" + Guid.NewGuid().ToString("N");
-                Assert.IsTrue(_tableStorage.CreateTable(missingTableName), "#A01");
-                Assert.IsTrue(_tableStorage.DeleteTable(missingTableName), "#A02");
-                _tableStorage.Update(missingTableName, Entities(1, "my-key", 10));
+                Assert.IsTrue(TableStorage.CreateTable(missingTableName), "#A01");
+                Assert.IsTrue(TableStorage.DeleteTable(missingTableName), "#A02");
+                TableStorage.Update(missingTableName, Entities(1, "my-key", 10));
                 Assert.Fail("#A00");
             }
             catch (InvalidOperationException)
@@ -292,7 +287,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             try
             {
                 var missingPartition = Guid.NewGuid().ToString("N");
-                _tableStorage.Update(TableName, Entities(1, missingPartition, 10));
+                TableStorage.Update(TableName, Entities(1, missingPartition, 10));
                 Assert.Fail("#A00");
             }
             catch (InvalidOperationException)
@@ -307,7 +302,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             const int N = 250;
             string pKey = Guid.NewGuid().ToString();
 
-            _tableStorage.CreateTable(TableName);
+            TableStorage.CreateTable(TableName);
             var entities = Enumerable.Range(0, N).Select(i => new CloudEntity<string>
                     {
                         PartitionKey = pKey,
@@ -315,9 +310,9 @@ namespace Lokad.Cloud.Storage.Test.Tables
                         Value = Guid.NewGuid().ToString()
                     });
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
-            var retrieved = _tableStorage.Get<string>(TableName, pKey, null, null).ToArray();
+            var retrieved = TableStorage.Get<string>(TableName, pKey, null, null).ToArray();
             var retrievedSorted = retrieved.OrderBy(e => e.RowKey).ToArray();
 
             bool isOrdered = true;
@@ -331,7 +326,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             }
             Assert.That(isOrdered, "#C01");
 
-            var retrieved2 = _tableStorage.Get<string>(TableName, pKey, "RowKey25", null).ToArray();
+            var retrieved2 = TableStorage.Get<string>(TableName, pKey, "RowKey25", null).ToArray();
             var retrievedSorted2 = retrieved2.OrderBy(e => e.RowKey).ToArray();
 
             bool isOrdered2 = true;
@@ -345,7 +340,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             }
             Assert.That(isOrdered2, "#C02");
 
-            var retrieved3 = _tableStorage.Get<string>(TableName, pKey, null, "RowKey25").ToArray();
+            var retrieved3 = TableStorage.Get<string>(TableName, pKey, null, "RowKey25").ToArray();
             var retrievedSorted3 = retrieved3.OrderBy(e => e.RowKey).ToArray();
 
             bool isOrdered3 = true;
@@ -375,12 +370,12 @@ namespace Lokad.Cloud.Storage.Test.Tables
                 };
 
             // Insert entity.
-            _tableStorage.Insert(TableName, new[] { entity });
+            TableStorage.Insert(TableName, new[] { entity });
 
             // Insert Retry should fail.
             try
             {
-                _tableStorage.Insert(TableName, new[] { entity });
+                TableStorage.Insert(TableName, new[] { entity });
                 Assert.Fail("#A01");
             }
             catch (InvalidOperationException)
@@ -391,7 +386,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             try
             {
                 entity.Value = "value2";
-                _tableStorage.Update(TableName, new[] { entity, entity });
+                TableStorage.Update(TableName, new[] { entity, entity });
                 Assert.Fail("#A02");
             }
             catch (InvalidOperationException)
@@ -399,13 +394,13 @@ namespace Lokad.Cloud.Storage.Test.Tables
             }
 
             // Delete entity.
-            _tableStorage.Delete<string>(TableName, partitionKey, new[] { rowKey });
+            TableStorage.Delete<string>(TableName, partitionKey, new[] { rowKey });
 
             // Update deleted entity should fail
             try
             {
                 entity.Value = "value2";
-                _tableStorage.Update(TableName, new[] { entity });
+                TableStorage.Update(TableName, new[] { entity });
                 Assert.Fail("#A03");
             }
             catch (InvalidOperationException)
@@ -415,7 +410,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
             // Insert entity twice should fail
             try
             {
-                _tableStorage.Insert(TableName, new[] { entity, entity });
+                TableStorage.Insert(TableName, new[] { entity, entity });
                 Assert.Fail("#A04");
             }
             catch (InvalidOperationException)
@@ -437,16 +432,16 @@ namespace Lokad.Cloud.Storage.Test.Tables
                     }).ToArray();
 
             // Insert/delete entity.
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             // partial deletion
-            _tableStorage.Delete<string>(TableName, pkey, entities.Take(5).Select(e => e.RowKey));
+            TableStorage.Delete<string>(TableName, pkey, entities.Take(5).Select(e => e.RowKey));
 
             // complete deletion, but with overlap
-            _tableStorage.Delete<string>(TableName, pkey, entities.Select(e => e.RowKey));
+            TableStorage.Delete<string>(TableName, pkey, entities.Select(e => e.RowKey));
 
             // checking that all entities have been deleted
-            var list = _tableStorage.Get<string>(TableName, pkey, entities.Select(e => e.RowKey));
+            var list = TableStorage.Get<string>(TableName, pkey, entities.Select(e => e.RowKey));
             Assert.That(list.Count() == 0, "#A00");
         }
 
@@ -457,8 +452,8 @@ namespace Lokad.Cloud.Storage.Test.Tables
             const int entityCount = 300;
             var partitionKey = Guid.NewGuid().ToString();
 
-            _tableStorage.Insert(TableName, Entities(entityCount, partitionKey, 1));
-            var retrievedCount = _tableStorage.Get<string>(TableName, partitionKey).Count();
+            TableStorage.Insert(TableName, Entities(entityCount, partitionKey, 1));
+            var retrievedCount = TableStorage.Get<string>(TableName, partitionKey).Count();
 
             Assert.AreEqual(entityCount, retrievedCount);
         }
@@ -473,9 +468,9 @@ namespace Lokad.Cloud.Storage.Test.Tables
             // entities are sorted
             var entities = Entities(entityCount, partitionKey, 1).OrderBy(e => e.RowKey).ToArray();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
-            var retrievedCount = _tableStorage.Get<string>(TableName, partitionKey,
+            var retrievedCount = TableStorage.Get<string>(TableName, partitionKey,
                 entities[150].RowKey, entities[200].RowKey).Count();
 
             // only the range should have been retrieved
@@ -489,8 +484,8 @@ namespace Lokad.Cloud.Storage.Test.Tables
             var partitionKey = Guid.NewGuid().ToString();
 
             // 5 MB is above the max entity transaction payload
-            _tableStorage.Insert(TableName, Entities(entityCount, partitionKey, 100 * 1024));
-            var retrievedCount = _tableStorage.Get<string>(TableName, partitionKey).Count();
+            TableStorage.Insert(TableName, Entities(entityCount, partitionKey, 100 * 1024));
+            var retrievedCount = TableStorage.Get<string>(TableName, partitionKey).Count();
 
             Assert.AreEqual(entityCount, retrievedCount);
         }
@@ -536,16 +531,16 @@ Time:2010-01-15T12:37:25.1611631Z</message>
                     Value = key,
                 }).ToArray();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
-            var result = keys.Select(key => _tableStorage.Get<string>(TableName, key, key).Value).ToArray();
+            var result = keys.Select(key => TableStorage.Get<string>(TableName, key, key).Value).ToArray();
             CollectionAssert.AreEqual(keys, result.Select(e => e.Value));
             CollectionAssert.AreEqual(keys, result.Select(e => e.PartitionKey));
             CollectionAssert.AreEqual(keys, result.Select(e => e.RowKey));
 
             foreach (var key in keys)
             {
-                _tableStorage.Delete<string>(TableName, key, new[] {key});
+                TableStorage.Delete<string>(TableName, key, new[] {key});
             }
         }
 
@@ -555,7 +550,7 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var partition = Guid.NewGuid().ToString("N");
             var entities = Entities(3, partition, 10);
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             // note: ETags are not unique (they're actually the same per request)
             CollectionAssert.AllItemsAreNotNull(entities.Select(e => e.ETag));
@@ -567,7 +562,7 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var partition = Guid.NewGuid().ToString("N");
             var entities = Entities(3, partition, 10);
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             var oldETags = entities.Select(e => e.ETag).ToArray();
 
@@ -576,7 +571,7 @@ Time:2010-01-15T12:37:25.1611631Z</message>
                 entity.Value += "modified";
             }
 
-            _tableStorage.Update(TableName, entities);
+            TableStorage.Update(TableName, entities);
 
             var newETags = entities.Select(e => e.ETag).ToArray();
             CollectionAssert.AllItemsAreNotNull(newETags);
@@ -590,12 +585,12 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var entities = Entities(1, partition, 10);
             var entity = entities.First();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             entity.ETag = "abc";
             entity.Value = "def";
 
-            _tableStorage.Update(TableName, entities, false);
+            TableStorage.Update(TableName, entities, false);
         }
 
         [Test]
@@ -605,12 +600,12 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var entities = Entities(1, partition, 10);
             var entity = entities.First();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             entity.ETag = "abc";
             entity.Value = "def";
 
-            _tableStorage.Update(TableName, entities, true);
+            TableStorage.Update(TableName, entities, true);
         }
 
         [Test]
@@ -620,12 +615,12 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var entities = Entities(1, partition, 10);
             var entity = entities.First();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             entity.ETag = null;
             entity.Value = "def";
 
-            _tableStorage.Update(TableName, entities, false);
+            TableStorage.Update(TableName, entities, false);
         }
 
         [Test, ExpectedException(typeof(DataServiceRequestException))]
@@ -635,12 +630,12 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var entities = Entities(1, partition, 10);
             var entity = entities.First();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             entity.ETag = "abc";
             entity.Value = "def";
 
-            _tableStorage.Delete(TableName, entities, false);
+            TableStorage.Delete(TableName, entities, false);
         }
 
         [Test]
@@ -650,12 +645,12 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var entities = Entities(1, partition, 10);
             var entity = entities.First();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             entity.ETag = "abc";
             entity.Value = "def";
 
-            _tableStorage.Delete(TableName, entities, true);
+            TableStorage.Delete(TableName, entities, true);
         }
 
         [Test]
@@ -665,12 +660,12 @@ Time:2010-01-15T12:37:25.1611631Z</message>
             var entities = Entities(1, partition, 10);
             var entity = entities.First();
 
-            _tableStorage.Insert(TableName, entities);
+            TableStorage.Insert(TableName, entities);
 
             entity.ETag = null;
             entity.Value = "def";
 
-            _tableStorage.Delete(TableName, entities, false);
+            TableStorage.Delete(TableName, entities, false);
         }
 
         CloudEntity<String>[] Entities(int count, string partitionKey, int entitySize)

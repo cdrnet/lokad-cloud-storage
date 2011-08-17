@@ -75,14 +75,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Blobs\DevBlobStorageTests.cs" />
     <Compile Include="CloudStorageTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Queues\DevQueueStorageTests.cs" />
     <Compile Include="Shared\Monads\MaybeTests.cs" />
     <Compile Include="Shared\Range.cs" />
     <Compile Include="Blobs\BlobNameTests.cs" />
     <Compile Include="Blobs\BlobStorageTests.cs" />
     <Compile Include="CloudFormatterTests.cs" />
     <Compile Include="Tables\CloudTableTests.cs" />
+    <Compile Include="Tables\DevTableStorageTests.cs" />
     <Compile Include="Tables\FatEntityTests.cs" />
     <Compile Include="Blobs\MemoryBlobStorageTests.cs" />
     <Compile Include="Queues\MemoryQueueStorageTests.cs" />

@@ -4,7 +4,6 @@
 #endregion
 
 using System;
-using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Test.Tables
@@ -15,7 +14,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
         [Test]
         public void TableNameValidation()
         {
-            var mockProvider = new MemoryTableStorageProvider();
+            var mockProvider = CloudStorage.ForInMemoryStorage().BuildTableStorage();
 
             new CloudTable<int>(mockProvider, "abc"); // name is OK
 

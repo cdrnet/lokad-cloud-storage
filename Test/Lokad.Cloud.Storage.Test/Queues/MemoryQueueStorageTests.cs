@@ -5,87 +5,70 @@
 
 using System;
 using System.Linq;
-using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Test.Queues
 {
     [TestFixture]
+    [Category("InMemoryStorage")]
     public class MemoryQueueStorageTests : QueueStorageTests
     {
+        private const string FirstQueueName = "firstQueueName";
+        private const string SecondQueueName = "secondQueueName";
+
         public MemoryQueueStorageTests()
             : base(CloudStorage.ForInMemoryStorage().BuildStorageProviders())
         {
         }
 
-        public override void ClearRemovesOverflowingBlobs()
+        [TearDown]
+        public void TearDown()
         {
-            // Memory queue storage does not overflow.
-        }
-
-        public override void DeleteRemovesOverflowingBlobs()
-        {
-            // Memory queue storage does not overflow.
-        }
-
-        public override void PersistRestoreOverflowing()
-        {
-            // Memory queue storage does not overflow.
-        }
-
-        public override void PutGetDeleteOverflowing()
-        {
-            // Memory queue storage does not overflow.
-        }
-
-        public override void QueueLatency()
-        {
-            // Memory queue storage does not support any timing.
+            QueueStorage.DeleteQueue(FirstQueueName);
+            QueueStorage.DeleteQueue(SecondQueueName);
         }
 
         [Test]
         public void GetOnMissingQueueDoesNotFail()
         {
-            var queueStorage = new MemoryQueueStorageProvider();
-            queueStorage.Get<int>("nosuchqueue", 1);
+            QueueStorage.Get<int>("nosuchqueue", 1);
         }
 
         [Test]
         public void ItemsGetPutInMonoThread()
         {
-            var queueStorage = new MemoryQueueStorageProvider();
             var fakeMessages = Enumerable.Range(0, 3).Select(i => new FakeMessage(i)).ToArray();
+            
+            QueueStorage.PutRange(FirstQueueName, fakeMessages.Take(2));
+            QueueStorage.PutRange(SecondQueueName, fakeMessages.Skip(2).ToArray());
 
-            const string firstQueueName = "firstQueueName";
-            const string secondQueueName = "secondQueueName";
-
-            queueStorage.PutRange(firstQueueName, fakeMessages.Take(2));
-            queueStorage.PutRange(secondQueueName, fakeMessages.Skip(2).ToArray());
-
-            Assert.AreEqual(2, queueStorage.GetApproximateCount(firstQueueName), "#A04 First queue has not the right number of elements.");
-            Assert.AreEqual(1, queueStorage.GetApproximateCount(secondQueueName), "#A05 Second queue has not the right number of elements.");
+            Assert.AreEqual(
+                2,
+                QueueStorage.GetApproximateCount(FirstQueueName),
+                "#A04 First queue has not the right number of elements.");
+            Assert.AreEqual(
+                1,
+                QueueStorage.GetApproximateCount(SecondQueueName),
+                "#A05 Second queue has not the right number of elements.");
         }
 
         [Test]
         public void ItemsReturnedInMonoThread()
         {
-            var queueStorage = new MemoryQueueStorageProvider();
             var fakeMessages = Enumerable.Range(0, 10).Select(i => new FakeMessage(i)).ToArray();
 
-            const string firstQueueName = "firstQueueName";
+            QueueStorage.PutRange(FirstQueueName, fakeMessages.Take(6));
+            var allFirstItems = QueueStorage.Get<FakeMessage>(FirstQueueName, 6);
+            QueueStorage.Clear(FirstQueueName);
 
-            queueStorage.PutRange(firstQueueName, fakeMessages.Take(6));
-            var allFirstItems = queueStorage.Get<FakeMessage>(firstQueueName, 6);
-            queueStorage.Clear(firstQueueName);
+            QueueStorage.PutRange(FirstQueueName, fakeMessages.Take(6));
+            var partOfFirstItems = QueueStorage.Get<FakeMessage>(FirstQueueName, 2);
+            Assert.AreEqual(4, QueueStorage.GetApproximateCount(FirstQueueName), "#A06");
+            QueueStorage.Clear(FirstQueueName);
 
-            queueStorage.PutRange(firstQueueName, fakeMessages.Take(6));
-            var partOfFirstItems = queueStorage.Get<FakeMessage>(firstQueueName, 2);
-            Assert.AreEqual(4, queueStorage.GetApproximateCount(firstQueueName), "#A06");
-            queueStorage.Clear(firstQueueName);
-
-            queueStorage.PutRange(firstQueueName, fakeMessages.Take(6));
-            var allFirstItemsAndMore = queueStorage.Get<FakeMessage>(firstQueueName, 8);
-            queueStorage.Clear(firstQueueName);
+            QueueStorage.PutRange(FirstQueueName, fakeMessages.Take(6));
+            var allFirstItemsAndMore = QueueStorage.Get<FakeMessage>(FirstQueueName, 8);
+            QueueStorage.Clear(FirstQueueName);
 
             Assert.AreEqual(6, allFirstItems.Count(), "#A07");
             Assert.AreEqual(2, partOfFirstItems.Count(), "#A08");
@@ -95,21 +78,18 @@ namespace Lokad.Cloud.Storage.Test.Queues
         [Test]
         public void ListInMonoThread()
         {
-            var queueStorage = new MemoryQueueStorageProvider();
             var fakeMessages = Enumerable.Range(0, 10).Select(i => new FakeMessage(i)).ToArray();
 
-            const string firstQueueName = "firstQueueName";
-
-            queueStorage.PutRange(firstQueueName, fakeMessages.Take(6));
-            var queuesName = queueStorage.List("");
+            QueueStorage.PutRange(FirstQueueName, fakeMessages.Take(6));
+            var queuesName = QueueStorage.List("");
 
             Assert.AreEqual(1, queuesName.Count(), "#A010");
         }
 
         [Serializable]
-        class FakeMessage
+        private class FakeMessage
         {
-            double Value { get; set; }
+            private double Value { get; set; }
 
             public FakeMessage(double value)
             {
