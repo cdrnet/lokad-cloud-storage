@@ -9,13 +9,13 @@ using System.Threading;
 using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test.Storage.InMemory
+namespace Lokad.Cloud.Storage.Test.Blobs
 {
     [TestFixture]
-    public class MemoryBlobStorageProviderTests : BlobStorageProviderTests
+    public class MemoryBlobStorageTests : BlobStorageTests
     {
-        public MemoryBlobStorageProviderTests()
-            : base(new MemoryBlobStorageProvider())
+        public MemoryBlobStorageTests()
+            : base(CloudStorage.ForInMemoryStorage().BuildStorageProviders())
         {
         }
 

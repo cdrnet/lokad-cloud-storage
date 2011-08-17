@@ -7,7 +7,7 @@ using System;
 using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test.Storage
+namespace Lokad.Cloud.Storage.Test.Tables
 {
     [TestFixture]
     public class CloudTableTests

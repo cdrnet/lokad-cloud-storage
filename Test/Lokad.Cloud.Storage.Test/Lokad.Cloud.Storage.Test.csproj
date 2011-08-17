@@ -78,18 +78,18 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared\Monads\MaybeTests.cs" />
     <Compile Include="Shared\Range.cs" />
-    <Compile Include="Storage\BlobNameTests.cs" />
-    <Compile Include="Storage\BlobStorageProviderTests.cs" />
-    <Compile Include="Storage\CloudFormatterTests.cs" />
-    <Compile Include="Storage\CloudTableTests.cs" />
-    <Compile Include="Storage\FatEntityTests.cs" />
-    <Compile Include="Storage\InMemory\MemoryBlobStorageProviderTests.cs" />
-    <Compile Include="Storage\InMemory\MemoryQueueStorageProviderTests.cs" />
-    <Compile Include="Storage\InMemory\MemoryTableStorageProviderTests.cs" />
-    <Compile Include="Storage\MessageWrapperTests.cs" />
-    <Compile Include="Storage\QueueStorageProviderTests.cs" />
-    <Compile Include="Storage\TableStorageProviderTests.cs" />
-    <Compile Include="Storage\TemporaryBlobNameTests.cs" />
+    <Compile Include="Blobs\BlobNameTests.cs" />
+    <Compile Include="Blobs\BlobStorageTests.cs" />
+    <Compile Include="CloudFormatterTests.cs" />
+    <Compile Include="Tables\CloudTableTests.cs" />
+    <Compile Include="Tables\FatEntityTests.cs" />
+    <Compile Include="Blobs\MemoryBlobStorageTests.cs" />
+    <Compile Include="Queues\MemoryQueueStorageTests.cs" />
+    <Compile Include="Tables\MemoryTableStorageTests.cs" />
+    <Compile Include="Queues\MessageWrapperTests.cs" />
+    <Compile Include="Queues\QueueStorageTests.cs" />
+    <Compile Include="Tables\TableStorageTests.cs" />
+    <Compile Include="Blobs\TemporaryBlobNameTests.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -101,6 +101,7 @@
   <ItemGroup>
     <Content Include="Shared\_ReadMe.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
   </Target>

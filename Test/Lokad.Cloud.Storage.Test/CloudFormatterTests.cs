@@ -10,7 +10,7 @@ using NUnit.Framework;
 using System.IO;
 using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Storage.Test.Storage
+namespace Lokad.Cloud.Storage.Test
 {
     [TestFixture]
     public class CloudFormatterTests

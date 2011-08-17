@@ -8,13 +8,13 @@ using System.Linq;
 using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test.Storage.InMemory
+namespace Lokad.Cloud.Storage.Test.Queues
 {
     [TestFixture]
-    public class MemoryQueueStorageProviderTests : QueueStorageProviderTests
+    public class MemoryQueueStorageTests : QueueStorageTests
     {
-        public MemoryQueueStorageProviderTests()
-            : base(new MemoryQueueStorageProvider(), new MemoryBlobStorageProvider())
+        public MemoryQueueStorageTests()
+            : base(CloudStorage.ForInMemoryStorage().BuildStorageProviders())
         {
         }
 

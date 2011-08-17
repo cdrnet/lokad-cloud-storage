@@ -6,7 +6,7 @@
 using System.IO;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test.Storage
+namespace Lokad.Cloud.Storage.Test.Queues
 {
     [TestFixture]
     public class MessageWrapperTests

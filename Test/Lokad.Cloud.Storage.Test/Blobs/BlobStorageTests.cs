@@ -10,25 +10,24 @@ using NUnit.Framework;
 
 // TODO: refactor tests so that containers do not have to be created each time.
 
-namespace Lokad.Cloud.Storage.Test.Storage
+namespace Lokad.Cloud.Storage.Test.Blobs
 {
     [TestFixture]
-    public class BlobStorageProviderTests
+    public class BlobStorageTests
     {
         private const string ContainerName = "tests-blobstorageprovider-mycontainer";
         private const string BlobName = "myprefix/myblob";
 
         private readonly IBlobStorageProvider _blobStorage;
 
-        public BlobStorageProviderTests()
+        public BlobStorageTests()
+            : this(CloudStorage.ForDevelopmentStorage().BuildStorageProviders())
         {
-            var storage = CloudStorage.ForDevelopmentStorage().BuildStorageProviders();
-            _blobStorage = storage.BlobStorage;
         }
 
-        protected BlobStorageProviderTests(IBlobStorageProvider blobStorageProvider)
+        protected BlobStorageTests(CloudStorageProviders storage)
         {
-            _blobStorage = blobStorageProvider;
+            _blobStorage = storage.BlobStorage;
         }
 
         [TestFixtureSetUp]

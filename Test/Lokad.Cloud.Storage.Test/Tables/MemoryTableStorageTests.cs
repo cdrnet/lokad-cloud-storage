@@ -9,14 +9,14 @@ using System.Threading;
 using Lokad.Cloud.Storage.InMemory;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test.Storage.InMemory
+namespace Lokad.Cloud.Storage.Test.Tables
 {
     /// <remarks>Includes all unit tests for the real table provider</remarks>
     [TestFixture]
-    public class MemoryTableStorageProviderTests : TableStorageProviderTests
+    public class MemoryTableStorageTests : TableStorageTests
     {
-        public MemoryTableStorageProviderTests()
-            : base(new MemoryTableStorageProvider())
+        public MemoryTableStorageTests()
+            : base(CloudStorage.ForInMemoryStorage().BuildStorageProviders())
         {
         }
 

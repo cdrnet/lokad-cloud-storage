@@ -12,10 +12,10 @@ using System.Text.RegularExpressions;
 using Lokad.Cloud.Storage.Test.Shared;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test.Storage
+namespace Lokad.Cloud.Storage.Test.Tables
 {
     [TestFixture]
-    public class TableStorageProviderTests
+    public class TableStorageTests
     {
         readonly static Random Rand = new Random();
 
@@ -23,15 +23,14 @@ namespace Lokad.Cloud.Storage.Test.Storage
 
         const string TableName = "teststablestorageprovidermytable";
 
-        public TableStorageProviderTests()
+        public TableStorageTests()
+            : this(CloudStorage.ForDevelopmentStorage().BuildStorageProviders())
         {
-            var storage = CloudStorage.ForDevelopmentStorage().BuildStorageProviders();
-            _tableStorage = storage.TableStorage;
         }
 
-        protected TableStorageProviderTests(ITableStorageProvider tableStorageProvider)
+        protected TableStorageTests(CloudStorageProviders storage)
         {
-            _tableStorage = tableStorageProvider;
+            _tableStorage = storage.TableStorage;
         }
 
         [TestFixtureSetUp]

@@ -10,10 +10,10 @@ using NUnit.Framework;
 using System.Text;
 using System.Runtime.Serialization;
 
-namespace Lokad.Cloud.Storage.Test.Storage
+namespace Lokad.Cloud.Storage.Test.Queues
 {
     [TestFixture]
-    public class QueueStorageProviderTests
+    public class QueueStorageTests
     {
         private const string BaseQueueName = "tests-queuestorageprovider-";
         private string QueueName;
@@ -23,17 +23,15 @@ namespace Lokad.Cloud.Storage.Test.Storage
         private readonly IQueueStorageProvider _queueStorage;
         private readonly IBlobStorageProvider _blobStorage;
 
-        public QueueStorageProviderTests()
+        public QueueStorageTests()
+            : this(CloudStorage.ForDevelopmentStorage().BuildStorageProviders())
         {
-            var storage = CloudStorage.ForDevelopmentStorage().BuildStorageProviders();
-            _queueStorage = storage.QueueStorage;
-            _blobStorage = storage.BlobStorage;
         }
 
-        protected QueueStorageProviderTests(IQueueStorageProvider queueStorageProvider, IBlobStorageProvider blobStorageProvider)
+        protected QueueStorageTests(CloudStorageProviders storage)
         {
-            _queueStorage = queueStorageProvider;
-            _blobStorage = blobStorageProvider;
+            _queueStorage = storage.QueueStorage;
+            _blobStorage = storage.BlobStorage;
         }
 
         [SetUp]

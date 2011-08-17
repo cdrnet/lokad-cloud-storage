@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Storage.Test.Storage
+namespace Lokad.Cloud.Storage.Test.Blobs
 {
     [TestFixture]
     public class TemporaryBlobNameTests

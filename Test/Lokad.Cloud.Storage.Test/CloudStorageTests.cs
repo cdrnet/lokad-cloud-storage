@@ -3,13 +3,12 @@
 // URL: http://www.lokad.com/
 #endregion
 
-using Lokad.Cloud.Storage;
 using Lokad.Cloud.Storage.Azure;
 using Lokad.Cloud.Storage.InMemory;
 using Microsoft.WindowsAzure;
 using NUnit.Framework;
 
-namespace Lokad.Cloud.Test
+namespace Lokad.Cloud.Storage.Test
 {
     [TestFixture]
     public class CloudStorageTests
