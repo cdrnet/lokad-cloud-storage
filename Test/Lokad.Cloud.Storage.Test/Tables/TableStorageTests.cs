@@ -34,7 +34,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
         }
 
         [TestFixtureTearDown]
-        public void TearDown()
+        public void FixtureTearDown()
         {
             TableStorage.DeleteTable(TableName);
         }
