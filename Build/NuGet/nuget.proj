@@ -1,0 +1,44 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="BuildPackages" ToolsVersion="4.0">
+	<UsingTask AssemblyFile="$(MSBuildProjectDirectory)/../MSBuild/MSBuild.Community.Tasks.dll" TaskName="MSBuild.Community.Tasks.XmlUpdate" />
+	<UsingTask AssemblyFile="$(MSBuildProjectDirectory)/../MSBuild/MSBuild.Community.Tasks.dll" TaskName="MSBuild.Community.Tasks.FileUpdate" />
+
+	<PropertyGroup>
+		<Root>$(MSBuildProjectDirectory)/../..</Root>
+		<OutNuGetPackages>$(MSBuildProjectDirectory)/out</OutNuGetPackages>
+		<StorageOut>$(MSBuildProjectDirectory)/../../Source/Lokad.Cloud.Storage/bin/Release</StorageOut>
+		<StoragePack>$(MSBuildProjectDirectory)/Lokad.Cloud.Storage</StoragePack>
+		<NuGetExe>$(MSBuildProjectDirectory)/../../Tools/nuget.exe</NuGetExe>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<StorageNet40 Include="$(StorageOut)/Lokad.Cloud.Storage.dll;$(StorageOut)/Lokad.Cloud.Storage.pdb;$(StorageOut)/Lokad.Cloud.Storage.xml" />
+	</ItemGroup>
+	
+	<Target Name="CopyContentFiles">
+		<RemoveDir Directories="$(StoragePack)/content" />
+		<!-- <Copy SourceFiles="$(Root)/README.markdown" DestinationFiles="$(StoragePack)/content/App_Readme/Lokad.Cloud.Storage.readme.txt" /> -->
+		<!-- <Copy SourceFiles="$(Root)/COPYRIGHT.markdown" DestinationFiles="$(StoragePack)/content/App_Readme/Lokad.Cloud.Storage.copyright.txt" /> -->
+		<!-- <Copy SourceFiles="$(Root)/AUTHORS.markdown" DestinationFiles="$(StoragePack)/content/App_Readme/Lokad.Cloud.Storage.authors.txt" /> -->
+		
+		<RemoveDir Directories="$(StoragePack)/lib" />
+		<Copy SourceFiles="@(StorageNet40)" DestinationFolder="$(StoragePack)/lib" />
+	</Target>
+
+	<Target Name="UpdateNuspec" DependsOnTargets="CopyContentFiles">
+		<GetAssemblyIdentity AssemblyFiles="$(StoragePack)/lib/Lokad.Cloud.Storage.dll">
+			<Output TaskParameter="Assemblies" ItemName="StorageAssemblyInfo"/>
+		</GetAssemblyIdentity>
+		<XmlUpdate
+			Prefix="n" Namespace="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
+			XmlFileName="$(StoragePack)/Lokad.Cloud.Storage.nuspec"
+			XPath="//n:package/n:metadata/n:version"
+			Value="%(StorageAssemblyInfo.Version)"/>
+	</Target>
+
+	<Target Name="BuildPackages" DependsOnTargets="UpdateNuspec">
+		<RemoveDir Directories="$(OutNuGetPackages)" />
+		<MakeDir Directories="$(OutNuGetPackages)" />
+		<Exec Command="$(NuGetExe) pack $(StoragePack)/Lokad.Cloud.Storage.nuspec /Verbose /OutputDirectory $(OutNuGetPackages)" />
+	</Target>
+
+</Project>
