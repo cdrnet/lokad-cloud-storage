@@ -5,46 +5,83 @@
 
 using System;
 using System.IO;
+using System.Text;
+using System.Xml.Linq;
 
 namespace Lokad.Cloud.Storage
 {
     /// <summary>
-    /// Raw byte pass-through formatter, supporting byte arrays only.
+    /// Raw byte pass-through formatter, supporting byte-array, string (UTF-8) and XElement (Root of UTF-8 XDocument) only.
     /// </summary>
     public class RawFormatter : IDataSerializer
     {
         /// <remarks>Supports byte[] only</remarks>
         public void Serialize(object instance, Stream destination, Type type)
         {
-            var data = instance as byte[];
-            if (data == null || type != typeof(byte[]))
+            if (instance == null)
+            {
+                throw new ArgumentNullException("instance");
+            }
+
+            if (type == typeof(XElement) && instance is XElement)
+            {
+                var document = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), (XElement)instance);
+                document.Save(destination);
+            }
+
+            byte[] bytes;
+
+            if (type == typeof(byte[]) && instance is byte[])
+            {
+                bytes = (byte[])instance;
+            }
+            else if (type == typeof(string) && instance is string)
+            {
+                bytes = Encoding.UTF8.GetBytes((string)instance);
+            }
+            else
             {
                 throw new NotSupportedException();
             }
 
-            destination.Write(data, 0, data.Length);
+            destination.Write(bytes, 0, bytes.Length);
         }
 
         /// <remarks>Supports byte[] only</remarks>
         public object Deserialize(Stream source, Type type)
         {
-            if (type != typeof(byte[]))
+            if (type == typeof(XElement))
             {
-                throw new NotSupportedException();
+                return XDocument.Load(source).Root;
             }
 
-            // shortcut if source is already a memory stream
+            byte[] bytes;
             var memorySource = source as MemoryStream;
             if (memorySource != null)
             {
-                return memorySource.ToArray();
+                // shortcut if source is already a memory stream
+                bytes = memorySource.ToArray();
+            }
+            else
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    source.CopyTo(memoryStream);
+                    bytes = memoryStream.ToArray();
+                }
             }
 
-            using (var memoryStream = new MemoryStream())
+            if (type == typeof(byte[]))
             {
-                source.CopyTo(memoryStream);
-                return memoryStream.ToArray();
+                return bytes;
             }
+
+            if (type == typeof(string))
+            {
+                return Encoding.UTF8.GetString(bytes);
+            }
+
+            throw new NotSupportedException();
         }
     }
 }

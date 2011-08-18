@@ -26,7 +26,7 @@ namespace Lokad.Cloud.Storage
         /// <summary>Format-Neutral Table Storage Abstraction.</summary>
         public ITableStorageProvider NeutralTableStorage { get; private set; }
 
-        /// <summary>Raw bytearray-only Blob Storage Abstraction.</summary>
+        /// <summary>Raw byte pass-through Blob Storage Abstraction, supporting only byte-array, string and XElement.</summary>
         public IBlobStorageProvider RawBlobStorage { get; private set; }
 
         /// <summary>Abstracts the finalizer (used for fast resource release
