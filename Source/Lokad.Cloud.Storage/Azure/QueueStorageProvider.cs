@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
@@ -276,34 +277,72 @@ namespace Lokad.Cloud.Storage.Azure
             foreach (var message in messages)
             {
                 stopwatch.Restart();
-                using (var stream = new MemoryStream())
+
+                var queueMessage = SerializeCloudQueueMessage(queueName, message);
+
+                PutRawMessage(queueMessage, queue);
+
+                NotifySucceeded(StorageOperationType.QueuePut, stopwatch);
+            }
+        }
+
+        /// <remarks></remarks>
+        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages)
+        {
+            var queue = _queueStorage.GetQueueReference(queueName);
+            var stopwatch = new Stopwatch();
+
+            List<Task> tasks = new List<Task>();
+
+            foreach (var message in messages)
+            {
+                stopwatch.Restart();
+
+                var queueMessage = SerializeCloudQueueMessage(queueName, message);
+
+                var task = Task.Factory.StartNew(() => PutRawMessage(queueMessage, queue));
+                task.ContinueWith(obj => NotifySucceeded(StorageOperationType.QueuePut, stopwatch), TaskContinuationOptions.OnlyOnRanToCompletion);
+
+                tasks.Add(task);
+            }
+
+            try
+            {
+                Task.WaitAll(tasks.ToArray());
+            }
+            catch (AggregateException ae)
+            {
+                throw ae.Flatten();
+            }
+        }
+
+        private CloudQueueMessage SerializeCloudQueueMessage<T>(string queueName, T message)
+        {
+            CloudQueueMessage queueMessage;
+            using (var stream = new MemoryStream())
+            {
+                _serializer.Serialize(message, stream, typeof (T));
+
+                // Caution: MaxMessageSize is not related to the number of bytes
+                // but the number of characters when Base64-encoded:
+
+                if (stream.Length >= (CloudQueueMessage.MaxMessageSize - 1)/4*3)
                 {
-                    _serializer.Serialize(message, stream, typeof(T));
-
-                    // Caution: MaxMessageSize is not related to the number of bytes
-                    // but the number of characters when Base64-encoded:
-
-                    CloudQueueMessage queueMessage;
-                    if (stream.Length >= (CloudQueueMessage.MaxMessageSize - 1) / 4 * 3)
+                    queueMessage = new CloudQueueMessage(PutOverflowingMessageAndWrap(queueName, message));
+                }
+                else
+                {
+                    try
+                    {
+                        queueMessage = new CloudQueueMessage(stream.ToArray());
+                    }
+                    catch (ArgumentException)
                     {
                         queueMessage = new CloudQueueMessage(PutOverflowingMessageAndWrap(queueName, message));
                     }
-                    else
-                    {
-                        try
-                        {
-                            queueMessage = new CloudQueueMessage(stream.ToArray());
-                        }
-                        catch (ArgumentException)
-                        {
-                            queueMessage = new CloudQueueMessage(PutOverflowingMessageAndWrap(queueName, message));
-                        }
-                    }
-
-                    PutRawMessage(queueMessage, queue);
                 }
-                NotifySucceeded(StorageOperationType.QueuePut, stopwatch);
             }
+            return queueMessage;
         }
 
         byte[] PutOverflowingMessageAndWrap<T>(string queueName, T message)

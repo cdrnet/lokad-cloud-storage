@@ -96,6 +96,15 @@ namespace Lokad.Cloud.Storage
             provider.PutRange(GetDefaultStorageName(typeof(T)), messages);
         }
 
+        /// <summary>Put messages on a queue (derived from the message type T).</summary>
+        /// <typeparam name="T">Type of the messages.</typeparam>
+        /// <param name="messages">Messages to be put.</param>
+        /// <remarks>If the queue does not exist, it gets created.</remarks>
+        public static void PutRangeParallel<T>(this IQueueStorageProvider provider, IEnumerable<T> messages)
+        {
+            provider.PutRangeParallel(GetDefaultStorageName(typeof(T)), messages);
+        }
+
         /// <summary>Clear all the messages from a queue (derived from the message type T).</summary>
         public static void Clear<T>(this IQueueStorageProvider provider)
         {

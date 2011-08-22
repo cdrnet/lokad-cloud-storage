@@ -103,6 +103,11 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages)
+        {
+            PutRange(queueName,messages);
+        }
+
         /// <remarks></remarks>
         public void Clear(string queueName)
         {

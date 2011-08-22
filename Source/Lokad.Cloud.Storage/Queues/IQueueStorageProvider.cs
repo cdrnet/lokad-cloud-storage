@@ -51,6 +51,15 @@ namespace Lokad.Cloud.Storage
         /// <remarks>If the queue does not exist, it gets created.</remarks>
         void PutRange<T>(string queueName, IEnumerable<T> messages);
 
+        /// <summary>
+        /// Puts messages on a queue. Uses Tasks to increase thouroughput dramatically.
+        /// </summary>
+        /// <typeparam name="T">Type of the messages.</typeparam>
+        /// <param name="queueName">Identifier of the queue where messages are put.</param>
+        /// <param name="messages">Messages to be put.</param>
+        /// <remarks>If the queue does not exist, it gets created.</remarks>
+        void PutRangeParallel<T>(string queueName, IEnumerable<T> messages);
+
         /// <summary>Clear all the messages from the specified queue.</summary>
         void Clear(string queueName);
 
