@@ -36,7 +36,7 @@ You can observe storage events in the following ways:
 *  Implement IObserver<ICloudStorageEvent> one or more times
    and pass it to CloudStorage with the WithObservers method.
 
-*  Register the CloudProvisionignInstrumentationSubject class
+*  Register the CloudStorageInstrumentationSubject class
    to CloudStorage with the WithObserver method and consume it
    with Rx (it implements IObservable<ICloudStorageEvent> and
    behaves like an Rx subject).
