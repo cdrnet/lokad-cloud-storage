@@ -22,8 +22,9 @@ namespace Lokad.Cloud.Storage.Test.Queues
         }
 
         [TearDown]
-        public void TearDown()
+        public override void TearDown()
         {
+            base.TearDown();
             QueueStorage.DeleteQueue(FirstQueueName);
             QueueStorage.DeleteQueue(SecondQueueName);
         }

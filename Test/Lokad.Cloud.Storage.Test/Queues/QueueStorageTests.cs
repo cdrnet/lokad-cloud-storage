@@ -33,7 +33,7 @@ namespace Lokad.Cloud.Storage.Test.Queues
         }
 
         [TearDown]
-        public void TearDown()
+        public virtual void TearDown()
         {
             QueueStorage.DeleteQueue(QueueName);
         }
