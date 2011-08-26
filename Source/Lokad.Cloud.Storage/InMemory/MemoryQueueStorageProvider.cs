@@ -19,7 +19,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
         private readonly Dictionary<string, Queue<byte[]>> _queues;
         private readonly Dictionary<object, Tu> _inProcessMessages;
-        private readonly HashSet<System.Tuple<string, string, string, byte[]>> _persistedMessages;
+        private readonly HashSet<Tuple<string, string, string, byte[]>> _persistedMessages;
 
         internal IDataSerializer DataSerializer { get; set; }
         
@@ -219,7 +219,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
                 // persist
                 var key = Guid.NewGuid().ToString("N");
-                _persistedMessages.Add(System.Tuple.Create(storeName, key, inProcess.Item1, inProcess.Item3[0]));
+                _persistedMessages.Add(Tuple.Create(storeName, key, inProcess.Item1, inProcess.Item3[0]));
 
                 // Remove from invisible queue
                 inProcess.Item3.RemoveAt(0);

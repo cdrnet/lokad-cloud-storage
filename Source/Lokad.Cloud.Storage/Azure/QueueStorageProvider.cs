@@ -402,162 +402,152 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         public bool Delete<T>(T message)
         {
-            return DeleteRange(new[] { message }) > 0;
+            var stopwatch = new Stopwatch();
+
+            // 1. GET RAW MESSAGE & QUEUE, OR SKIP IF NOT AVAILABLE/ALREADY DELETED
+
+            CloudQueueMessage rawMessage;
+            string queueName;
+            bool isOverflowing;
+            byte[] data;
+
+            lock (_sync)
+            {
+                // ignoring message if already deleted
+                InProcessMessage inProcMsg;
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg))
+                {
+                    return false;
+                }
+
+                rawMessage = inProcMsg.RawMessages[0];
+                isOverflowing = inProcMsg.IsOverflowing;
+                queueName = inProcMsg.QueueName;
+                data = inProcMsg.Data;
+            }
+
+            var queue = _queueStorage.GetQueueReference(queueName);
+
+            // 2. DELETING THE OVERFLOW BLOB, IF WRAPPED
+
+            if (isOverflowing)
+            {
+                var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(data);
+                if (messageWrapper.IsSuccess)
+                {
+                    _blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
+                }
+            }
+
+            // 3. DELETE THE MESSAGE FROM THE QUEUE
+
+            var deleted = DeleteRawMessage(rawMessage, queue);
+
+            // 4. REMOVE THE RAW MESSAGE
+
+            CheckInMessage(message);
+
+            if (deleted)
+            {
+                NotifySucceeded(StorageOperationType.QueueDelete, stopwatch);
+                return true;
+            }
+            
+            return false;
         }
 
         /// <remarks></remarks>
         public int DeleteRange<T>(IEnumerable<T> messages)
         {
-            int deletionCount = 0;
-            var stopwatch = new Stopwatch();
-
-            foreach (var message in messages)
-            {
-                stopwatch.Restart();
-
-                // 1. GET RAW MESSAGE & QUEUE, OR SKIP IF NOT AVAILABLE/ALREADY DELETED
-
-                CloudQueueMessage rawMessage;
-                string queueName;
-                bool isOverflowing;
-                byte[] data;
-
-                lock (_sync)
-                {
-                    // ignoring message if already deleted
-                    InProcessMessage inProcMsg;
-                    if (!_inProcessMessages.TryGetValue(message, out inProcMsg))
-                    {
-                        continue;
-                    }
-
-                    rawMessage = inProcMsg.RawMessages[0];
-                    isOverflowing = inProcMsg.IsOverflowing;
-                    queueName = inProcMsg.QueueName;
-                    data = inProcMsg.Data;
-                }
-
-                var queue = _queueStorage.GetQueueReference(queueName);
-
-                // 2. DELETING THE OVERFLOW BLOB, IF WRAPPED
-
-                if (isOverflowing)
-                {
-                    var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(data);
-                    if (messageWrapper.IsSuccess)
-                    {
-                        _blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
-                    }
-                }
-
-                // 3. DELETE THE MESSAGE FROM THE QUEUE
-
-                if(DeleteRawMessage(rawMessage, queue))
-                {
-                    deletionCount++;
-                }
-
-                // 4. REMOVE THE RAW MESSAGE
-
-                CheckInMessage(message);
-
-                NotifySucceeded(StorageOperationType.QueueDelete, stopwatch);
-            }
-
-            return deletionCount;
+            return messages.Count(Delete);
         }
 
         /// <remarks></remarks>
         public bool Abandon<T>(T message)
         {
-            return AbandonRange(new[] { message }) > 0;
+            var stopwatch = new Stopwatch();
+
+            // 1. GET RAW MESSAGE & QUEUE, OR SKIP IF NOT AVAILABLE/ALREADY DELETED
+
+            CloudQueueMessage oldRawMessage;
+            string queueName;
+            int dequeueCount;
+            byte[] data;
+
+            lock (_sync)
+            {
+                // ignoring message if already deleted
+                InProcessMessage inProcMsg;
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg))
+                {
+                    return false;
+                }
+
+                queueName = inProcMsg.QueueName;
+                dequeueCount = inProcMsg.DequeueCount;
+                oldRawMessage = inProcMsg.RawMessages[0];
+                data = inProcMsg.Data;
+            }
+
+            var queue = _queueStorage.GetQueueReference(queueName);
+
+            // 2. CLONE THE MESSAGE AND PUT IT TO THE QUEUE
+            // we always use an envelope here since the dequeue count
+            // is always >0, which we should continue to track in order
+            // to make poison detection possible at all.
+
+            var envelope = new MessageEnvelope
+            {
+                DequeueCount = dequeueCount,
+                RawMessage = data
+            };
+
+            CloudQueueMessage newRawMessage = null;
+            using (var stream = new MemoryStream())
+            {
+                _serializer.Serialize(envelope, stream, typeof(MessageEnvelope));
+                if (stream.Length < (CloudQueueMessage.MaxMessageSize - 1) / 4 * 3)
+                {
+                    try
+                    {
+                        newRawMessage = new CloudQueueMessage(stream.ToArray());
+                    }
+                    catch (ArgumentException) { }
+                }
+
+                if (newRawMessage == null)
+                {
+                    envelope.RawMessage = PutOverflowingMessageAndWrap(queueName, message);
+                    using (var wrappedStream = new MemoryStream())
+                    {
+                        _serializer.Serialize(envelope, wrappedStream, typeof(MessageEnvelope));
+                        newRawMessage = new CloudQueueMessage(wrappedStream.ToArray());
+                    }
+                }
+            }
+            PutRawMessage(newRawMessage, queue);
+
+            // 3. DELETE THE OLD MESSAGE FROM THE QUEUE
+
+            var deleted = DeleteRawMessage(oldRawMessage, queue);
+
+            // 4. REMOVE THE RAW MESSAGE
+
+            CheckInMessage(message);
+
+            if (deleted)
+            {
+                NotifySucceeded(StorageOperationType.QueueAbandon, stopwatch);
+                return true;
+            }
+
+            return false;
         }
 
         /// <remarks></remarks>
         public int AbandonRange<T>(IEnumerable<T> messages)
         {
-            int abandonCount = 0;
-            var stopwatch = new Stopwatch();
-
-            foreach (var message in messages)
-            {
-                stopwatch.Restart();
-
-                // 1. GET RAW MESSAGE & QUEUE, OR SKIP IF NOT AVAILABLE/ALREADY DELETED
-
-                CloudQueueMessage oldRawMessage;
-                string queueName;
-                int dequeueCount;
-                byte[] data;
-
-                lock (_sync)
-                {
-                    // ignoring message if already deleted
-                    InProcessMessage inProcMsg;
-                    if (!_inProcessMessages.TryGetValue(message, out inProcMsg))
-                    {
-                        continue;
-                    }
-
-                    queueName = inProcMsg.QueueName;
-                    dequeueCount = inProcMsg.DequeueCount;
-                    oldRawMessage = inProcMsg.RawMessages[0];
-                    data = inProcMsg.Data;
-                }
-
-                var queue = _queueStorage.GetQueueReference(queueName);
-
-                // 2. CLONE THE MESSAGE AND PUT IT TO THE QUEUE
-                // we always use an envelope here since the dequeue count
-                // is always >0, which we should continue to track in order
-                // to make poison detection possible at all.
-
-                var envelope = new MessageEnvelope
-                    {
-                        DequeueCount = dequeueCount,
-                        RawMessage = data
-                    };
-
-                CloudQueueMessage newRawMessage = null;
-                using (var stream = new MemoryStream())
-                {
-                    _serializer.Serialize(envelope, stream, typeof(MessageEnvelope));
-                    if (stream.Length < (CloudQueueMessage.MaxMessageSize - 1)/4*3)
-                    {
-                        try
-                        {
-                            newRawMessage = new CloudQueueMessage(stream.ToArray());
-                        }
-                        catch (ArgumentException) { }
-                    }
-
-                    if (newRawMessage == null)
-                    {
-                        envelope.RawMessage = PutOverflowingMessageAndWrap(queueName, message);
-                        using (var wrappedStream = new MemoryStream())
-                        {
-                            _serializer.Serialize(envelope, wrappedStream, typeof(MessageEnvelope));
-                            newRawMessage = new CloudQueueMessage(wrappedStream.ToArray());
-                        }
-                    }
-                }
-                PutRawMessage(newRawMessage, queue);
-
-                // 3. DELETE THE OLD MESSAGE FROM THE QUEUE
-
-                if(DeleteRawMessage(oldRawMessage, queue))
-                {
-                    abandonCount++;
-                }
-
-                // 4. REMOVE THE RAW MESSAGE
-
-                CheckInMessage(message);
-
-                NotifySucceeded(StorageOperationType.QueueAbandon, stopwatch);
-            }
-
-            return abandonCount;
+            return messages.Count(Abandon);
         }
 
         /// <remarks></remarks>
@@ -590,7 +580,33 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         public void Persist<T>(T message, string storeName, string reason)
         {
-            PersistRange(new[] { message }, storeName, reason);
+            // 1. GET MESSAGE FROM CHECK-OUT, SKIP IF NOT AVAILABLE/ALREADY DELETED
+
+            CloudQueueMessage rawMessage;
+            string queueName;
+            byte[] data;
+
+            lock (_sync)
+            {
+                // ignoring message if already deleted
+                InProcessMessage inProcessMessage;
+                if (!_inProcessMessages.TryGetValue(message, out inProcessMessage))
+                {
+                    return;
+                }
+
+                queueName = inProcessMessage.QueueName;
+                rawMessage = inProcessMessage.RawMessages[0];
+                data = inProcessMessage.Data;
+            }
+
+            // 2. PERSIST MESSAGE AND DELETE FROM QUEUE
+
+            PersistRawMessage(rawMessage, data, queueName, storeName, reason);
+
+            // 3. REMOVE MESSAGE FROM CHECK-OUT
+
+            CheckInMessage(message);
         }
 
         /// <remarks></remarks>
@@ -598,33 +614,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             foreach (var message in messages)
             {
-                // 1. GET MESSAGE FROM CHECK-OUT, SKIP IF NOT AVAILABLE/ALREADY DELETED
-
-                CloudQueueMessage rawMessage;
-                string queueName;
-                byte[] data;
-
-                lock (_sync)
-                {
-                    // ignoring message if already deleted
-                    InProcessMessage inProcessMessage;
-                    if (!_inProcessMessages.TryGetValue(message, out inProcessMessage))
-                    {
-                        continue;
-                    }
-
-                    queueName = inProcessMessage.QueueName;
-                    rawMessage = inProcessMessage.RawMessages[0];
-                    data = inProcessMessage.Data;
-                }
-
-                // 2. PERSIST MESSAGE AND DELETE FROM QUEUE
-
-                PersistRawMessage(rawMessage, data, queueName, storeName, reason);
-
-                // 3. REMOVE MESSAGE FROM CHECK-OUT
-
-                CheckInMessage(message);
+                Persist(message, storeName, reason);
             }
         }
 
