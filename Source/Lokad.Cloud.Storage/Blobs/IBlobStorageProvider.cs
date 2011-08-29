@@ -296,6 +296,9 @@ namespace Lokad.Cloud.Storage
         /// <returns>The value returned by the lambda. If empty, then the blob has been deleted.</returns>
         Maybe<T> UpsertBlobOrDelete<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
 
+        /// <summary>Query whether a blob is locked by a blob lease.</summary>
+        bool IsBlobLocked(string containerName, string blobName);
+
         /// <summary>Requests a new lease on the blob and returns its new lease ID</summary>
         Result<string> TryAcquireLease(string containerName, string blobName);
 

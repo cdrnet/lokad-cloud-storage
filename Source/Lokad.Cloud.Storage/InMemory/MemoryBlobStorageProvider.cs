@@ -457,6 +457,17 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
+        public bool IsBlobLocked(string containerName, string blobName)
+        {
+            lock (_syncRoot)
+            {
+                return (Containers.ContainsKey(containerName)
+                    && Containers[containerName].BlobNames.Contains(blobName))
+                    && Containers[containerName].BlobsLeases.ContainsKey(blobName);
+            }
+        }
+
+        /// <remarks></remarks>
         public Result<string> TryAcquireLease(string containerName, string blobName)
         {
             lock (_syncRoot)

@@ -845,6 +845,29 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
+        public bool IsBlobLocked(string containerName, string blobName)
+        {
+            var container = _blobStorage.GetContainerReference(containerName);
+
+            try
+            {
+                var blob = container.GetBlockBlobReference(blobName);
+                Retry.Do(_policies.TransientServerErrorBackOff, blob.FetchAttributes);
+                return blob.Properties.LeaseStatus == LeaseStatus.Locked;
+            }
+            catch (StorageClientException ex)
+            {
+                if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
+                    || ex.ErrorCode == StorageErrorCode.BlobNotFound
+                        || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                {
+                    return false;
+                }
+                throw;
+            }
+        }
+
+        /// <remarks></remarks>
         public Result<string> TryAcquireLease(string containerName, string blobName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
