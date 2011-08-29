@@ -129,6 +129,11 @@ namespace Lokad.Cloud.Storage.InMemory
             return TimeSpan.FromMinutes(5);
         }
 
+        public int ReviveMessages()
+        {
+            return 0;
+        }
+
         /// <remarks></remarks>
         public bool Delete<T>(T message)
         {

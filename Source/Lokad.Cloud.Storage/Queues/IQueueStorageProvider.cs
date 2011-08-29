@@ -67,6 +67,9 @@ namespace Lokad.Cloud.Storage
         /// <returns>The new visibility timeout</returns>
         TimeSpan KeepAlive<T>(T message) where T : class;
 
+        /// <summary>Revive messages that are no longer kept alive.</summary>
+        int ReviveMessages();
+
         /// <summary>Deletes a message being processed from the queue.</summary>
         /// <returns><c>True</c> if the message has been deleted.</returns>
         /// <remarks>Message must have first been retrieved through <see cref="Get{T}"/>.</remarks>

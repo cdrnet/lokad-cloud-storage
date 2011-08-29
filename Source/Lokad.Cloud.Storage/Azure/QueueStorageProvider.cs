@@ -575,6 +575,44 @@ namespace Lokad.Cloud.Storage.Azure
             return KeepAliveVisibilityTimeout;
         }
 
+        public int ReviveMessages()
+        {
+            var candidates = _blobStorage.ListBlobNames(ResilientLeasesContainerName)
+                .Where(name => !_blobStorage.IsBlobLocked(ResilientLeasesContainerName, name))
+                .Take(50).ToList();
+
+            int count = 0;
+            foreach (var blobName in candidates)
+            {
+                var lease = _blobStorage.TryAcquireLease(ResilientLeasesContainerName, blobName);
+                if (!lease.IsSuccess)
+                {
+                    continue;
+                }
+
+                var messageBlob = _blobStorage.GetBlob<ResilientMessageData>(ResilientMessagesContainerName, blobName);
+                if (!messageBlob.HasValue)
+                {
+                    continue;
+                }
+
+                // CASE: we were able to acquire a lease and can read the original message blob.
+                // => Restore the message
+
+                var messageData = messageBlob.Value;
+                var queue = _queueStorage.GetQueueReference(messageData.QueueName);
+                var rawMessage = new CloudQueueMessage(messageData.Data);
+                PutRawMessage(rawMessage, queue);
+
+                if (DeleteKeepAliveMessage(blobName, lease.Value))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         /// <remarks></remarks>
         public bool Delete<T>(T message)
         {
