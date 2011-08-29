@@ -29,7 +29,7 @@ namespace Lokad.Cloud.Storage
             _storage.Delete(Message);
         }
 
-        public void Abandond()
+        public void Abandon()
         {
             _storage.Abandon(Message);
         }
