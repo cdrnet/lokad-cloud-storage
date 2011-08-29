@@ -123,6 +123,12 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        public TimeSpan KeepAlive<T>(T message)
+             where T : class
+        {
+            return TimeSpan.FromMinutes(5);
+        }
+
         /// <remarks></remarks>
         public bool Delete<T>(T message)
         {

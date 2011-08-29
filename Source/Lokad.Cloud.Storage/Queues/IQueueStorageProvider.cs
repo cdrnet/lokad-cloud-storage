@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009
+﻿#region Copyright (c) Lokad 2009-2011
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -62,6 +62,10 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Clear all the messages from the specified queue.</summary>
         void Clear(string queueName);
+
+        /// <summary>Keep the message alive for another period.</summary>
+        /// <returns>The new visibility timeout</returns>
+        TimeSpan KeepAlive<T>(T message) where T : class;
 
         /// <summary>Deletes a message being processed from the queue.</summary>
         /// <returns><c>True</c> if the message has been deleted.</returns>

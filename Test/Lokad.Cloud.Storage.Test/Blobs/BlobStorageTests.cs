@@ -439,7 +439,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         {
             var blobName = CreateNewBlob();
             var lease = BlobStorage.TryAcquireLease(ContainerName, blobName);
-            Assert.IsTrue(BlobStorage.TryReleaseLease(ContainerName, blobName, lease.Value));
+            Assert.IsTrue(BlobStorage.TryReleaseLease(ContainerName, blobName, lease.Value).IsSuccess);
         }
 
         [Test]
@@ -447,14 +447,14 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         {
             var blobName = CreateNewBlob();
             BlobStorage.TryAcquireLease(ContainerName, blobName);
-            Assert.IsFalse(BlobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
+            Assert.IsFalse(BlobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")).IsSuccess);
         }
 
         [Test]
         public void CanNotReleaseUnleasedBlob()
         {
             var blobName = CreateNewBlob();
-            Assert.IsFalse(BlobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")));
+            Assert.IsFalse(BlobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")).IsSuccess);
         }
     }
 

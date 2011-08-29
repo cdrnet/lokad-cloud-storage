@@ -158,5 +158,53 @@ namespace Lokad.Cloud.Storage.Azure
                 }
             }
         }
+
+        /// <remarks>Policy must support exceptions being null.</remarks>
+        public static void DoUntilTrue(this RetryPolicy retryPolicy, Func<bool> action)
+        {
+            var policy = retryPolicy();
+            int retryCount = 0;
+
+            while (true)
+            {
+                try
+                {
+                    if (action())
+                    {
+                        return;
+                    }
+
+                    TimeSpan delay;
+                    if (policy(retryCount, null, out delay))
+                    {
+                        retryCount++;
+                        if (delay > TimeSpan.Zero)
+                        {
+                            Thread.Sleep(delay);
+                        }
+
+                        continue;
+                    }
+
+                    throw new TimeoutException("Failed to reach a successful result in a limited number of retrials");
+                }
+                catch (Exception exception)
+                {
+                    TimeSpan delay;
+                    if (policy(retryCount, exception, out delay))
+                    {
+                        retryCount++;
+                        if (delay > TimeSpan.Zero)
+                        {
+                            Thread.Sleep(delay);
+                        }
+
+                        continue;
+                    }
+
+                    throw;
+                }
+            }
+        }
     }
 }

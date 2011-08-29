@@ -865,6 +865,7 @@ namespace Lokad.Cloud.Storage.Azure
                 switch (statusCode)
                 {
                     case HttpStatusCode.Conflict:
+                    case HttpStatusCode.NotFound:
                     case HttpStatusCode.RequestTimeout:
                     case HttpStatusCode.InternalServerError:
                         return Result<string>.CreateError(statusCode.ToString());
@@ -886,19 +887,19 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public bool TryReleaseLease(string containerName, string blobName, string leaseId)
+        public Result<string> TryReleaseLease(string containerName, string blobName, string leaseId)
         {
             return TryLeaseAction(containerName, blobName, LeaseAction.Release, leaseId);
         }
 
         /// <remarks></remarks>
-        public bool TryRenewLease(string containerName, string blobName, string leaseId)
+        public Result<string> TryRenewLease(string containerName, string blobName, string leaseId)
         {
             return TryLeaseAction(containerName, blobName, LeaseAction.Renew, leaseId);
         }
 
         /// <remarks></remarks>
-        private bool TryLeaseAction(string containerName, string blobName, LeaseAction action, string leaseId = null)
+        private Result<string> TryLeaseAction(string containerName, string blobName, LeaseAction action, string leaseId = null)
         {
             var container = _blobStorage.GetContainerReference(containerName);
             var blob = container.GetBlockBlobReference(blobName);
@@ -918,9 +919,10 @@ namespace Lokad.Cloud.Storage.Azure
                 switch(statusCode)
                 {
                     case HttpStatusCode.Conflict:
+                    case HttpStatusCode.NotFound:
                     case HttpStatusCode.RequestTimeout:
                     case HttpStatusCode.InternalServerError:
-                        return false;
+                        return Result<string>.CreateError(statusCode.ToString());
                     default:
                         throw;
                 }
@@ -929,7 +931,9 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var expectedCode = action == LeaseAction.Break ? HttpStatusCode.Accepted : HttpStatusCode.OK;
-                return response.StatusCode == expectedCode;
+                return response.StatusCode == expectedCode
+                    ? Result<string>.CreateSuccess("OK")
+                    : Result<string>.CreateError(response.StatusCode.ToString());
             }
             finally
             {

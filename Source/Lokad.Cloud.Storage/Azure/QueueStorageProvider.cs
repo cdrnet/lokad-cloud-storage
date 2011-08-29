@@ -8,7 +8,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
@@ -29,7 +31,10 @@ namespace Lokad.Cloud.Storage.Azure
     public class QueueStorageProvider : IQueueStorageProvider, IDisposable
     {
         internal const string OverflowingMessagesContainerName = "lokad-cloud-overflowing-messages";
+        internal const string ResilientMessagesContainerName = "lokad-cloud-resilient-messages";
+        internal const string ResilientLeasesContainerName = "lokad-cloud-resilient-leases";
         internal const string PoisonedMessagePersistenceStoreName = "failing-messages";
+        private static readonly TimeSpan KeepAliveVisibilityTimeout = TimeSpan.FromSeconds(60);
 
         /// <summary>Root used to synchronize accesses to <c>_inprocess</c>. 
         /// Caution: do not hold the lock while performing operations on the cloud
@@ -399,6 +404,177 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        public TimeSpan KeepAlive<T>(T message)
+             where T : class
+        {
+            CloudQueueMessage rawMessage;
+            string queueName;
+            byte[] data;
+            string blobName;
+            string blobLease;
+
+            lock (_sync)
+            {
+                InProcessMessage inProcMsg;
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || inProcMsg.CommitStarted)
+                {
+                    // CASE: the message has already been handled => we ignore the request
+                    return TimeSpan.Zero;
+                }
+
+                rawMessage = inProcMsg.RawMessages[0];
+                queueName = inProcMsg.QueueName;
+                data = inProcMsg.Data;
+                blobName = inProcMsg.KeepAliveBlobName;
+                blobLease = inProcMsg.KeepAliveBlobLease;
+
+                if (blobName == null)
+                {
+                    // CASE: this is the first call to KeepAlive.
+                    // => choose a name and set the initial invisibility time; continue
+                    blobName = inProcMsg.KeepAliveBlobName = Guid.NewGuid().ToString("N");
+                    inProcMsg.KeepAliveTimeout = DateTimeOffset.UtcNow + KeepAliveVisibilityTimeout;
+                }
+                else if (blobLease == null)
+                {
+                    // CASE: the message is already being initialized. This can happen
+                    // e.g. on two calls to KeepAlive form different threads (race).
+                    // => do nothing, but only return the remaining invisibility time
+                    return inProcMsg.KeepAliveTimeout - DateTimeOffset.UtcNow;
+                }
+
+                // ELSE CASE: this is a successive call; continue
+            }
+
+            if (blobLease != null)
+            {
+                // CASE: this is a successive call, the message is already resilient
+                // => just renew the lease
+
+                bool messageAlreadyHandled = false;
+                Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                    {
+                        var result = _blobStorage.TryRenewLease(ResilientLeasesContainerName, blobName, blobLease);
+                        if (result.IsSuccess)
+                        {
+                            // CASE: success
+                            return true;
+                        }
+
+                        if (result.Error == "NotFound")
+                        {
+                            // CASE: we managed to loose our lease file, meaning that we must have lost our lease
+                            // (maybe because we didn't renew in time) and the message was handled in the meantime.
+                            // => do nothing
+                            messageAlreadyHandled = true;
+                            return true;
+                        }
+
+                        return false;
+                    });
+
+                if (messageAlreadyHandled)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                lock (_sync)
+                {
+                    InProcessMessage inProcMsg;
+                    if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || inProcMsg.CommitStarted)
+                    {
+                        // CASE: Renew worked, but in the meantime the message has already be handled
+                        // => do nothing
+                        return TimeSpan.Zero;
+                    }
+
+                    // CASE: renew succeeded
+                    inProcMsg.KeepAliveTimeout = DateTimeOffset.UtcNow - KeepAliveVisibilityTimeout;
+                    return KeepAliveVisibilityTimeout;
+                }
+            }
+
+            // CASE: this is the first call to KeepAlive
+
+            // 1. CREATE LEASE OBJECT
+
+            _blobStorage.PutBlob(ResilientLeasesContainerName, blobName, new ResilientLeaseData { QueueName = queueName, BlobName = blobName });
+
+            // 2. TAKE LEASE ON LEASE OBJECT
+
+            Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                {
+                    var lease = _blobStorage.TryAcquireLease(ResilientLeasesContainerName, blobName);
+                    if (lease.IsSuccess)
+                    {
+                        blobLease = lease.Value;
+                        return true;
+                    }
+
+                    if (lease.Error == "NotFound")
+                    {
+                        // CASE: lease blob has been deleted before we could acquire the lease
+                        // => recreate the blob, then retry
+                        _blobStorage.PutBlob(ResilientLeasesContainerName, blobName, new ResilientLeaseData { QueueName = queueName, BlobName = blobName });
+                        return false;
+                    }
+
+                    // CASE: conflict (e.g. because ReviveMessages is running), or transient error
+                    // => retry
+                    return false;
+                });
+
+            // 3. PUT MESSAGE TO BLOB
+
+            _blobStorage.PutBlob(ResilientMessagesContainerName, blobName, new ResilientMessageData { QueueName = queueName, Data = data });
+
+            // 4. UPDATE IN-PROCESS-MESSAGE
+
+            bool rollback = false;
+            lock (_sync)
+            {
+                InProcessMessage inProcMsg;
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || inProcMsg.CommitStarted)
+                {
+                    rollback = true;
+                }
+                else
+                {
+                    inProcMsg.KeepAliveBlobLease = blobLease;
+                }
+            }
+
+            // 5. ROLLBACK IF MESSAGE HAS BEEN HANDLED IN THE MEANTIME
+
+            if (rollback)
+            {
+                // CASE: The message has been handled in the meantime (so this call should be ignored)
+                // => Drop all the blobs we created and exit
+
+                _blobStorage.DeleteBlobIfExist(ResilientMessagesContainerName, blobName);
+
+                Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                {
+                    var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, blobLease);
+                    if (result.IsSuccess)
+                    {
+                        _blobStorage.DeleteBlobIfExist(ResilientLeasesContainerName, blobName);
+                        return true;
+                    }
+                    return result.Error == "NotFound";
+                });
+
+                return TimeSpan.Zero;
+            }
+
+            // 6. DELETE MESSAGE FROM THE QUEUE
+
+            var queue = _queueStorage.GetQueueReference(queueName);
+            DeleteRawMessage(rawMessage, queue);
+
+            return KeepAliveVisibilityTimeout;
+        }
+
         /// <remarks></remarks>
         public bool Delete<T>(T message)
         {
@@ -410,12 +586,14 @@ namespace Lokad.Cloud.Storage.Azure
             string queueName;
             bool isOverflowing;
             byte[] data;
+            string keepAliveBlobName;
+            string keepAliveBlobLease;
 
             lock (_sync)
             {
                 // ignoring message if already deleted
                 InProcessMessage inProcMsg;
-                if (!_inProcessMessages.TryGetValue(message, out inProcMsg))
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || inProcMsg.CommitStarted)
                 {
                     return false;
                 }
@@ -424,9 +602,11 @@ namespace Lokad.Cloud.Storage.Azure
                 isOverflowing = inProcMsg.IsOverflowing;
                 queueName = inProcMsg.QueueName;
                 data = inProcMsg.Data;
-            }
+                keepAliveBlobName = inProcMsg.KeepAliveBlobName;
+                keepAliveBlobLease = inProcMsg.KeepAliveBlobLease;
 
-            var queue = _queueStorage.GetQueueReference(queueName);
+                inProcMsg.CommitStarted = true;
+            }
 
             // 2. DELETING THE OVERFLOW BLOB, IF WRAPPED
 
@@ -441,7 +621,20 @@ namespace Lokad.Cloud.Storage.Azure
 
             // 3. DELETE THE MESSAGE FROM THE QUEUE
 
-            var deleted = DeleteRawMessage(rawMessage, queue);
+            bool deleted;
+            if (keepAliveBlobName != null && keepAliveBlobLease != null)
+            {
+                // CASE: in resilient mode
+                // => release locks, delete blobs
+                deleted = DeleteKeepAliveMessage(keepAliveBlobName, keepAliveBlobLease);
+            }
+            else
+            {
+                // CASE: normal mode (or keep alive in progress)
+                // => just delete the message
+                var queue = _queueStorage.GetQueueReference(queueName);
+                deleted = DeleteRawMessage(rawMessage, queue);
+            }
 
             // 4. REMOVE THE RAW MESSAGE
 
@@ -473,12 +666,14 @@ namespace Lokad.Cloud.Storage.Azure
             string queueName;
             int dequeueCount;
             byte[] data;
+            string keepAliveBlobName;
+            string keepAliveBlobLease;
 
             lock (_sync)
             {
                 // ignoring message if already deleted
                 InProcessMessage inProcMsg;
-                if (!_inProcessMessages.TryGetValue(message, out inProcMsg))
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || inProcMsg.CommitStarted)
                 {
                     return false;
                 }
@@ -487,6 +682,10 @@ namespace Lokad.Cloud.Storage.Azure
                 dequeueCount = inProcMsg.DequeueCount;
                 oldRawMessage = inProcMsg.RawMessages[0];
                 data = inProcMsg.Data;
+                keepAliveBlobName = inProcMsg.KeepAliveBlobName;
+                keepAliveBlobLease = inProcMsg.KeepAliveBlobLease;
+
+                inProcMsg.CommitStarted = true;
             }
 
             var queue = _queueStorage.GetQueueReference(queueName);
@@ -529,7 +728,19 @@ namespace Lokad.Cloud.Storage.Azure
 
             // 3. DELETE THE OLD MESSAGE FROM THE QUEUE
 
-            var deleted = DeleteRawMessage(oldRawMessage, queue);
+            bool deleted;
+            if (keepAliveBlobName != null && keepAliveBlobLease != null)
+            {
+                // CASE: in resilient mode
+                // => release locks, delete blobs
+                deleted = DeleteKeepAliveMessage(keepAliveBlobName, keepAliveBlobLease);
+            }
+            else
+            {
+                // CASE: normal mode (or keep alive in progress)
+                // => just delete the message
+                deleted = DeleteRawMessage(oldRawMessage, queue);
+            }
 
             // 4. REMOVE THE RAW MESSAGE
 
@@ -801,6 +1012,40 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
+        bool DeleteKeepAliveMessage(string blobName, string blobLease)
+        {
+            bool deleted = false;
+            _blobStorage.DeleteBlobIfExist(ResilientMessagesContainerName, blobName);
+            Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                {
+                    var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, blobLease);
+                    if (result.IsSuccess)
+                    {
+                        deleted = _blobStorage.DeleteBlobIfExist(ResilientLeasesContainerName, blobName);
+                        return true;
+                    }
+
+                    if (result.Error == "NotFound")
+                    {
+                        return true;
+                    }
+
+                    if (result.Error == "Conflict")
+                    {
+                        // CASE: either conflict by another lease (e.g. ReviveMessages), or because it is not leased anymore
+                        // => try to delete and retry.
+                        //    -> if it is not leased anymore, then delete will work and we're done;if not, we need to retry anyway
+                        //    -> if it is locked by another lease, then the delete will fail with a storage exception, causing a retry
+                        deleted = _blobStorage.DeleteBlobIfExist(ResilientLeasesContainerName, blobName);
+                        return false;
+                    }
+
+                    return false;
+                });
+
+            return deleted;
+        }
+
         void PutRawMessage(CloudQueueMessage message, CloudQueue queue)
         {
             try
@@ -1003,6 +1248,15 @@ namespace Lokad.Cloud.Storage.Azure
         /// so we can track it safely even when abandoning it later
         /// </summary>
         public int DequeueCount { get; set; }
+
+        /// <summary>
+        /// True if Delete, Abandon or ResumeNext has been requested
+        /// </summary>
+        public bool CommitStarted { get; set; }
+
+        public DateTimeOffset KeepAliveTimeout { get; set; }
+        public string KeepAliveBlobName { get; set; }
+        public string KeepAliveBlobLease { get; set; }
     }
 
     internal class OverflowingMessageBlobName<T> : BlobName<T>
@@ -1054,6 +1308,26 @@ namespace Lokad.Cloud.Storage.Azure
 
         [DataMember(Order = 6)]
         public byte[] Data { get; set; }
+    }
+
+    [DataContract]
+    internal class ResilientMessageData
+    {
+        [DataMember(Order = 1)]
+        public string QueueName { get; set; }
+
+        [DataMember(Order = 2)]
+        public byte[] Data { get; set; }
+    }
+
+    [DataContract]
+    internal class ResilientLeaseData
+    {
+        [DataMember(Order = 1)]
+        public string QueueName { get; set; }
+
+        [DataMember(Order = 2)]
+        public string BlobName { get; set; }
     }
 
     internal class PersistedMessageBlobName : BlobName<PersistedMessageData>

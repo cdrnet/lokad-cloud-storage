@@ -300,10 +300,10 @@ namespace Lokad.Cloud.Storage
         Result<string> TryAcquireLease(string containerName, string blobName);
 
         /// <summary>Releases the lease of the blob if the provided lease ID matches.</summary>
-        bool TryReleaseLease(string containerName, string blobName, string leaseId);
+        Result<string> TryReleaseLease(string containerName, string blobName, string leaseId);
 
         /// <summary>Renews the lease of the blob if the provided lease ID matches.</summary>
-        bool TryRenewLease(string containerName, string blobName, string leaseId);
+        Result<string> TryRenewLease(string containerName, string blobName, string leaseId);
 
     }
 }

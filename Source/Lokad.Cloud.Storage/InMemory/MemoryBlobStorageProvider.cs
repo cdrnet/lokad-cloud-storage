@@ -473,29 +473,41 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public bool TryReleaseLease(string containerName, string blobName, string leaseId)
+        public Result<string> TryReleaseLease(string containerName, string blobName, string leaseId)
         {
             lock (_syncRoot)
             {
                 string actualLeaseId;
-                if (Containers[containerName].BlobsLeases.TryGetValue(blobName, out actualLeaseId) && actualLeaseId == leaseId)
+                if (!Containers[containerName].BlobsLeases.TryGetValue(blobName, out actualLeaseId))
                 {
-                    Containers[containerName].BlobsLeases.Remove(blobName);
-                    return true;
+                    return Result<string>.CreateError("NotFound");
+                }
+                if (actualLeaseId != leaseId)
+                {
+                    return Result<string>.CreateError("Conflict");
                 }
 
-                return false;
+                Containers[containerName].BlobsLeases.Remove(blobName);
+                return Result.CreateSuccess("OK");
             }
         }
 
         /// <remarks></remarks>
-        public bool TryRenewLease(string containerName, string blobName, string leaseId)
+        public Result<string> TryRenewLease(string containerName, string blobName, string leaseId)
         {
             lock (_syncRoot)
             {
                 string actualLeaseId;
-                return Containers[containerName].BlobsLeases.TryGetValue(blobName, out actualLeaseId)
-                    && actualLeaseId == leaseId;
+                if (!Containers[containerName].BlobsLeases.TryGetValue(blobName, out actualLeaseId))
+                {
+                    return Result<string>.CreateError("NotFound");
+                }
+                if (actualLeaseId != leaseId)
+                {
+                    return Result<string>.CreateError("Conflict");
+                }
+
+                return Result.CreateSuccess("OK");
             }
         }
     }
