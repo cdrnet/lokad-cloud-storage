@@ -85,6 +85,7 @@
     <Compile Include="CloudFormatter.cs" />
     <Compile Include="CloudStorage.cs" />
     <Compile Include="CloudStorageProviders.cs" />
+    <Compile Include="Queues\KeepAliveMessageHandle.cs" />
     <Compile Include="RawFormatter.cs" />
     <Compile Include="DataSerializerExtensions.cs" />
     <Compile Include="Instrumentation\Events\BlobDeserializationFailedEvent.cs" />

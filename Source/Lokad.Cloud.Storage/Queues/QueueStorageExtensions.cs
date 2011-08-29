@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedMethodReturnValue.Global
@@ -116,6 +117,36 @@ namespace Lokad.Cloud.Storage
         public static bool DeleteQueue<T>(this IQueueStorageProvider provider)
         {
             return provider.DeleteQueue(GetDefaultStorageName(typeof(T)));
+        }
+
+        public static KeepAliveMessageHandle<T> GetResilient<T>(this IQueueStorageProvider provider, string queueName, TimeSpan keepAliveAfter, int maxProcessingTrials)
+            where T : class
+        {
+            var messages = provider.Get<T>(queueName, 1, keepAliveAfter + TimeSpan.FromSeconds(30), maxProcessingTrials).ToList();
+            if (messages.Count == 0)
+            {
+                return null;
+            }
+
+            return new KeepAliveMessageHandle<T>(messages[0], provider, keepAliveAfter, TimeSpan.FromSeconds(30));
+        }
+
+        public static KeepAliveMessageHandle<T> GetResilient<T>(this IQueueStorageProvider provider, string queueName)
+            where T : class
+        {
+            return GetResilient<T>(provider, queueName, TimeSpan.FromSeconds(90), 5);
+        }
+
+        public static KeepAliveMessageHandle<T> GetResilient<T>(this IQueueStorageProvider provider, TimeSpan keepAliveAfter, int maxProcessingTrials)
+            where T : class
+        {
+            return GetResilient<T>(provider, GetDefaultStorageName(typeof(T)), keepAliveAfter, maxProcessingTrials);
+        }
+
+        public static KeepAliveMessageHandle<T> GetResilient<T>(this IQueueStorageProvider provider)
+           where T : class
+        {
+            return GetResilient<T>(provider, GetDefaultStorageName(typeof(T)), TimeSpan.FromSeconds(90), 5);
         }
 
         /// <summary>Gets the approximate number of items in a queue (derived from the message type T).</summary>
