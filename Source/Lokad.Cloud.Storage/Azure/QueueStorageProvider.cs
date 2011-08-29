@@ -590,23 +590,34 @@ namespace Lokad.Cloud.Storage.Azure
                     continue;
                 }
 
-                var messageBlob = _blobStorage.GetBlob<ResilientMessageData>(ResilientMessagesContainerName, blobName);
-                if (!messageBlob.HasValue)
+                try
                 {
-                    continue;
+                    var messageBlob = _blobStorage.GetBlob<ResilientMessageData>(ResilientMessagesContainerName, blobName);
+                    if (!messageBlob.HasValue)
+                    {
+                        continue;
+                    }
+
+                    // CASE: we were able to acquire a lease and can read the original message blob.
+                    // => Restore the message
+
+                    var messageData = messageBlob.Value;
+                    var queue = _queueStorage.GetQueueReference(messageData.QueueName);
+                    var rawMessage = new CloudQueueMessage(messageData.Data);
+                    PutRawMessage(rawMessage, queue);
+
+                    if (DeleteKeepAliveMessage(blobName, lease.Value))
+                    {
+                        count++;
+                    }
                 }
-
-                // CASE: we were able to acquire a lease and can read the original message blob.
-                // => Restore the message
-
-                var messageData = messageBlob.Value;
-                var queue = _queueStorage.GetQueueReference(messageData.QueueName);
-                var rawMessage = new CloudQueueMessage(messageData.Data);
-                PutRawMessage(rawMessage, queue);
-
-                if (DeleteKeepAliveMessage(blobName, lease.Value))
+                finally
                 {
-                    count++;
+                    Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                        {
+                            var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, lease.Value);
+                            return result.IsSuccess || result.Error == "NotFound" || result.Error == "Conflict";
+                        });
                 }
             }
 
