@@ -468,6 +468,46 @@ namespace Lokad.Cloud.Storage.Azure
                             return true;
                         }
 
+                        if (result.Error == "Conflict")
+                        {
+                            // CASE: we managed to loose our lease and someone acquired it in the meantime
+                            // => try to re-aquire a new lease
+
+                            var newLease = _blobStorage.TryAcquireLease(ResilientLeasesContainerName, blobName);
+                            if (newLease.IsSuccess)
+                            {
+                                // CASE: we managed to re-acquire the lost lease.
+                                // However, if the message blob is no longer present then the message was already handled and we need to retreat
+
+                                if (_blobStorage.GetBlobEtag(ResilientMessagesContainerName, blobName) == null)
+                                {
+                                    Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                                        {
+                                            var retreatResult = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, newLease.Value);
+                                            return retreatResult.IsSuccess || result.Error == "NotFound";
+                                        });
+
+                                    messageAlreadyHandled = true;
+                                    return true;
+                                }
+
+                                blobLease = newLease.Value;
+                                return true;
+                            }
+
+                            if (newLease.Error == "NotFound")
+                            {
+                                // CASE: we managed to loose our lease file, meaning that we must have lost our lease
+                                // (maybe because we didn't renew in time) and the message was handled in the meantime.
+                                // => do nothing
+                                messageAlreadyHandled = true;
+                                return true;
+                            }
+
+                            // still conflict or transient error, retry
+                            return false;
+                        }
+
                         return false;
                     });
 
@@ -486,8 +526,9 @@ namespace Lokad.Cloud.Storage.Azure
                         return TimeSpan.Zero;
                     }
 
-                    // CASE: renew succeeded
+                    // CASE: renew succeeded, or we managed to acquire a new lease
                     inProcMsg.KeepAliveTimeout = DateTimeOffset.UtcNow - KeepAliveVisibilityTimeout;
+                    inProcMsg.KeepAliveBlobLease = blobLease;
                     return KeepAliveVisibilityTimeout;
                 }
             }
@@ -552,15 +593,15 @@ namespace Lokad.Cloud.Storage.Azure
                 _blobStorage.DeleteBlobIfExist(ResilientMessagesContainerName, blobName);
 
                 Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
-                {
-                    var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, blobLease);
-                    if (result.IsSuccess)
                     {
-                        _blobStorage.DeleteBlobIfExist(ResilientLeasesContainerName, blobName);
-                        return true;
-                    }
-                    return result.Error == "NotFound";
-                });
+                        var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, blobLease);
+                        if (result.IsSuccess)
+                        {
+                            _blobStorage.DeleteBlobIfExist(ResilientLeasesContainerName, blobName);
+                            return true;
+                        }
+                        return result.Error == "NotFound";
+                    });
 
                 return TimeSpan.Zero;
             }
