@@ -620,7 +620,7 @@ namespace Lokad.Cloud.Storage.Azure
                 .Where(name => !_blobStorage.IsBlobLocked(ResilientLeasesContainerName, name))
                 .Take(50).ToList();
 
-            int count = 0;
+            var messagesByQueue = new Dictionary<string, int>();
             foreach (var blobName in candidates)
             {
                 var lease = _blobStorage.TryAcquireLease(ResilientLeasesContainerName, blobName);
@@ -647,7 +647,15 @@ namespace Lokad.Cloud.Storage.Azure
 
                     if (DeleteKeepAliveMessage(blobName, lease.Value))
                     {
-                        count++;
+                        int oldCount;
+                        if (messagesByQueue.TryGetValue(messageData.QueueName, out oldCount))
+                        {
+                            messagesByQueue[messageData.QueueName] = oldCount + 1;
+                        }
+                        else
+                        {
+                            messagesByQueue[messageData.QueueName] = 1;
+                        }
                     }
                 }
                 finally
@@ -660,7 +668,12 @@ namespace Lokad.Cloud.Storage.Azure
                 }
             }
 
-            return count;
+            if (_observer != null && messagesByQueue.Count > 0)
+            {
+                _observer.Notify(new MessagesRevivedEvent(messagesByQueue));
+            }
+
+            return messagesByQueue.Sum(p => p.Value);
         }
 
         /// <remarks></remarks>
