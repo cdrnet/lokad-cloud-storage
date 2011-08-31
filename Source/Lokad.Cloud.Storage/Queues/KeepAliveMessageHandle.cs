@@ -16,12 +16,12 @@ namespace Lokad.Cloud.Storage
 
         public T Message { get; private set; }
 
-        internal KeepAliveMessageHandle(T message, IQueueStorageProvider storage, TimeSpan dueTime, TimeSpan period)
+        public KeepAliveMessageHandle(T message, IQueueStorageProvider storage, TimeSpan keepAliveAfter, TimeSpan keepAlivePeriod)
         {
             _storage = storage;
             Message = message;
 
-            _timer = new Timer(state => _storage.KeepAlive(Message), null, dueTime, period);
+            _timer = new Timer(state => _storage.KeepAlive(Message), null, keepAliveAfter, keepAlivePeriod);
         }
 
         public void Delete()
