@@ -437,6 +437,10 @@ namespace Lokad.Cloud.Storage.Azure
                                         ReadETagsAndDetach(context, (entity, etag) => cloudEntityOfFatEntity[entity].ETag = etag);
                                     });
                             }
+                            else if (errorCode == StorageErrorCodeStrings.ResourceNotFound)
+                            {
+                                throw new InvalidOperationException("Cannot call update on a resource that does not exist", ex);
+                            }
                             else
                             {
                                 throw;
