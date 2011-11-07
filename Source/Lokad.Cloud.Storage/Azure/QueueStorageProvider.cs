@@ -56,7 +56,6 @@ namespace Lokad.Cloud.Storage.Azure
         /// <param name="serializer">Not null.</param>
         /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper scenario).</param>
         /// <param name="observer">Can be <see langword="null"/>.</param>
-        /// <param name="log">Optional log</param>
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
