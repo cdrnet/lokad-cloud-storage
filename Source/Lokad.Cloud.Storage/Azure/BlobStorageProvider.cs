@@ -30,7 +30,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>Custom meta-data used as a work-around of an issue of the StorageClient.</summary>
         /// <remarks>[vermorel 2010-11] The StorageClient for odds reasons do not enable the
         /// retrieval of the Content-MD5 property when performing a GET on blobs. In order to validate
-        /// the integrity during the entire roundtrip, we need to apply a suplementary header
+        /// the integrity during the entire roundtrip, we need to apply a supplementary header
         /// used to perform the MD5 check.</remarks>
         private const string MetadataMD5Key = "LokadContentMD5";
 
