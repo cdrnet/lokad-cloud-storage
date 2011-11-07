@@ -101,6 +101,7 @@ namespace Lokad.Cloud.Storage.Instrumentation
                 {
                     lock (_subject._sync)
                     {
+                        // Need to retest '_observer' because of race conditions 
                         if (_observer != null && !_subject._isDisposed)
                         {
                             int idx = Array.IndexOf(_subject._observers, _observer);
