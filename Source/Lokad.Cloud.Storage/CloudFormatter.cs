@@ -38,7 +38,7 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Serializes the object to the specified stream.</summary>
         /// <param name="instance">The instance.</param>
-        /// <param name="destinationStream">The destination stream.</param>
+        /// <param name="destination">The destination stream.</param>
         /// <param name="type">The type of the object to serialize (can be a base type of the provided instance).</param>
         public void Serialize(object instance, Stream destination, Type type)
         {
@@ -52,7 +52,7 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <summary>Deserializes the object from specified source stream.</summary>
-        /// <param name="sourceStream">The source stream.</param>
+        /// <param name="source">The source stream.</param>
         /// <param name="type">The type of the object to deserialize.</param>
         /// <returns>deserialized object</returns>
         public object Deserialize(Stream source, Type type)
