@@ -52,7 +52,7 @@ namespace Lokad.Cloud.Storage
             Parsers.Add(typeof(Guid), s => new Guid(s));
 
             // DateTime: sortable ascending;
-            // NOTE: not time zone safe, users have to deal with that temselves
+            // NOTE: not time zone safe, users have to deal with that themselves
             Printers.Add(typeof(DateTime),
                 o => ((DateTime)o).ToString(DateFormatInBlobName, CultureInfo.InvariantCulture));
             Parsers.Add(typeof(DateTime),
