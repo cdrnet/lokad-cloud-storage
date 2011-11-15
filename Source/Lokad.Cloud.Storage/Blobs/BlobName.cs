@@ -14,7 +14,7 @@ namespace Lokad.Cloud.Storage
     /// </summary>
     /// <typeparam name="T">Type contained in the blob.</typeparam>
     [Serializable, DataContract]
-    public abstract class BlobName<T> : UntypedBlobName
+    public abstract class BlobName<T> : UntypedBlobName, ITypedBlobName<T>
     {
     }
 }
