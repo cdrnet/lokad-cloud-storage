@@ -9,7 +9,7 @@ namespace Lokad.Cloud.Storage
     /// Blob reference, to be used a short hand
     /// while operating with the <see cref="IBlobStorageProvider"/>
     /// </summary>
-    public interface IBlobName
+    public interface IBlobLocation
     {
         /// <summary>
         /// Name of the container where the blob is located.
@@ -19,6 +19,6 @@ namespace Lokad.Cloud.Storage
         /// <summary>
         /// Location of the blob inside of the container.
         /// </summary>
-        string BlobName { get; }
+        string Path { get; }
     }
 }

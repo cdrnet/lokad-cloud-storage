@@ -34,9 +34,9 @@ namespace Lokad.Cloud.Storage
         /// <remarks>
         /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
         /// </remarks>
-        public static IEnumerable<T> ListBlobs<T>(this IBlobStorageProvider provider, ITypedBlobName<T> blobNamePrefix, int skip = 0)
+        public static IEnumerable<T> ListBlobs<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> locationPrefix, int skip = 0)
         {
-            return provider.ListBlobs<T>(blobNamePrefix.ContainerName, blobNamePrefix.BlobName, skip);
+            return provider.ListBlobs<T>(locationPrefix.ContainerName, locationPrefix.Path, skip);
         }
 
         /// <summary>
@@ -45,9 +45,9 @@ namespace Lokad.Cloud.Storage
         /// <remarks>
         /// <para>This method is idempotent.</para>
         /// </remarks>
-        public static bool DeleteBlobIfExist<T>(this IBlobStorageProvider provider, ITypedBlobName<T> fullName)
+        public static bool DeleteBlobIfExist<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location)
         {
-            return provider.DeleteBlobIfExist(fullName.ContainerName, fullName.BlobName);
+            return provider.DeleteBlobIfExist(location.ContainerName, location.Path);
         }
 
         /// <summary>
@@ -56,45 +56,45 @@ namespace Lokad.Cloud.Storage
         /// <remarks>
         /// <para>This method is idempotent.</para>
         /// </remarks>
-        public static void DeleteAllBlobs(this IBlobStorageProvider provider, IBlobName blobNamePrefix)
+        public static void DeleteAllBlobs(this IBlobStorageProvider provider, IBlobLocation locationPrefix)
         {
-            provider.DeleteAllBlobs(blobNamePrefix.ContainerName, blobNamePrefix.BlobName);
+            provider.DeleteAllBlobs(locationPrefix.ContainerName, locationPrefix.Path);
         }
 
         /// <remarks></remarks>
-        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name)
+        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location)
         {
-            return provider.GetBlob<T>(name.ContainerName, name.BlobName);
+            return provider.GetBlob<T>(location.ContainerName, location.Path);
         }
 
         /// <remarks></remarks>
-        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name, out string etag)
+        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, out string etag)
         {
-            return provider.GetBlob<T>(name.ContainerName, name.BlobName, out etag);
+            return provider.GetBlob<T>(location.ContainerName, location.Path, out etag);
         }
 
         /// <remarks></remarks>
-        public static string GetBlobEtag<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name)
+        public static string GetBlobEtag<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location)
         {
-            return provider.GetBlobEtag(name.ContainerName, name.BlobName);
+            return provider.GetBlobEtag(location.ContainerName, location.Path);
         }
 
         /// <remarks></remarks>
-        public static void PutBlob<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name, T item)
+        public static void PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item)
         {
-            provider.PutBlob(name.ContainerName, name.BlobName, item);
+            provider.PutBlob(location.ContainerName, location.Path, item);
         }
 
         /// <remarks></remarks>
-        public static bool PutBlob<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name, T item, bool overwrite)
+        public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, bool overwrite)
         {
-            return provider.PutBlob(name.ContainerName, name.BlobName, item, overwrite);
+            return provider.PutBlob(location.ContainerName, location.Path, item, overwrite);
         }
 
         /// <summary>Push the blob only if etag is matching the etag of the blob in BlobStorage</summary>
-        public static bool PutBlob<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name, T item, string etag)
+        public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, string etag)
         {
-            return provider.PutBlob(name.ContainerName, name.BlobName, item, etag);
+            return provider.PutBlob(location.ContainerName, location.Path, item, etag);
         }
 
         /// <summary>
@@ -109,9 +109,9 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist.</returns>
-        public static Maybe<T> UpdateBlobIfExist<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name, Func<T, T> update)
+        public static Maybe<T> UpdateBlobIfExist<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, T> update)
         {
-            return provider.UpsertBlobOrSkip(name.ContainerName, name.BlobName, () => Maybe<T>.Empty, t => update(t));
+            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, t => update(t));
         }
 
         /// <summary>
@@ -128,9 +128,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or no change was applied.</returns>
         public static Maybe<T> UpdateBlobIfExistOrSkip<T>(
-            this IBlobStorageProvider provider, ITypedBlobName<T> name, Func<T, Maybe<T>> update)
+            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, Maybe<T>> update)
         {
-            return provider.UpsertBlobOrSkip(name.ContainerName, name.BlobName, () => Maybe<T>.Empty, update);
+            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, update);
         }
 
         /// <summary>
@@ -147,9 +147,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or was deleted.</returns>
         public static Maybe<T> UpdateBlobIfExistOrDelete<T>(
-            this IBlobStorageProvider provider, ITypedBlobName<T> name, Func<T, Maybe<T>> update)
+            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, Maybe<T>> update)
         {
-            return provider.UpdateBlobIfExistOrDelete(name.ContainerName, name.BlobName, update);
+            return provider.UpdateBlobIfExistOrDelete(location.ContainerName, location.Path, update);
         }
 
         /// <summary>
@@ -168,9 +168,9 @@ namespace Lokad.Cloud.Storage
         /// </para>
         /// </remarks>
         /// <returns>The value returned by the lambda.</returns>
-        public static T UpsertBlob<T>(this IBlobStorageProvider provider, ITypedBlobName<T> name, Func<T> insert, Func<T, T> update)
+        public static T UpsertBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T> insert, Func<T, T> update)
         {
-            return provider.UpsertBlobOrSkip<T>(name.ContainerName, name.BlobName, () => insert(), t => update(t)).Value;
+            return provider.UpsertBlobOrSkip<T>(location.ContainerName, location.Path, () => insert(), t => update(t)).Value;
         }
 
         /// <summary>
@@ -191,9 +191,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then no change was applied.</returns>
         public static Maybe<T> UpsertBlobOrSkip<T>(this IBlobStorageProvider provider,
-            ITypedBlobName<T> name, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+            IBlobLocationAndType<T> location, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
         {
-            return provider.UpsertBlobOrSkip(name.ContainerName, name.BlobName, insert, update);
+            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, insert, update);
         }
 
         /// <summary>
@@ -214,9 +214,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then the blob has been deleted.</returns>
         public static Maybe<T> UpsertBlobOrDelete<T>(
-            this IBlobStorageProvider provider, ITypedBlobName<T> name, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
         {
-            return provider.UpsertBlobOrDelete(name.ContainerName, name.BlobName, insert, update);
+            return provider.UpsertBlobOrDelete(location.ContainerName, location.Path, insert, update);
         }
 
         /// <summary>Checks that containerName is a valid DNS name, as requested by Azure</summary>

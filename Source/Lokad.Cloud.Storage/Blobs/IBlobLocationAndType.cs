@@ -9,7 +9,7 @@ namespace Lokad.Cloud.Storage
     /// Typed blob reference, to be used a short hand
     /// while operating with the <see cref="IBlobStorageProvider"/>
     /// </summary>
-    public interface ITypedBlobName<T> : IBlobName
+    public interface IBlobLocationAndType<T> : IBlobLocation
     {
     }
 }

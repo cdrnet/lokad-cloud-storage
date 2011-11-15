@@ -18,7 +18,7 @@ namespace Lokad.Cloud.Storage
     /// not inherit <see cref="UntypedBlobName"/>c> but <see cref="BlobName{T}"/> instead.
     /// </summary>
     [Serializable, DataContract]
-    public abstract class UntypedBlobName : IBlobName
+    public abstract class UntypedBlobName : IBlobLocation
     {
         class InheritanceComparer : IComparer<Type>
         {
@@ -44,7 +44,7 @@ namespace Lokad.Cloud.Storage
         /// <summary>
         /// Location of the blob inside of the container.
         /// </summary>
-        public virtual string BlobName
+        public virtual string Path
         {
             get
             {
