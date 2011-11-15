@@ -77,7 +77,7 @@ namespace Lokad.Cloud.Storage.Azure
                 _runtimeFinalizer.Register(this);
             }
 
-            _inProcessMessages = new Dictionary<object, InProcessMessage>(20);
+            _inProcessMessages = new Dictionary<object, InProcessMessage>(20, new IdentityComparer());
         }
 
         /// <summary>
@@ -404,6 +404,11 @@ namespace Lokad.Cloud.Storage.Azure
         public TimeSpan KeepAlive<T>(T message)
              where T : class
         {
+            if (!IdentityComparer.CanDifferentiateInstances(typeof(T)))
+            {
+                throw new NotSupportedException("KeepAlive supports neither strings nor value types");
+            }
+
             CloudQueueMessage rawMessage;
             string queueName;
             byte[] data;
@@ -693,7 +698,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 // ignoring message if already deleted
                 InProcessMessage inProcMsg;
-                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || inProcMsg.CommitStarted)
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || (IdentityComparer.CanDifferentiateInstances(typeof(T)) && inProcMsg.CommitStarted))
                 {
                     return false;
                 }
@@ -773,7 +778,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 // ignoring message if already deleted
                 InProcessMessage inProcMsg;
-                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || inProcMsg.CommitStarted)
+                if (!_inProcessMessages.TryGetValue(message, out inProcMsg) || (IdentityComparer.CanDifferentiateInstances(typeof(T)) && inProcMsg.CommitStarted))
                 {
                     return false;
                 }
@@ -1319,6 +1324,35 @@ namespace Lokad.Cloud.Storage.Azure
         }
     }
 
+    internal class IdentityComparer : IEqualityComparer<object>
+    {
+        public static bool CanDifferentiateInstances(Type type)
+        {
+            return type != typeof(string) && type.IsClass;
+        }
+
+        public bool Equals(object x, object y)
+        {
+            if (x == null)
+            {
+                return y == null;
+            }
+
+            if (y == null)
+            {
+                return false;
+            }
+
+            return x.GetType().IsClass ? ReferenceEquals(x, y) : x.Equals(y);
+        }
+
+        public int GetHashCode(object obj)
+        {
+            return obj == null ? 0 : obj.GetHashCode();
+        }
+    }
+
+
     /// <summary>Represents a set of value-identical messages that are being processed by workers, 
     /// i.e. were hidden from the queue because of calls to Get{T}.</summary>
     internal class InProcessMessage
@@ -1350,7 +1384,7 @@ namespace Lokad.Cloud.Storage.Azure
         public int DequeueCount { get; set; }
 
         /// <summary>
-        /// True if Delete, Abandon or ResumeNext has been requested
+        /// True if Delete, Abandon or ResumeNext has been requested.
         /// </summary>
         public bool CommitStarted { get; set; }
 
