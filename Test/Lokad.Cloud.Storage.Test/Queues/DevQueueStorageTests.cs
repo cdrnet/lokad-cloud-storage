@@ -25,7 +25,7 @@ namespace Lokad.Cloud.Storage.Test.Queues
         public void PutGetDeleteOverflowing()
         {
             // 20k chosen so that it doesn't fit into the queue.
-            var message = new MyMessage { MyBuffer = new byte[20000] };
+            var message = new MyMessage { MyBuffer = new byte[80000] };
 
             // fill buffer with random content
             _rand.NextBytes(message.MyBuffer);
@@ -54,7 +54,7 @@ namespace Lokad.Cloud.Storage.Test.Queues
             // CAUTION: we are now compressing serialization output.
             // hence, we can't just pass an empty array, as it would be compressed at near 100%.
 
-            var data = new byte[20000];
+            var data = new byte[80000];
             _rand.NextBytes(data);
 
             QueueStorage.Put(queueName, data);
@@ -81,7 +81,7 @@ namespace Lokad.Cloud.Storage.Test.Queues
             // CAUTION: we are now compressing serialization output.
             // hence, we can't just pass an empty array, as it would be compressed at near 100%.
 
-            var data = new byte[20000];
+            var data = new byte[80000];
             _rand.NextBytes(data);
 
             QueueStorage.Put(queueName, data);
@@ -110,7 +110,7 @@ namespace Lokad.Cloud.Storage.Test.Queues
             // CAUTION: we are now compressing serialization output.
             // hence, we can't just pass an empty array, as it would be compressed at near 100%.
 
-            var data = new byte[20000];
+            var data = new byte[80000];
             _rand.NextBytes(data);
 
             // clean up
