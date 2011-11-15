@@ -18,7 +18,7 @@ namespace Lokad.Cloud.Storage
     /// not inherit <see cref="UntypedBlobName"/>c> but <see cref="BlobName{T}"/> instead.
     /// </summary>
     [Serializable, DataContract]
-    public abstract class UntypedBlobName
+    public abstract class UntypedBlobName : IBlobName
     {
         class InheritanceComparer : IComparer<Type>
         {
@@ -36,12 +36,21 @@ namespace Lokad.Cloud.Storage
         static readonly Dictionary<Type, Func<string, object>> Parsers = new Dictionary<Type, Func<string, object>>();
         static readonly Dictionary<Type, Func<object, string>> Printers = new Dictionary<Type, Func<object, string>>();
 
-        /// <summary>Name of the container (to be used as a short-hand while
-        /// operating with the <see cref="IBlobStorageProvider"/>).</summary>
-        /// <remarks>Do not introduce an extra field for the property as
-        /// it would be incorporated in the blob name. Instead, just
-        /// return a constant string.</remarks>
+        /// <summary>
+        /// Name of the container where the blob is located.
+        /// </summary>
         public abstract string ContainerName { get; }
+
+        /// <summary>
+        /// Location of the blob inside of the container.
+        /// </summary>
+        public virtual string BlobName
+        {
+            get
+            {
+                return ToString();
+            }
+        }
 
         static UntypedBlobName()
         {
@@ -118,8 +127,6 @@ namespace Lokad.Cloud.Storage
             static readonly bool[] TreatDefaultAsNull;
             const string Delimeter = "/";
 
-            static readonly ConstructorInfo FirstCtor;
-
             static ConverterTypeCache()
             {
                
@@ -138,9 +145,6 @@ namespace Lokad.Cloud.Storage
 
                 TreatDefaultAsNull = Members.Select(m =>
                     ((RankAttribute) (m.GetCustomAttributes(typeof (RankAttribute), true).First())).TreatDefaultAsNull).ToArray();
-
-                FirstCtor = typeof(T).GetConstructors(
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).First();
             }
 
             public static string Print(T instance)
@@ -248,14 +252,6 @@ namespace Lokad.Cloud.Storage
         public static T Parse<T>(string value) where T : UntypedBlobName
         {
             return ConverterTypeCache<T>.Parse(value);
-        }
-
-        /// <summary>Returns the <see cref="ContainerName"/> value without
-        /// having an instance at hand.</summary>
-        public static string GetContainerName<T>() where T : UntypedBlobName
-        {
-            // HACK: that's a heavy way of getting the thing done
-            return ((T)FormatterServices.GetUninitializedObject(typeof(T))).ContainerName;
         }
     }
 }

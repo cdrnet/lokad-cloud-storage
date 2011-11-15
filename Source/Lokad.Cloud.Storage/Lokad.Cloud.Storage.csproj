@@ -78,6 +78,7 @@
     <Compile Include="Azure\TableStorageProvider.cs" />
     <Compile Include="Blobs\BlobName.cs" />
     <Compile Include="Blobs\BlobStorageExtensions.cs" />
+    <Compile Include="Blobs\IBlobName.cs" />
     <Compile Include="Blobs\IBlobStorageProvider.cs" />
     <Compile Include="Blobs\RankAttribute.cs" />
     <Compile Include="Blobs\TemporaryBlobName.cs" />

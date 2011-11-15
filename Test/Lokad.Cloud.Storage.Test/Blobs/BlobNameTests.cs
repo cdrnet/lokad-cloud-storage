@@ -136,13 +136,6 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
-        public void Get_ContainerName()
-        {
-            var name = UntypedBlobName.GetContainerName<PatternA>();
-            Assert.AreEqual("my-test-container", name);
-        }
-
-        [Test]
         public void Two_Patterns()
         {
             // actually ensures that the implementation supports two patterns
