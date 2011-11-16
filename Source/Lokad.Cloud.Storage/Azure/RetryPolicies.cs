@@ -248,6 +248,7 @@ namespace Lokad.Cloud.Storage.Azure
             var webException = exception as WebException;
             if (webException != null &&
                 (webException.Status == WebExceptionStatus.ConnectionClosed ||
+                 webException.Status == WebExceptionStatus.ConnectFailure ||
                  webException.Status == WebExceptionStatus.Timeout))
             {
                 return true;
@@ -308,6 +309,7 @@ namespace Lokad.Cloud.Storage.Azure
             if (webException != null &&
                 (webException.Status == WebExceptionStatus.ProtocolError ||
                  webException.Status == WebExceptionStatus.ConnectionClosed ||
+                 webException.Status == WebExceptionStatus.ConnectFailure ||
                  webException.Status == WebExceptionStatus.Timeout))
             {
                 return true;
