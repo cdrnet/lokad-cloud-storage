@@ -34,9 +34,9 @@ namespace Lokad.Cloud.Storage
         /// <remarks>
         /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
         /// </remarks>
-        public static IEnumerable<T> ListBlobs<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> locationPrefix, int skip = 0)
+        public static IEnumerable<T> ListBlobs<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> locationPrefix, int skip = 0, IDataSerializer serializer = null)
         {
-            return provider.ListBlobs<T>(locationPrefix.ContainerName, locationPrefix.Path, skip);
+            return provider.ListBlobs<T>(locationPrefix.ContainerName, locationPrefix.Path, skip, serializer);
         }
 
         /// <summary>
@@ -62,15 +62,15 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <remarks></remarks>
-        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location)
+        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, IDataSerializer serializer = null)
         {
-            return provider.GetBlob<T>(location.ContainerName, location.Path);
+            return provider.GetBlob<T>(location.ContainerName, location.Path, serializer);
         }
 
         /// <remarks></remarks>
-        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, out string etag)
+        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, out string etag, IDataSerializer serializer = null)
         {
-            return provider.GetBlob<T>(location.ContainerName, location.Path, out etag);
+            return provider.GetBlob<T>(location.ContainerName, location.Path, out etag, serializer);
         }
 
         /// <remarks></remarks>
@@ -80,21 +80,21 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <remarks></remarks>
-        public static void PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item)
+        public static void PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, IDataSerializer serializer = null)
         {
-            provider.PutBlob(location.ContainerName, location.Path, item);
+            provider.PutBlob(location.ContainerName, location.Path, item, serializer);
         }
 
         /// <remarks></remarks>
-        public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, bool overwrite)
+        public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, bool overwrite, IDataSerializer serializer = null)
         {
-            return provider.PutBlob(location.ContainerName, location.Path, item, overwrite);
+            return provider.PutBlob(location.ContainerName, location.Path, item, overwrite, serializer);
         }
 
         /// <summary>Push the blob only if etag is matching the etag of the blob in BlobStorage</summary>
-        public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, string etag)
+        public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, string etag, IDataSerializer serializer = null)
         {
-            return provider.PutBlob(location.ContainerName, location.Path, item, etag);
+            return provider.PutBlob(location.ContainerName, location.Path, item, etag, serializer);
         }
 
         /// <summary>
@@ -109,9 +109,9 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist.</returns>
-        public static Maybe<T> UpdateBlobIfExist<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, T> update)
+        public static Maybe<T> UpdateBlobIfExist<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, T> update, IDataSerializer serializer = null)
         {
-            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, t => update(t));
+            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, t => update(t), serializer);
         }
 
         /// <summary>
@@ -128,9 +128,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or no change was applied.</returns>
         public static Maybe<T> UpdateBlobIfExistOrSkip<T>(
-            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, Maybe<T>> update)
+            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
-            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, update);
+            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, update, serializer);
         }
 
         /// <summary>
@@ -147,9 +147,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or was deleted.</returns>
         public static Maybe<T> UpdateBlobIfExistOrDelete<T>(
-            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, Maybe<T>> update)
+            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
-            return provider.UpdateBlobIfExistOrDelete(location.ContainerName, location.Path, update);
+            return provider.UpdateBlobIfExistOrDelete(location.ContainerName, location.Path, update, serializer);
         }
 
         /// <summary>
@@ -168,9 +168,9 @@ namespace Lokad.Cloud.Storage
         /// </para>
         /// </remarks>
         /// <returns>The value returned by the lambda.</returns>
-        public static T UpsertBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T> insert, Func<T, T> update)
+        public static T UpsertBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T> insert, Func<T, T> update, IDataSerializer serializer = null)
         {
-            return provider.UpsertBlobOrSkip<T>(location.ContainerName, location.Path, () => insert(), t => update(t)).Value;
+            return provider.UpsertBlobOrSkip<T>(location.ContainerName, location.Path, () => insert(), t => update(t), serializer).Value;
         }
 
         /// <summary>
@@ -191,9 +191,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then no change was applied.</returns>
         public static Maybe<T> UpsertBlobOrSkip<T>(this IBlobStorageProvider provider,
-            IBlobLocationAndType<T> location, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+            IBlobLocationAndType<T> location, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
-            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, insert, update);
+            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, insert, update, serializer);
         }
 
         /// <summary>
@@ -214,9 +214,9 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then the blob has been deleted.</returns>
         public static Maybe<T> UpsertBlobOrDelete<T>(
-            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+            this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
-            return provider.UpsertBlobOrDelete(location.ContainerName, location.Path, insert, update);
+            return provider.UpsertBlobOrDelete(location.ContainerName, location.Path, insert, update, serializer);
         }
 
         /// <summary>Checks that containerName is a valid DNS name, as requested by Azure</summary>

@@ -25,14 +25,14 @@ namespace Lokad.Cloud.Storage.InMemory
         /// <summary>naive global lock to make methods thread-safe.</summary>
         readonly object _syncRoot;
 
-        internal IDataSerializer DataSerializer { get; set; }
+        internal IDataSerializer DefaultSerializer { get; set; }
 
         /// <remarks></remarks>
         public MemoryBlobStorageProvider()
         {
             _containers = new Dictionary<string, MockContainer>();
             _syncRoot = new object();
-            DataSerializer = new CloudFormatter();
+            DefaultSerializer = new CloudFormatter();
         }
 
         /// <remarks></remarks>
@@ -100,7 +100,7 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0)
+        public IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0, IDataSerializer serializer = null)
         {
             var names = ListBlobNames(containerName, blobNamePrefix);
 
@@ -109,7 +109,7 @@ namespace Lokad.Cloud.Storage.InMemory
                 names = names.Skip(skip);
             }
 
-            return names.Select(name => GetBlob<T>(containerName, name))
+            return names.Select(name => GetBlob<T>(containerName, name, serializer))
                 .Where(blob => blob.HasValue)
                 .Select(blob => blob.Value);
         }
@@ -139,21 +139,21 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public Maybe<T> GetBlob<T>(string containerName, string blobName)
+        public Maybe<T> GetBlob<T>(string containerName, string blobName, IDataSerializer serializer = null)
         {
             string ignoredEtag;
-            return GetBlob<T>(containerName, blobName, out ignoredEtag);
+            return GetBlob<T>(containerName, blobName, out ignoredEtag, serializer);
         }
 
         /// <remarks></remarks>
-        public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag)
+        public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag, IDataSerializer serializer = null)
         {
-            return GetBlob(containerName, blobName, typeof(T), out etag)
+            return GetBlob(containerName, blobName, typeof(T), out etag, serializer)
                 .Convert(o => o is T ? (T)o : Maybe<T>.Empty, Maybe<T>.Empty);
         }
 
         /// <remarks></remarks>
-        public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag)
+        public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag, IDataSerializer serializer = null)
         {
             lock (_syncRoot)
             {
@@ -170,11 +170,11 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag)
+        public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag, IDataSerializer serializer = null)
         {
             etag = null;
 
-            var formatter = DataSerializer as IIntermediateDataSerializer;
+            var formatter = (serializer ?? DefaultSerializer) as IIntermediateDataSerializer;
             if (formatter == null)
             {
                 return Maybe<XElement>.Empty;
@@ -202,15 +202,13 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags)
+        public Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags, IDataSerializer serializer = null)
         {
-            // Copy-paste from BlobStorageProvider.cs
-
             var tempResult = blobNames.Select(blobName =>
             {
                 string etag;
                 var blob = GetBlob<T>(containerName, blobName, out etag);
-                return new System.Tuple<Maybe<T>, string>(blob, etag);
+                return new Tuple<Maybe<T>, string>(blob, etag);
             }).ToArray();
 
             etags = new string[blobNames.Length];
@@ -226,7 +224,7 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag)
+        public Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag, IDataSerializer serializer = null)
         {
             lock (_syncRoot)
             {
@@ -239,7 +237,7 @@ namespace Lokad.Cloud.Storage.InMemory
                 }
 
                 newEtag = currentEtag;
-                return GetBlob<T>(containerName, blobName);
+                return GetBlob<T>(containerName, blobName, serializer);
             }
         }
 
@@ -255,40 +253,41 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public void PutBlob<T>(string containerName, string blobName, T item)
+        public void PutBlob<T>(string containerName, string blobName, T item, IDataSerializer serializer = null)
         {
-            PutBlob(containerName, blobName, item, true);
+            PutBlob(containerName, blobName, item, true, serializer);
         }
 
         /// <remarks></remarks>
-        public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite)
+        public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, IDataSerializer serializer = null)
         {
             string ignored;
-            return PutBlob(containerName, blobName, item, overwrite, out ignored);
+            return PutBlob(containerName, blobName, item, overwrite, out ignored, serializer);
         }
 
         /// <remarks></remarks>
-        public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag)
+        public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag, IDataSerializer serializer = null)
         {
-            return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag);
+            return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag, serializer);
         }
 
         /// <remarks></remarks>
-        public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag)
+        public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag, IDataSerializer serializer = null)
         {
             string ignored;
-            return PutBlob(containerName, blobName, item, typeof (T), true, expectedEtag, out ignored);
+            return PutBlob(containerName, blobName, item, typeof (T), true, expectedEtag, out ignored, serializer);
         }
 
         /// <remarks></remarks>
-        public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string etag)
+        public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string etag, IDataSerializer serializer = null)
         {
-            return PutBlob(containerName, blobName, item, type, overwrite, null, out etag);
+            return PutBlob(containerName, blobName, item, type, overwrite, null, out etag, serializer);
         }
 
         /// <remarks></remarks>
-        public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string etag)
+        public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string etag, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? DefaultSerializer;
             lock(_syncRoot)
             {
                 etag = null;
@@ -301,9 +300,10 @@ namespace Lokad.Cloud.Storage.InMemory
                             return false;
                         }
 
+                        // Just verify that we can serialize
                         using (var stream = new MemoryStream())
                         {
-                            DataSerializer.Serialize(item, stream, type);
+                            dataSerializer.Serialize(item, stream, type);
                         }
 
                         Containers[containerName].SetBlob(blobName, item);
@@ -325,7 +325,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
                 using (var stream = new MemoryStream())
                 {
-                    DataSerializer.Serialize(item, stream, type);
+                    dataSerializer.Serialize(item, stream, type);
                 }
 
                 Containers[containerName].AddBlob(blobName, item);
@@ -335,21 +335,21 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update)
+        public Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update, IDataSerializer serializer = null)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t));
+            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t), serializer);
         }
 
         /// <remarks></remarks>
-        public Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
+        public Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
-            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
+            return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update, serializer);
         }
 
         /// <remarks></remarks>
-        public Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update)
+        public Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
-            var result = UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update);
+            var result = UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update, serializer);
             if (!result.HasValue)
             {
                 DeleteBlobIfExist(containerName, blobName);
@@ -359,14 +359,14 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public T UpsertBlob<T>(string containerName, string blobName, Func<T> insert, Func<T, T> update)
+        public T UpsertBlob<T>(string containerName, string blobName, Func<T> insert, Func<T, T> update, IDataSerializer serializer = null)
         {
-            return UpsertBlobOrSkip<T>(containerName, blobName, () => insert(), t => update(t)).Value;
+            return UpsertBlobOrSkip<T>(containerName, blobName, () => insert(), t => update(t), serializer).Value;
         }
 
         /// <remarks></remarks>
         public Maybe<T> UpsertBlobOrSkip<T>(
-            string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+            string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
             lock (_syncRoot)
             {
@@ -402,9 +402,9 @@ namespace Lokad.Cloud.Storage.InMemory
 
         /// <remarks></remarks>
         public Maybe<T> UpsertBlobOrDelete<T>(
-            string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update)
+            string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
-            var result = UpsertBlobOrSkip(containerName, blobName, insert, update);
+            var result = UpsertBlobOrSkip(containerName, blobName, insert, update, serializer);
             if (!result.HasValue)
             {
                 DeleteBlobIfExist(containerName, blobName);

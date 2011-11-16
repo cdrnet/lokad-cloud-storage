@@ -155,7 +155,7 @@ namespace Lokad.Cloud.Storage
         {
             return new InMemory.MemoryBlobStorageProvider
             {
-                DataSerializer = DataSerializer
+                DefaultSerializer = DataSerializer
             };
         }
 

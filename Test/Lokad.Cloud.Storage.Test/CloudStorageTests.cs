@@ -42,12 +42,12 @@ namespace Lokad.Cloud.Storage.Test
         {
             var serializerInstance = new CloudFormatter();
             var providersCustom = CloudStorage.ForInMemoryStorage().WithDataSerializer(serializerInstance).BuildStorageProviders();
-            Assert.AreSame(serializerInstance, ((MemoryBlobStorageProvider)providersCustom.BlobStorage).DataSerializer);
+            Assert.AreSame(serializerInstance, ((MemoryBlobStorageProvider)providersCustom.BlobStorage).DefaultSerializer);
             Assert.AreSame(serializerInstance, ((MemoryTableStorageProvider)providersCustom.TableStorage).DataSerializer);
             Assert.AreSame(serializerInstance, ((MemoryQueueStorageProvider)providersCustom.QueueStorage).DataSerializer);
 
             var providersDefault = CloudStorage.ForInMemoryStorage().BuildStorageProviders();
-            Assert.AreNotSame(serializerInstance, ((MemoryBlobStorageProvider)providersDefault.BlobStorage).DataSerializer);
+            Assert.AreNotSame(serializerInstance, ((MemoryBlobStorageProvider)providersDefault.BlobStorage).DefaultSerializer);
             Assert.AreNotSame(serializerInstance, ((MemoryTableStorageProvider)providersDefault.TableStorage).DataSerializer);
             Assert.AreNotSame(serializerInstance, ((MemoryQueueStorageProvider)providersDefault.QueueStorage).DataSerializer);
         }

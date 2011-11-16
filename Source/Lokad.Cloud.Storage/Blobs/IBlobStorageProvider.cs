@@ -47,7 +47,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks>
         /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
         /// </remarks>
-        IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0);
+        IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0, IDataSerializer serializer = null);
 
         /// <summary>
         /// Deletes a blob if it exists.
@@ -70,7 +70,7 @@ namespace Lokad.Cloud.Storage
         /// If there is no such blob, the returned object
         /// has its property HasValue set to <c>false</c>.
         /// </returns>
-        Maybe<T> GetBlob<T>(string containerName, string blobName);
+        Maybe<T> GetBlob<T>(string containerName, string blobName, IDataSerializer serializer = null);
 
         /// <summary>Gets a blob.</summary>
         /// <typeparam name="T">Blob type.</typeparam>
@@ -83,7 +83,7 @@ namespace Lokad.Cloud.Storage
         /// If there is no such blob, the returned object
         /// has its property HasValue set to <c>false</c>.
         /// </returns>
-        Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag);
+        Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag, IDataSerializer serializer = null);
 
         /// <summary>Gets a blob.</summary>
         /// <param name="containerName">Name of the container.</param>
@@ -99,7 +99,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks>This method should only be used when the caller does not know the type of the
         /// object stored in the blob at compile time, but it can only be determined at run time.
         /// In all other cases, you should use the generic overloads of the method.</remarks>
-        Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag);
+        Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag, IDataSerializer serializer = null);
 
         /// <summary>
         /// Gets a blob in intermediate XML representation for inspection and recovery,
@@ -114,7 +114,7 @@ namespace Lokad.Cloud.Storage
         /// If there is no such blob or the formatter supports no XML representation,
         /// the returned object has its property HasValue set to <c>false</c>.
         /// </returns>
-        Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag);
+        Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag, IDataSerializer serializer = null);
 
         /// <summary>
         /// Gets a range of blobs.
@@ -125,7 +125,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="etags">Etag identifiers for all returned blobs.</param>
         /// <returns>For each requested blob, an element in the array is returned in the same order.
         /// If a specific blob was not found, the corresponding <b>etags</b> array element is <c>null</c>.</returns>
-        Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags);
+        Maybe<T>[] GetBlobRange<T>(string containerName, string[] blobNames, out string[] etags, IDataSerializer serializer = null);
 
         /// <summary>Gets a blob only if the etag has changed meantime.</summary>
         /// <typeparam name="T">Type of the blob.</typeparam>
@@ -139,7 +139,7 @@ namespace Lokad.Cloud.Storage
         /// If the blob has not been modified or if there is no such blob,
         /// then the returned object has its property HasValue set to <c>false</c>.
         /// </returns>
-        Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag);
+        Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag, IDataSerializer serializer = null);
 
         /// <summary>
         /// Gets the current etag of the blob, or <c>null</c> if the blob does not exists.
@@ -148,13 +148,13 @@ namespace Lokad.Cloud.Storage
 
         /// <summary>Puts a blob (overwrite if the blob already exists).</summary>
         /// <remarks>Creates the container if it does not exist beforehand.</remarks>
-        void PutBlob<T>(string containerName, string blobName, T item);
+        void PutBlob<T>(string containerName, string blobName, T item, IDataSerializer serializer = null);
 
         /// <summary>Puts a blob and optionally overwrite.</summary>
         /// <remarks>Creates the container if it does not exist beforehand.</remarks>
         /// <returns><c>true</c> if the blob has been put and <c>false</c> if the blob already
         /// exists but could not be overwritten.</returns>
-        bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite);
+        bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, IDataSerializer serializer = null);
 
         /// <summary>Puts a blob and optionally overwrite.</summary>
         /// <param name="containerName">Name of the container.</param>
@@ -167,7 +167,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks>Creates the container if it does not exist beforehand.</remarks>
         /// <returns><c>true</c> if the blob has been put and <c>false</c> if the blob already
         /// exists but could not be overwritten.</returns>
-        bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag);
+        bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag, IDataSerializer serializer = null);
 
         /// <summary>Puts a blob only if etag given in argument is matching blob's etag in blobStorage.</summary>
         /// <param name="containerName">Name of the container.</param>
@@ -177,7 +177,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks>Creates the container if it does not exist beforehand.</remarks>
         /// <returns><c>true</c> if the blob has been put and <c>false</c> if the blob already
         /// exists but version were not matching.</returns>
-        bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag);
+        bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag, IDataSerializer serializer = null);
 
         /// <summary>Puts a blob and optionally overwrite.</summary>
         /// <param name="containerName">Name of the container.</param>
@@ -194,7 +194,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks>This method should only be used when the caller does not know the type of the
         /// object stored in the blob at compile time, but it can only be determined at run time.
         /// In all other cases, you should use the generic overloads of the method.</remarks>
-        bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string etag);
+        bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string etag, IDataSerializer serializer = null);
 
         /// <summary>
         /// Updates a blob if it already exists.
@@ -208,7 +208,7 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist.</returns>
-        Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update);
+        Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update, IDataSerializer serializer = null);
 
         /// <summary>
         /// Updates a blob if it already exists.
@@ -223,7 +223,7 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or no change was applied.</returns>
-        Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update);
+        Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update, IDataSerializer serializer = null);
 
         /// <summary>
         /// Updates a blob if it already exists.
@@ -238,7 +238,7 @@ namespace Lokad.Cloud.Storage
         /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or was deleted.</returns>
-        Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update);
+        Maybe<T> UpdateBlobIfExistOrDelete<T>(string containerName, string blobName, Func<T, Maybe<T>> update, IDataSerializer serializer = null);
 
         /// <summary>
         /// Inserts or updates a blob depending on whether it already exists or not.
@@ -256,7 +256,7 @@ namespace Lokad.Cloud.Storage
         /// </para>
         /// </remarks>
         /// <returns>The value returned by the lambda.</returns>
-        T UpsertBlob<T>(string containerName, string blobName, Func<T> insert, Func<T, T> update);
+        T UpsertBlob<T>(string containerName, string blobName, Func<T> insert, Func<T, T> update, IDataSerializer serializer = null);
 
         /// <summary>
         /// Inserts or updates a blob depending on whether it already exists or not.
@@ -275,7 +275,7 @@ namespace Lokad.Cloud.Storage
         /// </para>
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then no change was applied.</returns>
-        Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
+        Maybe<T> UpsertBlobOrSkip<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null);
 
         /// <summary>
         /// Inserts or updates a blob depending on whether it already exists or not.
@@ -294,7 +294,7 @@ namespace Lokad.Cloud.Storage
         /// </para>
         /// </remarks>
         /// <returns>The value returned by the lambda. If empty, then the blob has been deleted.</returns>
-        Maybe<T> UpsertBlobOrDelete<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update);
+        Maybe<T> UpsertBlobOrDelete<T>(string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null);
 
         /// <summary>Query whether a blob is locked by a blob lease.</summary>
         bool IsBlobLocked(string containerName, string blobName);
