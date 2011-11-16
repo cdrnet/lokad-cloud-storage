@@ -137,88 +137,85 @@ namespace Lokad.Cloud.Storage.Azure
             var messages = new List<T>(count);
             var wrappedMessages = new List<MessageWrapper>();
 
-            lock (_sync)
+            foreach (var rawMessage in rawMessages)
             {
-                foreach (var rawMessage in rawMessages)
+                // 3.1. DESERIALIZE MESSAGE, CHECK-OUT, COLLECT WRAPPED MESSAGES TO BE UNWRAPPED LATER
+
+                var data = rawMessage.AsBytes;
+                var stream = new MemoryStream(data);
+                try
                 {
-                    // 3.1. DESERIALIZE MESSAGE, CHECK-OUT, COLLECT WRAPPED MESSAGES TO BE UNWRAPPED LATER
+                    var dequeueCount = rawMessage.DequeueCount;
 
-                    var data = rawMessage.AsBytes;
-                    var stream = new MemoryStream(data);
-                    try
+                    // 3.1.1 UNPACK ENVELOPE IF PACKED, UPDATE POISONING INDICATOR
+
+                    var messageAsEnvelope = dataSerializer.TryDeserializeAs<MessageEnvelope>(stream);
+                    if (messageAsEnvelope.IsSuccess)
                     {
-                        var dequeueCount = rawMessage.DequeueCount;
+                        stream.Dispose();
+                        dequeueCount += messageAsEnvelope.Value.DequeueCount;
+                        data = messageAsEnvelope.Value.RawMessage;
+                        stream = new MemoryStream(data);
+                    }
 
-                        // 3.1.1 UNPACK ENVELOPE IF PACKED, UPDATE POISONING INDICATOR
+                    // 3.1.2 PERSIST POISONED MESSAGE, SKIP
 
-                        var messageAsEnvelope = dataSerializer.TryDeserializeAs<MessageEnvelope>(stream);
-                        if (messageAsEnvelope.IsSuccess)
-                        {
-                            stream.Dispose();
-                            dequeueCount += messageAsEnvelope.Value.DequeueCount;
-                            data = messageAsEnvelope.Value.RawMessage;
-                            stream = new MemoryStream(data);
-                        }
-
-                        // 3.1.2 PERSIST POISONED MESSAGE, SKIP
-
-                        if (dequeueCount > maxProcessingTrials)
-                        {
-                            // we want to persist the unpacked message (no envelope) but still need to drop
-                            // the original message, that's why we pass the original rawMessage but the unpacked data
-                            PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
-                                String.Format("Message was dequeued {0} times but failed processing each time.", dequeueCount - 1));
-
-                            if (_observer != null)
-                            {
-                                _observer.Notify(new MessageProcessingFailedQuarantinedEvent(queueName, PoisonedMessagePersistenceStoreName, typeof(T), data));
-                            }
-
-                            continue;
-                        }
-
-                        // 3.1.3 DESERIALIZE MESSAGE IF POSSIBLE
-
-                        var messageAsT = dataSerializer.TryDeserializeAs<T>(stream);
-                        if (messageAsT.IsSuccess)
-                        {
-                            messages.Add(messageAsT.Value);
-                            CheckOutMessage(messageAsT.Value, rawMessage, data, queueName, false, dequeueCount, dataSerializer);
-
-                            continue;
-                        }
-
-                        // 3.1.4 DESERIALIZE WRAPPER IF POSSIBLE
-
-                        var messageAsWrapper = dataSerializer.TryDeserializeAs<MessageWrapper>(stream);
-                        if (messageAsWrapper.IsSuccess)
-                        {
-                            // we don't retrieve messages while holding the lock
-                            wrappedMessages.Add(messageAsWrapper.Value);
-                            CheckOutMessage(messageAsWrapper.Value, rawMessage, data, queueName, true, dequeueCount, dataSerializer);
-
-                            continue;
-                        }
-
-                        // 3.1.5 PERSIST FAILED MESSAGE, SKIP
-
+                    if (dequeueCount > maxProcessingTrials)
+                    {
                         // we want to persist the unpacked message (no envelope) but still need to drop
                         // the original message, that's why we pass the original rawMessage but the unpacked data
                         PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
-                            String.Format("Message failed to deserialize:\r\nAs {0}:\r\n{1}\r\n\r\nAs MessageEnvelope:\r\n{2}\r\n\r\nAs MessageWrapper:\r\n{3}",
-                                typeof (T).FullName, messageAsT.Error, messageAsEnvelope.IsSuccess ? "unwrapped" : messageAsEnvelope.Error.ToString(), messageAsWrapper.Error));
+                            String.Format("Message was dequeued {0} times but failed processing each time.", dequeueCount - 1));
 
                         if (_observer != null)
                         {
-                            var exceptions = new List<Exception> { messageAsT.Error, messageAsWrapper.Error };
-                            if (!messageAsEnvelope.IsSuccess) { exceptions.Add(messageAsEnvelope.Error); }
-                            _observer.Notify(new MessageDeserializationFailedQuarantinedEvent(new AggregateException(exceptions), queueName, PoisonedMessagePersistenceStoreName, typeof(T), data));
+                            _observer.Notify(new MessageProcessingFailedQuarantinedEvent(queueName, PoisonedMessagePersistenceStoreName, typeof(T), data));
                         }
+
+                        continue;
                     }
-                    finally
+
+                    // 3.1.3 DESERIALIZE MESSAGE IF POSSIBLE
+
+                    var messageAsT = dataSerializer.TryDeserializeAs<T>(stream);
+                    if (messageAsT.IsSuccess)
                     {
-                        stream.Dispose();
+                        messages.Add(messageAsT.Value);
+                        CheckOutMessage(messageAsT.Value, rawMessage, data, queueName, false, dequeueCount, dataSerializer);
+
+                        continue;
                     }
+
+                    // 3.1.4 DESERIALIZE WRAPPER IF POSSIBLE
+
+                    var messageAsWrapper = dataSerializer.TryDeserializeAs<MessageWrapper>(stream);
+                    if (messageAsWrapper.IsSuccess)
+                    {
+                        // we don't retrieve messages while holding the lock
+                        wrappedMessages.Add(messageAsWrapper.Value);
+                        CheckOutMessage(messageAsWrapper.Value, rawMessage, data, queueName, true, dequeueCount, dataSerializer);
+
+                        continue;
+                    }
+
+                    // 3.1.5 PERSIST FAILED MESSAGE, SKIP
+
+                    // we want to persist the unpacked message (no envelope) but still need to drop
+                    // the original message, that's why we pass the original rawMessage but the unpacked data
+                    PersistRawMessage(rawMessage, data, queueName, PoisonedMessagePersistenceStoreName,
+                        String.Format("Message failed to deserialize:\r\nAs {0}:\r\n{1}\r\n\r\nAs MessageEnvelope:\r\n{2}\r\n\r\nAs MessageWrapper:\r\n{3}",
+                            typeof (T).FullName, messageAsT.Error, messageAsEnvelope.IsSuccess ? "unwrapped" : messageAsEnvelope.Error.ToString(), messageAsWrapper.Error));
+
+                    if (_observer != null)
+                    {
+                        var exceptions = new List<Exception> { messageAsT.Error, messageAsWrapper.Error };
+                        if (!messageAsEnvelope.IsSuccess) { exceptions.Add(messageAsEnvelope.Error); }
+                        _observer.Notify(new MessageDeserializationFailedQuarantinedEvent(new AggregateException(exceptions), queueName, PoisonedMessagePersistenceStoreName, typeof(T), data));
+                    }
+                }
+                finally
+                {
+                    stream.Dispose();
                 }
             }
 
