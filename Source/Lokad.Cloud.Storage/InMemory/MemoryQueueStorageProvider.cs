@@ -21,7 +21,7 @@ namespace Lokad.Cloud.Storage.InMemory
         private readonly Dictionary<object, Tu> _inProcessMessages;
         private readonly HashSet<Tuple<string, string, string, byte[]>> _persistedMessages;
 
-        internal IDataSerializer DataSerializer { get; set; }
+        internal IDataSerializer DefaultSerializer { get; set; }
         
         /// <summary>Default constructor.</summary>
         public MemoryQueueStorageProvider()
@@ -29,7 +29,7 @@ namespace Lokad.Cloud.Storage.InMemory
             _queues = new Dictionary<string, Queue<byte[]>>();
             _inProcessMessages = new Dictionary<object, Tu>();
             _persistedMessages = new HashSet<Tuple<string, string, string, byte[]>>();
-            DataSerializer = new CloudFormatter();
+            DefaultSerializer = new CloudFormatter();
         }
 
         /// <remarks></remarks>
@@ -39,8 +39,9 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials)
+        public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? DefaultSerializer;
             lock (_sync)
             {
                 var items = new List<T>(count);
@@ -52,7 +53,7 @@ namespace Lokad.Cloud.Storage.InMemory
                         object message;
                         using (var stream = new MemoryStream(messageBytes))
                         {
-                            message = DataSerializer.Deserialize(stream, typeof (T));
+                            message = dataSerializer.Deserialize(stream, typeof (T));
                         }
 
                         Tu inProcess;
@@ -71,14 +72,15 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public void Put<T>(string queueName, T message)
+        public void Put<T>(string queueName, T message, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? DefaultSerializer;
             lock (_sync)
             {
                 byte[] messageBytes;
                 using (var stream = new MemoryStream())
                 {
-                    DataSerializer.Serialize(message, stream, typeof(T));
+                    dataSerializer.Serialize(message, stream, typeof(T));
                     messageBytes = stream.ToArray();
                 }
 
@@ -92,20 +94,21 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public void PutRange<T>(string queueName, IEnumerable<T> messages)
+        public void PutRange<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? DefaultSerializer;
             lock (_sync)
             {
                 foreach(var message in messages)
                 {
-                    Put(queueName, message);
+                    Put(queueName, message, dataSerializer);
                 }
             }
         }
 
-        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages)
+        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
         {
-            PutRange(queueName,messages);
+            PutRange(queueName, messages, serializer);
         }
 
         /// <remarks></remarks>
@@ -266,9 +269,9 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
+        public Maybe<PersistedMessage> GetPersisted(string storeName, string key, IDataSerializer serializer = null)
         {
-            var intermediateDataSerializer = DataSerializer as IIntermediateDataSerializer;
+            var intermediateDataSerializer = (serializer ?? DefaultSerializer) as IIntermediateDataSerializer;
             var xmlProvider = intermediateDataSerializer != null
                 ? new Maybe<IIntermediateDataSerializer>(intermediateDataSerializer)
                 : Maybe<IIntermediateDataSerializer>.Empty;
@@ -293,7 +296,7 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public void DeletePersisted(string storeName, string key)
+        public void DeletePersisted(string storeName, string key, IDataSerializer serializer = null)
         {
             lock (_sync)
             {

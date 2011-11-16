@@ -41,7 +41,7 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudQueueClient _queueStorage;
         readonly IBlobStorageProvider _blobStorage;
-        readonly IDataSerializer _serializer;
+        readonly IDataSerializer _defaultSerializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
         readonly RetryPolicies _policies;
         readonly ICloudStorageObserver _observer;
@@ -53,20 +53,20 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>IoC constructor.</summary>
         /// <param name="blobStorage">Not null.</param>
         /// <param name="queueStorage">Not null.</param>
-        /// <param name="serializer">Not null.</param>
+        /// <param name="defaultSerializer">Not null.</param>
         /// <param name="runtimeFinalizer">May be null (handy for strict O/C mapper scenario).</param>
         /// <param name="observer">Can be <see langword="null"/>.</param>
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
-            IDataSerializer serializer,
+            IDataSerializer defaultSerializer,
             ICloudStorageObserver observer = null,
             IRuntimeFinalizer runtimeFinalizer = null)
         {
             _policies = new RetryPolicies(observer);
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
-            _serializer = serializer;
+            _defaultSerializer = defaultSerializer;
             _runtimeFinalizer = runtimeFinalizer;
             _observer = observer;
 
@@ -97,9 +97,10 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials)
+        public IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials, IDataSerializer serializer = null)
         {
             var stopwatch = Stopwatch.StartNew();
+            var dataSerializer = serializer ?? _defaultSerializer;
 
             var queue = _queueStorage.GetQueueReference(queueName);
 
@@ -150,7 +151,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                         // 3.1.1 UNPACK ENVELOPE IF PACKED, UPDATE POISONING INDICATOR
 
-                        var messageAsEnvelope = _serializer.TryDeserializeAs<MessageEnvelope>(stream);
+                        var messageAsEnvelope = dataSerializer.TryDeserializeAs<MessageEnvelope>(stream);
                         if (messageAsEnvelope.IsSuccess)
                         {
                             stream.Dispose();
@@ -178,23 +179,23 @@ namespace Lokad.Cloud.Storage.Azure
 
                         // 3.1.3 DESERIALIZE MESSAGE IF POSSIBLE
 
-                        var messageAsT = _serializer.TryDeserializeAs<T>(stream);
+                        var messageAsT = dataSerializer.TryDeserializeAs<T>(stream);
                         if (messageAsT.IsSuccess)
                         {
                             messages.Add(messageAsT.Value);
-                            CheckOutMessage(messageAsT.Value, rawMessage, data, queueName, false, dequeueCount);
+                            CheckOutMessage(messageAsT.Value, rawMessage, data, queueName, false, dequeueCount, dataSerializer);
 
                             continue;
                         }
 
                         // 3.1.4 DESERIALIZE WRAPPER IF POSSIBLE
 
-                        var messageAsWrapper = _serializer.TryDeserializeAs<MessageWrapper>(stream);
+                        var messageAsWrapper = dataSerializer.TryDeserializeAs<MessageWrapper>(stream);
                         if (messageAsWrapper.IsSuccess)
                         {
                             // we don't retrieve messages while holding the lock
                             wrappedMessages.Add(messageAsWrapper.Value);
-                            CheckOutMessage(messageAsWrapper.Value, rawMessage, data, queueName, true, dequeueCount);
+                            CheckOutMessage(messageAsWrapper.Value, rawMessage, data, queueName, true, dequeueCount, dataSerializer);
 
                             continue;
                         }
@@ -265,14 +266,15 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public void Put<T>(string queueName, T message)
+        public void Put<T>(string queueName, T message, IDataSerializer serializer = null)
         {
-            PutRange(queueName, new[] { message });
+            PutRange(queueName, new[] { message }, serializer);
         }
 
         /// <remarks></remarks>
-        public void PutRange<T>(string queueName, IEnumerable<T> messages)
+        public void PutRange<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? _defaultSerializer;
             var queue = _queueStorage.GetQueueReference(queueName);
             var stopwatch = new Stopwatch();
 
@@ -280,7 +282,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 stopwatch.Restart();
 
-                var queueMessage = SerializeCloudQueueMessage(queueName, message);
+                var queueMessage = SerializeCloudQueueMessage(queueName, message, dataSerializer);
 
                 PutRawMessage(queueMessage, queue);
 
@@ -289,8 +291,9 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages)
+        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? _defaultSerializer;
             var queue = _queueStorage.GetQueueReference(queueName);
             var stopwatch = new Stopwatch();
 
@@ -300,7 +303,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 stopwatch.Restart();
 
-                var queueMessage = SerializeCloudQueueMessage(queueName, message);
+                var queueMessage = SerializeCloudQueueMessage(queueName, message, dataSerializer);
 
                 var task = Task.Factory.StartNew(() => PutRawMessage(queueMessage, queue));
                 task.ContinueWith(obj => NotifySucceeded(StorageOperationType.QueuePut, stopwatch), TaskContinuationOptions.OnlyOnRanToCompletion);
@@ -318,19 +321,19 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        private CloudQueueMessage SerializeCloudQueueMessage<T>(string queueName, T message)
+        private CloudQueueMessage SerializeCloudQueueMessage<T>(string queueName, T message, IDataSerializer serializer)
         {
             CloudQueueMessage queueMessage;
             using (var stream = new MemoryStream())
             {
-                _serializer.Serialize(message, stream, typeof (T));
+                serializer.Serialize(message, stream, typeof (T));
 
                 // Caution: MaxMessageSize is not related to the number of bytes
                 // but the number of characters when Base64-encoded:
 
                 if (stream.Length >= (CloudQueueMessage.MaxMessageSize - 1)/4*3)
                 {
-                    queueMessage = new CloudQueueMessage(PutOverflowingMessageAndWrap(queueName, message));
+                    queueMessage = new CloudQueueMessage(PutOverflowingMessageAndWrap(queueName, message, serializer));
                 }
                 else
                 {
@@ -340,14 +343,14 @@ namespace Lokad.Cloud.Storage.Azure
                     }
                     catch (ArgumentException)
                     {
-                        queueMessage = new CloudQueueMessage(PutOverflowingMessageAndWrap(queueName, message));
+                        queueMessage = new CloudQueueMessage(PutOverflowingMessageAndWrap(queueName, message, serializer));
                     }
                 }
             }
             return queueMessage;
         }
 
-        byte[] PutOverflowingMessageAndWrap<T>(string queueName, T message)
+        byte[] PutOverflowingMessageAndWrap<T>(string queueName, T message, IDataSerializer serializer)
         {
             var stopwatch = Stopwatch.StartNew();
 
@@ -364,7 +367,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             using (var stream = new MemoryStream())
             {
-                _serializer.Serialize(mw, stream, typeof(MessageWrapper));
+                serializer.Serialize(mw, stream, typeof(MessageWrapper));
                 var serializerWrapper = stream.ToArray();
 
                 NotifySucceeded(StorageOperationType.QueueWrap, stopwatch);
@@ -691,6 +694,7 @@ namespace Lokad.Cloud.Storage.Azure
             string queueName;
             bool isOverflowing;
             byte[] data;
+            IDataSerializer dataSerializer;
             string keepAliveBlobName;
             string keepAliveBlobLease;
 
@@ -707,6 +711,7 @@ namespace Lokad.Cloud.Storage.Azure
                 isOverflowing = inProcMsg.IsOverflowing;
                 queueName = inProcMsg.QueueName;
                 data = inProcMsg.Data;
+                dataSerializer = inProcMsg.Serializer;
                 keepAliveBlobName = inProcMsg.KeepAliveBlobName;
                 keepAliveBlobLease = inProcMsg.KeepAliveBlobLease;
 
@@ -717,7 +722,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             if (isOverflowing)
             {
-                var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(data);
+                var messageWrapper = dataSerializer.TryDeserializeAs<MessageWrapper>(data);
                 if (messageWrapper.IsSuccess)
                 {
                     _blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
@@ -771,6 +776,7 @@ namespace Lokad.Cloud.Storage.Azure
             string queueName;
             int dequeueCount;
             byte[] data;
+            IDataSerializer dataSerializer;
             string keepAliveBlobName;
             string keepAliveBlobLease;
 
@@ -787,6 +793,7 @@ namespace Lokad.Cloud.Storage.Azure
                 dequeueCount = inProcMsg.DequeueCount;
                 oldRawMessage = inProcMsg.RawMessages[0];
                 data = inProcMsg.Data;
+                dataSerializer = inProcMsg.Serializer;
                 keepAliveBlobName = inProcMsg.KeepAliveBlobName;
                 keepAliveBlobLease = inProcMsg.KeepAliveBlobLease;
 
@@ -809,7 +816,7 @@ namespace Lokad.Cloud.Storage.Azure
             CloudQueueMessage newRawMessage = null;
             using (var stream = new MemoryStream())
             {
-                _serializer.Serialize(envelope, stream, typeof(MessageEnvelope));
+                dataSerializer.Serialize(envelope, stream, typeof(MessageEnvelope));
                 if (stream.Length < (CloudQueueMessage.MaxMessageSize - 1) / 4 * 3)
                 {
                     try
@@ -821,10 +828,10 @@ namespace Lokad.Cloud.Storage.Azure
 
                 if (newRawMessage == null)
                 {
-                    envelope.RawMessage = PutOverflowingMessageAndWrap(queueName, message);
+                    envelope.RawMessage = PutOverflowingMessageAndWrap(queueName, message, dataSerializer);
                     using (var wrappedStream = new MemoryStream())
                     {
-                        _serializer.Serialize(envelope, wrappedStream, typeof(MessageEnvelope));
+                        dataSerializer.Serialize(envelope, wrappedStream, typeof(MessageEnvelope));
                         newRawMessage = new CloudQueueMessage(wrappedStream.ToArray());
                     }
                 }
@@ -942,8 +949,10 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public Maybe<PersistedMessage> GetPersisted(string storeName, string key)
+        public Maybe<PersistedMessage> GetPersisted(string storeName, string key, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? _defaultSerializer;
+
             // 1. GET PERSISTED MESSAGE BLOB
 
             var blobReference = new PersistedMessageBlobName(storeName, key);
@@ -960,7 +969,7 @@ namespace Lokad.Cloud.Storage.Azure
             // 2. IF WRAPPED, UNWRAP; UNPACK XML IF SUPPORTED
 
             bool dataForRestorationAvailable;
-            var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(data);
+            var messageWrapper = dataSerializer.TryDeserializeAs<MessageWrapper>(data);
             if (messageWrapper.IsSuccess)
             {
                 string ignored;
@@ -972,7 +981,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
             else
             {
-                var intermediateSerializer = _serializer as IIntermediateDataSerializer;
+                var intermediateSerializer = dataSerializer as IIntermediateDataSerializer;
                 if (intermediateSerializer != null)
                 {
                     using (var stream = new MemoryStream(data))
@@ -1004,8 +1013,10 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public void DeletePersisted(string storeName, string key)
+        public void DeletePersisted(string storeName, string key, IDataSerializer serializer = null)
         {
+            var dataSerializer = serializer ?? _defaultSerializer;
+
             // 1. GET PERSISTED MESSAGE BLOB
 
             var blobReference = new PersistedMessageBlobName(storeName, key);
@@ -1019,7 +1030,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             // 2. IF WRAPPED, UNWRAP AND DELETE BLOB
 
-            var messageWrapper = _serializer.TryDeserializeAs<MessageWrapper>(persistedMessage.Data);
+            var messageWrapper = dataSerializer.TryDeserializeAs<MessageWrapper>(persistedMessage.Data);
             if (messageWrapper.IsSuccess)
             {
                 _blobStorage.DeleteBlobIfExist(messageWrapper.Value.ContainerName, messageWrapper.Value.BlobName);
@@ -1178,7 +1189,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        void CheckOutMessage(object message, CloudQueueMessage rawMessage, byte[] data, string queueName, bool isOverflowing, int dequeueCount)
+        void CheckOutMessage(object message, CloudQueueMessage rawMessage, byte[] data, string queueName, bool isOverflowing, int dequeueCount, IDataSerializer serializer)
         {
             lock (_sync)
             {
@@ -1191,6 +1202,7 @@ namespace Lokad.Cloud.Storage.Azure
                         {
                             QueueName = queueName,
                             RawMessages = new List<CloudQueueMessage> {rawMessage},
+                            Serializer = serializer,
                             Data = data,
                             IsOverflowing = isOverflowing,
                             DequeueCount = dequeueCount
@@ -1365,6 +1377,11 @@ namespace Lokad.Cloud.Storage.Azure
         /// objects as returned from the queue storage.
         /// </summary>
         public List<CloudQueueMessage> RawMessages { get; set; }
+
+        /// <summary>
+        /// Serializer used for this message.
+        /// </summary>
+        public IDataSerializer Serializer { get; set; }
 
         /// <summary>
         /// The unpacked message data. Can still be a message wrapper, but never an envelope.

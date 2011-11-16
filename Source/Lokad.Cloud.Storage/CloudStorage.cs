@@ -171,7 +171,7 @@ namespace Lokad.Cloud.Storage
         {
             return new InMemory.MemoryQueueStorageProvider
             {
-                DataSerializer = DataSerializer
+                DefaultSerializer = DataSerializer
             };
         }
     }

@@ -35,21 +35,21 @@ namespace Lokad.Cloud.Storage
         /// being poisonous, removed from the queue and persisted to the 'failing-messages' store.
         /// </param>
         /// <returns>Enumeration of messages, possibly empty.</returns>
-        IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials);
+        IEnumerable<T> Get<T>(string queueName, int count, TimeSpan visibilityTimeout, int maxProcessingTrials, IDataSerializer serializer = null);
 
         /// <summary>Put a message on a queue.</summary>
         /// <typeparam name="T">Type of the messages.</typeparam>
         /// <param name="queueName">Identifier of the queue where messages are put.</param>
         /// <param name="message">Message to be put.</param>
         /// <remarks>If the queue does not exist, it gets created.</remarks>
-        void Put<T>(string queueName, T message);
+        void Put<T>(string queueName, T message, IDataSerializer serializer = null);
 
         /// <summary>Put messages on a queue.</summary>
         /// <typeparam name="T">Type of the messages.</typeparam>
         /// <param name="queueName">Identifier of the queue where messages are put.</param>
         /// <param name="messages">Messages to be put.</param>
         /// <remarks>If the queue does not exist, it gets created.</remarks>
-        void PutRange<T>(string queueName, IEnumerable<T> messages);
+        void PutRange<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null);
 
         /// <summary>
         /// Puts messages on a queue. Uses Tasks to increase thouroughput dramatically.
@@ -58,7 +58,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="queueName">Identifier of the queue where messages are put.</param>
         /// <param name="messages">Messages to be put.</param>
         /// <remarks>If the queue does not exist, it gets created.</remarks>
-        void PutRangeParallel<T>(string queueName, IEnumerable<T> messages);
+        void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null);
 
         /// <summary>Clear all the messages from the specified queue.</summary>
         void Clear(string queueName);
@@ -147,14 +147,14 @@ namespace Lokad.Cloud.Storage
         /// </summary>
         /// <param name="storeName">Name of the message persistence store.</param>
         /// <param name="key">Unique key of the persisted message as returned by ListPersisted.</param>
-        Maybe<PersistedMessage> GetPersisted(string storeName, string key);
+        Maybe<PersistedMessage> GetPersisted(string storeName, string key, IDataSerializer serializer = null);
 
         /// <summary>
         /// Delete a persisted message.
         /// </summary>
         /// <param name="storeName">Name of the message persistence store.</param>
         /// <param name="key">Unique key of the persisted message as returned by ListPersisted.</param>
-        void DeletePersisted(string storeName, string key);
+        void DeletePersisted(string storeName, string key, IDataSerializer serializer = null);
 
         /// <summary>
         /// Put a persisted message back to the queue and delete it.
