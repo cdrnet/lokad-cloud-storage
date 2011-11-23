@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
@@ -110,7 +111,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                rawMessages = Retry.Get(_policies.TransientServerErrorBackOff, () => queue.GetMessages(count, visibilityTimeout));
+                rawMessages = Retry.Get(_policies.TransientServerErrorBackOff, CancellationToken.None, () => queue.GetMessages(count, visibilityTimeout));
             }
             catch (StorageClientException ex)
             {
@@ -387,7 +388,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // caution: call 'DeleteOverflowingMessages' first (BASE).
                 DeleteOverflowingMessages(queueName);
                 var queue = _queueStorage.GetQueueReference(queueName);
-                Retry.Do(_policies.TransientServerErrorBackOff, queue.Clear);
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, queue.Clear);
             }
             catch (StorageClientException ex)
             {
@@ -454,7 +455,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // => just renew the lease
 
                 bool messageAlreadyHandled = false;
-                Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                Retry.DoUntilTrue(_policies.OptimisticConcurrency, CancellationToken.None, () =>
                     {
                         var result = _blobStorage.TryRenewLease(ResilientLeasesContainerName, blobName, blobLease);
                         if (result.IsSuccess)
@@ -485,7 +486,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                                 if (_blobStorage.GetBlobEtag(ResilientMessagesContainerName, blobName) == null)
                                 {
-                                    Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                                    Retry.DoUntilTrue(_policies.OptimisticConcurrency, CancellationToken.None, () =>
                                         {
                                             var retreatResult = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, newLease.Value);
                                             return retreatResult.IsSuccess || result.Error == "NotFound";
@@ -545,7 +546,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             // 2. TAKE LEASE ON LEASE OBJECT
 
-            Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+            Retry.DoUntilTrue(_policies.OptimisticConcurrency, CancellationToken.None, () =>
                 {
                     var lease = _blobStorage.TryAcquireLease(ResilientLeasesContainerName, blobName);
                     if (lease.IsSuccess)
@@ -596,7 +597,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 _blobStorage.DeleteBlobIfExist(ResilientMessagesContainerName, blobName);
 
-                Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                Retry.DoUntilTrue(_policies.OptimisticConcurrency, CancellationToken.None, () =>
                     {
                         var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, blobLease);
                         if (result.IsSuccess)
@@ -664,7 +665,7 @@ namespace Lokad.Cloud.Storage.Azure
                 }
                 finally
                 {
-                    Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+                    Retry.DoUntilTrue(_policies.OptimisticConcurrency, CancellationToken.None, () =>
                         {
                             var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, lease.Value);
                             return result.IsSuccess || result.Error == "NotFound" || result.Error == "Conflict";
@@ -1095,7 +1096,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             try
             {
-                Retry.Do(_policies.TransientServerErrorBackOff, () => queue.DeleteMessage(message));
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () => queue.DeleteMessage(message));
                 return true;
             }
             catch (StorageClientException ex)
@@ -1129,7 +1130,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             bool deleted = false;
             _blobStorage.DeleteBlobIfExist(ResilientMessagesContainerName, blobName);
-            Retry.DoUntilTrue(_policies.OptimisticConcurrency, () =>
+            Retry.DoUntilTrue(_policies.OptimisticConcurrency, CancellationToken.None, () =>
                 {
                     var result = _blobStorage.TryReleaseLease(ResilientLeasesContainerName, blobName, blobLease);
                     if (result.IsSuccess)
@@ -1163,7 +1164,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             try
             {
-                Retry.Do(_policies.TransientServerErrorBackOff, () => queue.AddMessage(message));
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () => queue.AddMessage(message));
             }
             catch (StorageClientException ex)
             {
@@ -1173,7 +1174,7 @@ namespace Lokad.Cloud.Storage.Azure
                 {
                     // It usually takes time before the queue gets available
                     // (the queue might also have been freshly deleted).
-                    Retry.Do(_policies.SlowInstantiation, () =>
+                    Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () =>
                         {
                             queue.Create();
                             queue.AddMessage(message);
@@ -1252,7 +1253,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // Caution: call to 'DeleteOverflowingMessages' comes first (BASE).
                 DeleteOverflowingMessages(queueName);
                 var queue = _queueStorage.GetQueueReference(queueName);
-                Retry.Do(_policies.TransientServerErrorBackOff, queue.Delete);
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, queue.Delete);
                 return true;
             }
             catch (StorageClientException ex)
@@ -1275,7 +1276,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var queue = _queueStorage.GetQueueReference(queueName);
-                return Retry.Get(_policies.TransientServerErrorBackOff, queue.RetrieveApproximateMessageCount);
+                return Retry.Get(_policies.TransientServerErrorBackOff, CancellationToken.None, queue.RetrieveApproximateMessageCount);
             }
             catch (StorageClientException ex)
             {
@@ -1300,7 +1301,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                rawMessage = Retry.Get(_policies.TransientServerErrorBackOff, queue.PeekMessage);
+                rawMessage = Retry.Get(_policies.TransientServerErrorBackOff, CancellationToken.None, queue.PeekMessage);
             }
             catch (StorageClientException ex)
             {

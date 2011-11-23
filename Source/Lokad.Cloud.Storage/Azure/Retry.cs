@@ -11,13 +11,14 @@ namespace Lokad.Cloud.Storage.Azure
 {
     internal static class Retry
     {
-        public static void Do(this RetryPolicy retryPolicy, Action action)
+        public static void Do(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Action action)
         {
             var policy = retryPolicy();
             int retryCount = 0;
 
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
                     action();
@@ -42,7 +43,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        public static void Do(this RetryPolicy firstPolicy, RetryPolicy secondPolicy, Action action)
+        public static void Do(this RetryPolicy firstPolicy, RetryPolicy secondPolicy, CancellationToken cancellationToken, Action action)
         {
             var first = firstPolicy();
             var second = secondPolicy();
@@ -50,6 +51,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
                     action();
@@ -85,13 +87,14 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        public static T Get<T>(this RetryPolicy retryPolicy, Func<T> action)
+        public static T Get<T>(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<T> action)
         {
             var policy = retryPolicy();
             int retryCount = 0;
 
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
                     var result = action();
@@ -116,7 +119,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        public static T Get<T>(this RetryPolicy firstPolicy, RetryPolicy secondPolicy, Func<T> action)
+        public static T Get<T>(this RetryPolicy firstPolicy, RetryPolicy secondPolicy, CancellationToken cancellationToken, Func<T> action)
         {
             var first = firstPolicy();
             var second = secondPolicy();
@@ -124,6 +127,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
                     var result = action();
@@ -160,13 +164,14 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks>Policy must support exceptions being null.</remarks>
-        public static void DoUntilTrue(this RetryPolicy retryPolicy, Func<bool> action)
+        public static void DoUntilTrue(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<bool> action)
         {
             var policy = retryPolicy();
             int retryCount = 0;
 
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
                     if (action())

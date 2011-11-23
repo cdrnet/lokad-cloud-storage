@@ -60,7 +60,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             while (true)
             {
-                if (!Retry.Get(_policies.TransientServerErrorBackOff, enumerator.MoveNext))
+                if (!Retry.Get(_policies.TransientServerErrorBackOff, CancellationToken.None, enumerator.MoveNext))
                 {
                     yield break;
                 }
@@ -80,7 +80,7 @@ namespace Lokad.Cloud.Storage.Azure
             var container = _blobStorage.GetContainerReference(containerName);
             try
             {
-                Retry.Do(_policies.TransientServerErrorBackOff, container.Create);
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, container.Create);
                 return true;
             }
             catch(StorageClientException ex)
@@ -101,7 +101,7 @@ namespace Lokad.Cloud.Storage.Azure
             var container = _blobStorage.GetContainerReference(containerName);
             try
             {
-                Retry.Do(_policies.TransientServerErrorBackOff, container.Delete);
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, container.Delete);
                 return true;
             }
             catch(StorageClientException ex)
@@ -159,7 +159,7 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 try
                 {
-                    if (!Retry.Get(_policies.TransientServerErrorBackOff, enumerator.MoveNext))
+                    if (!Retry.Get(_policies.TransientServerErrorBackOff, CancellationToken.None, enumerator.MoveNext))
                     {
                         yield break;
                     }
@@ -204,7 +204,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var blob = container.GetBlockBlobReference(blobName);
-                Retry.Do(_policies.TransientServerErrorBackOff, blob.Delete);
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, blob.Delete);
 
                 NotifySucceeded(StorageOperationType.BlobDelete, stopwatch);
                 return true;
@@ -262,7 +262,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                         {
                             stream.Seek(0, SeekOrigin.Begin);
                             blob.DownloadToStream(stream);
@@ -321,7 +321,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                         {
                             stream.Seek(0, SeekOrigin.Begin);
                             blob.DownloadToStream(stream);
@@ -398,7 +398,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 using (var stream = new MemoryStream())
                 {
-                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                         {
                             stream.Seek(0, SeekOrigin.Begin);
                             blob.DownloadToStream(stream, options);
@@ -456,7 +456,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var blob = container.GetBlockBlobReference(blobName);
-                Retry.Do(_policies.TransientServerErrorBackOff, blob.FetchAttributes);
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, blob.FetchAttributes);
                 return blob.Properties.ETag;
             }
             catch (StorageClientException ex)
@@ -539,9 +539,9 @@ namespace Lokad.Cloud.Storage.Azure
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
                         var tentativeEtag = Maybe<string>.Empty;
-                        Retry.Do(_policies.SlowInstantiation, () =>
+                        Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () =>
                             {
-                                Retry.Get(_policies.TransientServerErrorBackOff, container.CreateIfNotExist);
+                                Retry.Get(_policies.TransientServerErrorBackOff, CancellationToken.None, container.CreateIfNotExist);
 
                                 tentativeEtag = doUpload();
                             });
@@ -619,7 +619,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         blob.UploadFromStream(stream, options);
@@ -705,7 +705,7 @@ namespace Lokad.Cloud.Storage.Azure
                 {
                     using (var readStream = new MemoryStream())
                     {
-                        Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, () =>
+                        Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                             {
                                 readStream.Seek(0, SeekOrigin.Begin);
                                 blob.DownloadToStream(readStream);
@@ -737,7 +737,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                         // caution: the container might have been freshly deleted
                         // (multiple retries are needed in such a situation)
-                        Retry.Do(_policies.SlowInstantiation, () => Retry.Get(_policies.TransientServerErrorBackOff, container.CreateIfNotExist));
+                        Retry.Get(_policies.SlowInstantiation, _policies.TransientServerErrorBackOff, CancellationToken.None, container.CreateIfNotExist);
                     }
                     else
                     {
@@ -856,7 +856,7 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var blob = container.GetBlockBlobReference(blobName);
-                Retry.Do(_policies.TransientServerErrorBackOff, blob.FetchAttributes);
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, blob.FetchAttributes);
                 return blob.Properties.LeaseStatus == LeaseStatus.Locked;
             }
             catch (StorageClientException ex)
