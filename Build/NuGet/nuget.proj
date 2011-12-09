@@ -25,14 +25,27 @@
 	</Target>
 
 	<Target Name="UpdateNuspec" DependsOnTargets="CopyContentFiles">
+	
+		<!-- Evaluate Assembly Identity -->
 		<GetAssemblyIdentity AssemblyFiles="$(StoragePack)/lib/Lokad.Cloud.Storage.dll">
 			<Output TaskParameter="Assemblies" ItemName="StorageAssemblyInfo"/>
 		</GetAssemblyIdentity>
+		
+		<!-- Extract Assembly Versions -->
+		<PropertyGroup>
+			<StorageAssemblyVersion>%(StorageAssemblyInfo.Version)</StorageAssemblyVersion>
+		</PropertyGroup>
+		
+		<!-- Package Versions (skip 4th part/build number, for semvar compliance) -->
+		<PropertyGroup>
+			<StoragePackVersion>$(StorageAssemblyVersion.Substring(0, $(StorageAssemblyVersion.LastIndexOf('.'))))</StoragePackVersion>
+		</PropertyGroup>
+		
 		<XmlUpdate
 			Prefix="n" Namespace="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
 			XmlFileName="$(StoragePack)/Lokad.Cloud.Storage.nuspec"
 			XPath="//n:package/n:metadata/n:version"
-			Value="%(StorageAssemblyInfo.Version)"/>
+			Value="$(StoragePackVersion)"/>
 	</Target>
 
 	<Target Name="BuildPackages" DependsOnTargets="UpdateNuspec">
