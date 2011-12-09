@@ -13,7 +13,7 @@
     <language>en-US</language>
     <tags>azure, storage, blob, queue, table, lokad, cloud</tags>
     <dependencies>
-      <dependency id="WindowsAzure.StorageClient.Library" version="1.4" />
+      <dependency id="WindowsAzure.Storage" version="1.6" />
     </dependencies>
   </metadata>
 </package>
