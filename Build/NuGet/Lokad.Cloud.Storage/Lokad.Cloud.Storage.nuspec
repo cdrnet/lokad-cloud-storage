@@ -7,7 +7,7 @@
     <owners>Lokad.com</owners>
     <licenseUrl>http://www.opensource.org/licenses/bsd-license.php</licenseUrl>
     <projectUrl>http://lokad.github.com/lokad-cloud/</projectUrl>
-    <iconUrl>http://lokad.github.com/images/lokad-cloud-logo-32-32.png</iconUrl>
+    <iconUrl>http://lokad.github.com/images/lokad-cloud-logo-100-100.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Azure Storage O/C mapper (Object to Cloud). Leverage Windows Azure without getting dragged down by low level technicalities.</description>
     <language>en-US</language>
