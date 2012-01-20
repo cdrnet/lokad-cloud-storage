@@ -92,7 +92,7 @@ namespace Lokad.Cloud.Storage
 
         static object InternalParse(string value, Type type)
         {
-            var func = GetValue(Parsers, type, s => Convert.ChangeType(s, type));
+            var func = GetValue(Parsers, type, s => Convert.ChangeType(s, Nullable.GetUnderlyingType(type) ?? type));
             return func(value);
         }
 

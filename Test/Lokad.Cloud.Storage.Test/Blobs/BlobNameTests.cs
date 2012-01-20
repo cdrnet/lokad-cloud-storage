@@ -117,6 +117,14 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             }
         }
 
+        class PatternH : BlobName<string>
+        {
+            public override string ContainerName { get { return "my-test-container"; } }
+
+            [Rank(0)] public long? LongId { get; set; }
+            [Rank(1)] public int? IntId { get; set; }
+        }
+
         [Test]
         public void Conversion_round_trip()
         {
@@ -133,6 +141,26 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             Assert.AreEqual(original.AccountHRID, parsed.AccountHRID);
             Assert.AreEqual(original.ChunkID, parsed.ChunkID);
             Assert.AreEqual(original.ChunkSize, parsed.ChunkSize);
+        }
+
+        [Test]
+        public void Conversion_round_trip_Nullable()
+        {
+            var original1 = new PatternH { LongId = 0, IntId = 0 };
+            var name1 = UntypedBlobName.Print(original1);
+            var parsed1 = UntypedBlobName.Parse<PatternH>(name1);
+
+            Assert.AreNotSame(original1, parsed1);
+            Assert.AreEqual(original1.LongId, parsed1.LongId);
+            Assert.AreEqual(original1.IntId, parsed1.IntId);
+
+            var original2 = new PatternH { LongId = 10, IntId = 20 };
+            var name2 = UntypedBlobName.Print(original2);
+            var parsed2 = UntypedBlobName.Parse<PatternH>(name2);
+
+            Assert.AreNotSame(original2, parsed2);
+            Assert.AreEqual(original2.LongId, parsed2.LongId);
+            Assert.AreEqual(original2.IntId, parsed2.IntId);
         }
 
         [Test]
@@ -223,6 +251,15 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         {
             var pattern = new PatternA();
             Assert.AreEqual(string.Empty, pattern.ToString());
+        }
+
+        [Test]
+        public void PartialPrint_Manage_Nullable()
+        {
+            Assert.AreEqual("10/20", UntypedBlobName.Print(new PatternH { LongId = 10, IntId = 20 }));
+            Assert.AreEqual("10/", UntypedBlobName.Print(new PatternH { LongId = 10, IntId = null }));
+            Assert.AreEqual(string.Empty, UntypedBlobName.Print(new PatternH { LongId = null, IntId = null }));
+            Assert.AreEqual(string.Empty, UntypedBlobName.Print(new PatternH { LongId = null, IntId = 20 }));
         }
 
         [Test]
