@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2011
+﻿#region Copyright (c) Lokad 2009-2012
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -11,11 +11,11 @@ using System.Xml.Linq;
 namespace Lokad.Cloud.Storage
 {
     /// <summary>
-    /// Raw byte pass-through formatter, supporting byte-array, string (UTF-8) and XElement (Root of UTF-8 XDocument) only.
+    /// Raw byte pass-through formatter, supporting byte-array, Stream, string (UTF-8) and XElement (Root of UTF-8 XDocument) only.
     /// </summary>
     public class RawFormatter : IDataSerializer
     {
-        /// <remarks>Supports byte[] only</remarks>
+        /// <remarks>Supports byte[], XElement, Stream and string only</remarks>
         public void Serialize(object instance, Stream destination, Type type)
         {
             if (instance == null)
@@ -23,10 +23,18 @@ namespace Lokad.Cloud.Storage
                 throw new ArgumentNullException("instance");
             }
 
+            if (type == typeof(Stream) && instance is Stream)
+            {
+                var stream = (Stream)instance;
+                stream.CopyTo(destination);
+                return;
+            }
+
             if (type == typeof(XElement) && instance is XElement)
             {
                 var document = new XDocument(new XDeclaration("1.0", "utf-8", "yes"), (XElement)instance);
                 document.Save(destination);
+                return;
             }
 
             byte[] bytes;
@@ -47,9 +55,16 @@ namespace Lokad.Cloud.Storage
             destination.Write(bytes, 0, bytes.Length);
         }
 
-        /// <remarks>Supports byte[] only</remarks>
+        /// <remarks>Supports byte[], XElement, Stream and string only</remarks>
         public object Deserialize(Stream source, Type type)
         {
+            if (type == typeof(Stream))
+            {
+                var stream = new MemoryStream();
+                source.CopyTo(stream);
+                return stream;
+            }
+
             if (type == typeof(XElement))
             {
                 return XDocument.Load(source).Root;

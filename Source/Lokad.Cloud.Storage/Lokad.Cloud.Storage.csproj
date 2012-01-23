@@ -84,6 +84,7 @@
     <Compile Include="CloudFormatter.cs" />
     <Compile Include="CloudStorage.cs" />
     <Compile Include="CloudStorageProviders.cs" />
+    <Compile Include="CompressedRawFormatter.cs" />
     <Compile Include="Instrumentation\Events\MessagesRevivedEvent.cs" />
     <Compile Include="Instrumentation\StorageEventLevel.cs" />
     <Compile Include="Queues\KeepAliveMessageHandle.cs" />
