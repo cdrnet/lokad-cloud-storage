@@ -45,7 +45,7 @@ namespace Lokad.Cloud.Storage.Azure
         readonly IDataSerializer _defaultSerializer;
         readonly IRuntimeFinalizer _runtimeFinalizer;
         readonly RetryPolicies _policies;
-        readonly ICloudStorageObserver _observer;
+        readonly IStorageObserver _observer;
 
         // messages currently being processed (boolean property indicates if the message is overflowing)
         /// <summary>Mapping object --> Queue Message Id. Use to delete messages afterward.</summary>
@@ -61,7 +61,7 @@ namespace Lokad.Cloud.Storage.Azure
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
             IDataSerializer defaultSerializer,
-            ICloudStorageObserver observer = null,
+            IStorageObserver observer = null,
             IRuntimeFinalizer runtimeFinalizer = null)
         {
             _policies = new RetryPolicies(observer);

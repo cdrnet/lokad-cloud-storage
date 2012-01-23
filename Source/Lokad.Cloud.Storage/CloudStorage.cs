@@ -60,7 +60,7 @@ namespace Lokad.Cloud.Storage
             protected IDataSerializer DataSerializer { get; private set; }
 
             /// <remarks>Can be null if not needed</remarks>
-            protected ICloudStorageObserver Observer { get; set; }
+            protected IStorageObserver Observer { get; set; }
 
             /// <remarks>Can be null if not needed</remarks>
             protected IRuntimeFinalizer RuntimeFinalizer { get; private set; }
@@ -82,20 +82,20 @@ namespace Lokad.Cloud.Storage
             }
 
             /// <summary>
-            /// Optionally provide a storage event observer, e.g. a <see cref="CloudStorageInstrumentationSubject"/>.
+            /// Optionally provide a storage event observer, e.g. a <see cref="StorageObserverSubject"/>.
             /// </summary>
-            public CloudStorageBuilder WithObserver(ICloudStorageObserver observer)
+            public CloudStorageBuilder WithObserver(IStorageObserver observer)
             {
                 Observer = observer;
                 return this;
             }
 
             /// <summary>
-            /// Optionally provide a set of observers, will use a <see cref="CloudStorageInstrumentationSubject"/> internally.
+            /// Optionally provide a set of observers, will use a <see cref="StorageObserverSubject"/> internally.
             /// </summary>
-            public CloudStorageBuilder WithObservers(params IObserver<ICloudStorageEvent>[] observers)
+            public CloudStorageBuilder WithObservers(params IObserver<IStorageEvent>[] observers)
             {
-                Observer = new CloudStorageInstrumentationSubject(observers);
+                Observer = new StorageObserverSubject(observers);
                 return this;
             }
 

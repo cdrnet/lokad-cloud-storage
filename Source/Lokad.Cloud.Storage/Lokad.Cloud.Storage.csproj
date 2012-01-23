@@ -85,6 +85,7 @@
     <Compile Include="CloudStorage.cs" />
     <Compile Include="CloudStorageProviders.cs" />
     <Compile Include="Instrumentation\Events\MessagesRevivedEvent.cs" />
+    <Compile Include="Instrumentation\StorageEventLevel.cs" />
     <Compile Include="Queues\KeepAliveMessageHandle.cs" />
     <Compile Include="RawFormatter.cs" />
     <Compile Include="DataSerializerExtensions.cs" />
@@ -93,10 +94,10 @@
     <Compile Include="Instrumentation\Events\MessageDeserializationFailedQuarantinedEvent.cs" />
     <Compile Include="Instrumentation\Events\MessageProcessingFailedQuarantinedEvent.cs" />
     <Compile Include="Instrumentation\Events\StorageOperationType.cs" />
-    <Compile Include="Instrumentation\ICloudStorageObserver.cs" />
+    <Compile Include="Instrumentation\IStorageObserver.cs" />
     <Compile Include="Instrumentation\Events\StorageOperationRetriedEvent.cs" />
-    <Compile Include="Instrumentation\CloudStorageInstrumentationSubject.cs" />
-    <Compile Include="Instrumentation\Events\ICloudStorageEvent.cs" />
+    <Compile Include="Instrumentation\StorageObserverSubject.cs" />
+    <Compile Include="Instrumentation\IStorageEvent.cs" />
     <Compile Include="IIntermediateDataSerializer.cs" />
     <Compile Include="InMemory\MemoryBlobStorageProvider.cs" />
     <Compile Include="InMemory\MemoryQueueStorageProvider.cs" />

@@ -1,9 +1,10 @@
-﻿#region Copyright (c) Lokad 2011
+﻿#region Copyright (c) Lokad 2011-2012
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
 
 using System;
+using System.Xml.Linq;
 
 namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
@@ -11,10 +12,9 @@ namespace Lokad.Cloud.Storage.Instrumentation.Events
     /// Raised whenever a storage operation is retried.
     /// Useful for analyzing retry policy behavior.
     /// </summary>
-    public class StorageOperationRetriedEvent : ICloudStorageEvent
+    public class StorageOperationRetriedEvent : IStorageEvent
     {
-        // TODO (ruegg, 2011-05-27): Drop properties that we don't actually need in practice
-
+        public StorageEventLevel Level { get { return StorageEventLevel.Trace; } }
         public Exception Exception { get; private set; }
         public string Policy { get; private set; }
         public int Trial { get; private set; }
@@ -28,6 +28,19 @@ namespace Lokad.Cloud.Storage.Instrumentation.Events
             Trial = trial;
             Interval = interval;
             TrialSequence = trialSequence;
+        }
+
+        public string Describe()
+        {
+            return string.Format("Storage: Operation was retried on policy {0} ({1} trial): {2}",
+                Policy, Trial, Exception != null ? Exception.Message : string.Empty);
+        }
+
+        public XElement DescribeMeta()
+        {
+            return new XElement("Meta",
+                new XElement("Component", "Lokad.Cloud.Storage"),
+                new XElement("Event", "StorageOperationRetriedEvent"));
         }
     }
 }

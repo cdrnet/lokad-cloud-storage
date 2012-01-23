@@ -20,10 +20,10 @@ namespace Lokad.Cloud.Storage.Azure
     /// </summary>
     internal class RetryPolicies
     {
-        private readonly ICloudStorageObserver _observer;
+        private readonly IStorageObserver _observer;
 
         /// <param name="observer">Can be <see langword="null"/>.</param>
-        internal RetryPolicies(ICloudStorageObserver observer)
+        internal RetryPolicies(IStorageObserver observer)
         {
             _observer = observer;
         }

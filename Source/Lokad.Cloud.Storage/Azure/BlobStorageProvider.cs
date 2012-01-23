@@ -36,12 +36,12 @@ namespace Lokad.Cloud.Storage.Azure
 
         readonly CloudBlobClient _blobStorage;
         readonly IDataSerializer _defaultSerializer;
-        readonly ICloudStorageObserver _observer;
+        readonly IStorageObserver _observer;
         readonly RetryPolicies _policies;
 
         /// <summary>IoC constructor.</summary>
         /// <param name="observer">Can be <see langword="null"/>.</param>
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer defaultSerializer, ICloudStorageObserver observer = null)
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer defaultSerializer, IStorageObserver observer = null)
         {
             _policies = new RetryPolicies(observer);
             _blobStorage = blobStorage;
