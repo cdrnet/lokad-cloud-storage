@@ -76,7 +76,7 @@ namespace Lokad.Cloud.Storage
             {
                 if (_isSuccess)
                     throw new InvalidOperationException("Dont access error on valid result.");
-				
+                
                 return _error;
             }
         }

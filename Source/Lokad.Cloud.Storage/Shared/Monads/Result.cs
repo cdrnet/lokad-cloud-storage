@@ -1,7 +1,5 @@
 // Imported from Lokad.Shared, 2011-02-08
 
-using System;
-
 namespace Lokad.Cloud.Storage
 {
     /// <summary> Helper class for creating <see cref="Result{T}"/> instances </summary>

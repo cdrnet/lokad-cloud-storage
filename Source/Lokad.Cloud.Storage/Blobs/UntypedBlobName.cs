@@ -17,7 +17,7 @@ namespace Lokad.Cloud.Storage
     /// Base class for untyped hierarchical blob names. Implementations should
     /// not inherit <see cref="UntypedBlobName"/>c> but <see cref="BlobName{T}"/> instead.
     /// </summary>
-    [Serializable, DataContract]
+    [Serializable, DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0")]
     public abstract class UntypedBlobName : IBlobLocation
     {
         class InheritanceComparer : IComparer<Type>

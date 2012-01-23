@@ -1437,7 +1437,7 @@ namespace Lokad.Cloud.Storage.Azure
         }
     }
 
-    [DataContract]
+    [DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0"), Serializable]
     internal class PersistedMessageData
     {
         [DataMember(Order = 1)]
@@ -1459,7 +1459,7 @@ namespace Lokad.Cloud.Storage.Azure
         public byte[] Data { get; set; }
     }
 
-    [DataContract]
+    [DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0"), Serializable]
     internal class ResilientMessageData
     {
         [DataMember(Order = 1)]
@@ -1469,7 +1469,7 @@ namespace Lokad.Cloud.Storage.Azure
         public byte[] Data { get; set; }
     }
 
-    [DataContract]
+    [DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0")]
     internal class ResilientLeaseData
     {
         [DataMember(Order = 1)]

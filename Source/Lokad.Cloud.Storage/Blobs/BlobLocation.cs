@@ -12,7 +12,7 @@ namespace Lokad.Cloud.Storage
     /// Blob reference, to be used a short hand
     /// while operating with the <see cref="IBlobStorageProvider"/>
     /// </summary>
-    [Serializable, DataContract]
+    [Serializable, DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0")]
     public class BlobLocation : IBlobLocation
     {
         /// <summary>

@@ -3,6 +3,7 @@
 // URL: http://www.lokad.com/
 #endregion
 
+using System;
 using System.Runtime.Serialization;
 
 namespace Lokad.Cloud.Storage
@@ -11,13 +12,13 @@ namespace Lokad.Cloud.Storage
     /// The purpose of the <see cref="MessageEnvelope"/> is to provide
     /// additional metadata for a message.
     /// </summary>
-    [DataContract]
+    [DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0"), Serializable]
     internal sealed class MessageEnvelope
     {
-        [DataMember]
+        [DataMember(Order = 1)]
         public int DequeueCount { get; set; }
 
-        [DataMember]
+        [DataMember(Order = 2)]
         public byte[] RawMessage { get; set; }
     }
 }

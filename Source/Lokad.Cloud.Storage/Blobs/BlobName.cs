@@ -13,7 +13,7 @@ namespace Lokad.Cloud.Storage
     /// strongly typed content.
     /// </summary>
     /// <typeparam name="T">Type contained in the blob.</typeparam>
-    [Serializable, DataContract]
+    [Serializable, DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0")]
     public abstract class BlobName<T> : UntypedBlobName, IBlobLocationAndType<T>
     {
     }

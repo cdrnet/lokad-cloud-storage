@@ -19,7 +19,7 @@ namespace Lokad.Cloud.Storage
     /// directly linked to the garbage collected container.
     /// </remarks>
     /// <typeparam name="T">Type referred by the blob name.</typeparam>
-    [Serializable, DataContract]
+    [Serializable, DataContract(Namespace = "http://schemas.lokad.com/lokad-cloud/storage/2.0")]
     public class TemporaryBlobName<T> : BlobName<T>
     {
         /// <summary>Name of the container for the temporary blobs.</summary>
