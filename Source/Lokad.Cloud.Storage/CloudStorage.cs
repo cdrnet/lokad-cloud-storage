@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2010-2011
+﻿#region Copyright (c) Lokad 2009-2012
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -7,7 +7,6 @@ using System;
 using System.ComponentModel;
 using System.Net;
 using Lokad.Cloud.Storage.Instrumentation;
-using Lokad.Cloud.Storage.Instrumentation.Events;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.StorageClient;
 
@@ -124,26 +123,10 @@ namespace Lokad.Cloud.Storage
                 var queueStorage = BuildQueueStorage();
                 var tableStorage = BuildTableStorage();
 
-                var originalSerializer = DataSerializer;
-
-                DataSerializer = new CloudFormatter();
-                var neutralBlobStorage = BuildBlobStorage();
-                var neutralQueueStorage = BuildQueueStorage();
-                var neutralTableStorage = BuildTableStorage();
-
-                DataSerializer = new RawFormatter();
-                var rawBlobStorage = BuildBlobStorage();
-
-                DataSerializer = originalSerializer;
-
                 return new CloudStorageProviders(
                     blobStorage,
                     queueStorage,
                     tableStorage,
-                    neutralBlobStorage,
-                    neutralQueueStorage,
-                    neutralTableStorage,
-                    rawBlobStorage,
                     RuntimeFinalizer);
             }
         }

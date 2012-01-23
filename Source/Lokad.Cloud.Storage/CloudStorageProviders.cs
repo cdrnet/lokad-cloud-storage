@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2011
+﻿#region Copyright (c) Lokad 2009-2012
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -17,55 +17,27 @@ namespace Lokad.Cloud.Storage
         /// <summary>Table Storage Abstraction.</summary>
         public ITableStorageProvider TableStorage { get; private set; }
 
-        /// <summary>Format-Neutral Blob Storage Abstraction.</summary>
-        public IBlobStorageProvider NeutralBlobStorage { get; private set; }
-
-        /// <summary>Format-Neutral Queue Storage Abstraction.</summary>
-        public IQueueStorageProvider NeutralQueueStorage { get; private set; }
-
-        /// <summary>Format-Neutral Table Storage Abstraction.</summary>
-        public ITableStorageProvider NeutralTableStorage { get; private set; }
-
-        /// <summary>Raw byte pass-through Blob Storage Abstraction, supporting only byte-array, string and XElement.</summary>
-        public IBlobStorageProvider RawBlobStorage { get; private set; }
-
         /// <summary>Abstracts the finalizer (used for fast resource release
         /// in case of runtime shutdown).</summary>
         public IRuntimeFinalizer RuntimeFinalizer { get; private set; }
 
-        /// <summary>IoC constructor.</summary>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CloudStorageProviders"/> class.
+        /// </summary>
+        /// <param name="blobStorage">The blob storage provider.</param>
+        /// <param name="queueStorage">The queue storage provider.</param>
+        /// <param name="tableStorage">The table storage provider.</param>
+        /// <param name="runtimeFinalizer">The runtime finalizer.</param>
         public CloudStorageProviders(
             IBlobStorageProvider blobStorage,
             IQueueStorageProvider queueStorage,
             ITableStorageProvider tableStorage,
-            IBlobStorageProvider neutralBlobStorage,
-            IQueueStorageProvider neutralQueueStorage,
-            ITableStorageProvider neutralTableStorage,
-            IBlobStorageProvider rawBlobStorage,
             IRuntimeFinalizer runtimeFinalizer = null)
         {
             BlobStorage = blobStorage;
             QueueStorage = queueStorage;
             TableStorage = tableStorage;
-            NeutralBlobStorage = neutralBlobStorage;
-            NeutralQueueStorage = neutralQueueStorage;
-            NeutralTableStorage = neutralTableStorage;
-            RawBlobStorage = rawBlobStorage;
             RuntimeFinalizer = runtimeFinalizer;
-        }
-
-        /// <summary>Copy constructor.</summary>
-        protected CloudStorageProviders(
-            CloudStorageProviders copyFrom)
-        {
-            BlobStorage = copyFrom.BlobStorage;
-            QueueStorage = copyFrom.QueueStorage;
-            TableStorage = copyFrom.TableStorage;
-            NeutralBlobStorage = copyFrom.NeutralBlobStorage;
-            NeutralQueueStorage = copyFrom.NeutralQueueStorage;
-            NeutralTableStorage = copyFrom.NeutralTableStorage;
-            RawBlobStorage = copyFrom.RawBlobStorage;
-            RuntimeFinalizer = copyFrom.RuntimeFinalizer;
         }
     }
 }
