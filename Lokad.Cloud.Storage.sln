@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lokad.Cloud.Storage", "Sour
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lokad.Cloud.Storage.Test", "Test\Lokad.Cloud.Storage.Test\Lokad.Cloud.Storage.Test.csproj", "{93D4C481-3265-42F3-BF63-C06106AE016F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lokad.Cloud.Storage.Autofac", "Source\Lokad.Cloud.Storage.Autofac\Lokad.Cloud.Storage.Autofac.csproj", "{B8BBBB61-AE9F-4C12-A751-67EB846A8919}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,12 @@ Global
 		{93D4C481-3265-42F3-BF63-C06106AE016F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{93D4C481-3265-42F3-BF63-C06106AE016F}.ReleaseApi|Any CPU.ActiveCfg = Release|Any CPU
 		{93D4C481-3265-42F3-BF63-C06106AE016F}.ReleaseApi|Any CPU.Build.0 = Release|Any CPU
+		{B8BBBB61-AE9F-4C12-A751-67EB846A8919}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8BBBB61-AE9F-4C12-A751-67EB846A8919}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8BBBB61-AE9F-4C12-A751-67EB846A8919}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8BBBB61-AE9F-4C12-A751-67EB846A8919}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8BBBB61-AE9F-4C12-A751-67EB846A8919}.ReleaseApi|Any CPU.ActiveCfg = Release|Any CPU
+		{B8BBBB61-AE9F-4C12-A751-67EB846A8919}.ReleaseApi|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -40,5 +48,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{93D4C481-3265-42F3-BF63-C06106AE016F} = {A4EE85F0-A2E1-4516-8B4E-F4BA7DA67968}
 		{0F9244AB-3B7C-4F98-9D44-E46FBC65522C} = {58865F1A-F33E-419A-ABF0-871911E20D4C}
+		{B8BBBB61-AE9F-4C12-A751-67EB846A8919} = {58865F1A-F33E-419A-ABF0-871911E20D4C}
 	EndGlobalSection
 EndGlobal
