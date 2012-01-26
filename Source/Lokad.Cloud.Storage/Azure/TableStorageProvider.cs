@@ -481,21 +481,121 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        // HACK: no 'upsert' (update or insert) available at the time
-        // http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/4b902237-7cfb-4d48-941b-4802864fc274
-
         /// <remarks>Upsert is making several storage calls to emulate the 
         /// missing semantic from the Table Storage.</remarks>
         void UpsertInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
-            // checking for entities that already exist
-            var partitionKey = entities.First().PartitionKey;
-            var existingKeys = new HashSet<string>(
+            if (_tableStorage.BaseUri.Host == "127.0.0.1")
+            {
+                // HACK: Dev Storage of v1.6 tools does NOT support Upsert yet -> emulate
+
+                // checking for entities that already exist
+                var partitionKey = entities.First().PartitionKey;
+                var existingKeys = new HashSet<string>(
                 Get<T>(tableName, partitionKey, entities.Select(e => e.RowKey)).Select(e => e.RowKey));
 
-            // inserting or updating depending on the presence of the keys
-            Insert(tableName, entities.Where(e => !existingKeys.Contains(e.RowKey)));
-            Update(tableName, entities.Where(e => existingKeys.Contains(e.RowKey)), true);
+                // inserting or updating depending on the presence of the keys
+                Insert(tableName, entities.Where(e => !existingKeys.Contains(e.RowKey)));
+                Update(tableName, entities.Where(e => existingKeys.Contains(e.RowKey)), true);
+
+                return;
+            }
+
+            var context = _tableStorage.GetDataServiceContext();
+            context.MergeOption = MergeOption.AppendOnly;
+            context.ResolveType = ResolveFatEntityType;
+
+            var stopwatch = new Stopwatch();
+
+            var fatEntities = entities.Select(e => Tuple.Create(FatEntity.Convert(e, _serializer), e));
+
+            var noBatchMode = false;
+
+            foreach (var slice in SliceEntities(fatEntities, e => e.Item1.GetPayload()))
+            {
+                stopwatch.Restart();
+
+                var cloudEntityOfFatEntity = new Dictionary<object, CloudEntity<T>>();
+                foreach (var fatEntity in slice)
+                {
+                    // entities should be updated in a single round-trip
+                    context.AttachTo(tableName, fatEntity.Item1);
+                    context.UpdateObject(fatEntity.Item1);
+                    cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
+                }
+
+                Retry.Do(_policies.TransientTableErrorBackOff, CancellationToken.None, () =>
+                {
+                    try
+                    {
+                        context.SaveChanges(noBatchMode ? SaveChangesOptions.ReplaceOnUpdate : SaveChangesOptions.ReplaceOnUpdate | SaveChangesOptions.Batch);
+                        ReadETagsAndDetach(context, (entity, etag) => cloudEntityOfFatEntity[entity].ETag = etag);
+                    }
+                    catch (DataServiceRequestException ex)
+                    {
+                        var errorCode = RetryPolicies.GetErrorCode(ex);
+
+                        if (errorCode == StorageErrorCodeStrings.OperationTimedOut)
+                        {
+                            // if batch does not work, then split into elementary requests
+                            // PERF: it would be better to split the request in two and retry
+                            context.SaveChanges(SaveChangesOptions.ReplaceOnUpdate);
+                            ReadETagsAndDetach(context, (entity, etag) => cloudEntityOfFatEntity[entity].ETag = etag);
+                            noBatchMode = true;
+                        }
+                        else if (errorCode == TableErrorCodeStrings.TableNotFound)
+                        {
+                            Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () =>
+                            {
+                                try
+                                {
+                                    _tableStorage.CreateTableIfNotExist(tableName);
+                                }
+                                // HACK: incorrect behavior of the StorageClient (2010-09)
+                                // Fails to behave properly in multi-threaded situations
+                                catch (StorageClientException cex)
+                                {
+                                    if (cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
+                                    {
+                                        throw;
+                                    }
+                                }
+                                context.SaveChanges(noBatchMode ? SaveChangesOptions.ReplaceOnUpdate : SaveChangesOptions.ReplaceOnUpdate | SaveChangesOptions.Batch);
+                                ReadETagsAndDetach(context, (entity, etag) => cloudEntityOfFatEntity[entity].ETag = etag);
+                            });
+                        }
+                        else if (errorCode == StorageErrorCodeStrings.ResourceNotFound)
+                        {
+                            throw new InvalidOperationException("Cannot call update on a resource that does not exist", ex);
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    catch (DataServiceQueryException ex)
+                    {
+                        // HACK: code duplicated
+
+                        var errorCode = RetryPolicies.GetErrorCode(ex);
+
+                        if (errorCode == StorageErrorCodeStrings.OperationTimedOut)
+                        {
+                            // if batch does not work, then split into elementary requests
+                            // PERF: it would be better to split the request in two and retry
+                            context.SaveChanges(SaveChangesOptions.ReplaceOnUpdate);
+                            ReadETagsAndDetach(context, (entity, etag) => cloudEntityOfFatEntity[entity].ETag = etag);
+                            noBatchMode = true;
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                });
+
+                NotifySucceeded(StorageOperationType.TableUpsert, stopwatch);
+            }
         }
 
         /// <summary>Slice entities according the payload limitation of

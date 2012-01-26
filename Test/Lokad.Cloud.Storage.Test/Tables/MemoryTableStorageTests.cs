@@ -5,7 +5,7 @@
 
 using System;
 using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Test.Tables
@@ -37,14 +37,14 @@ namespace Lokad.Cloud.Storage.Test.Tables
             //Single thread.
             for (int i = 0; i <= 5; i++)
             {
-                TableStorage.CreateTable(i.ToString());
+                TableStorage.CreateTable("table" + i.ToString());
             }
 
             Assert.AreEqual(6, TableStorage.GetTables().Count() - originalCount, "#A01");
 
             //Remove tables.
             Assert.False(TableStorage.DeleteTable("Table_that_does_not_exist"), "#A02");
-            var isSuccess = TableStorage.DeleteTable(4.ToString());
+            var isSuccess = TableStorage.DeleteTable("table" + 4.ToString());
 
             Assert.IsTrue(isSuccess, "#A03");
             Assert.AreEqual(5, TableStorage.GetTables().Count() - originalCount, "#A04");
@@ -164,42 +164,22 @@ namespace Lokad.Cloud.Storage.Test.Tables
         }
 
         [Test]
-        public void CreateAndGetTablesMultiThread()
+        public void CreateAndGetTablesMultipleTasks()
         {
             //Multi thread.
             const int M = 32;
 
-            var threads = Enumerable.Range(0, M).Select(i => new Thread(CreateTables)).ToArray();
-            var threadsParameters =
-                Enumerable.Range(0, M).Select(
-                    i => new ThreadParameter { TableStorage = TableStorage, ThreadId = "treadId" + i.ToString() }).
-                    ToArray();
-
-            for (int i = 0; i < M; i++)
-            {
-                threads[i].Start(threadsParameters[i]);
-            }
-            Thread.Sleep(2000);
+            Task.WaitAll(Enumerable.Range(0, M)
+                .Select(i => Task.Factory.StartNew(() =>
+                    {
+                        for (int k1 = 0; k1 < 10; k1++)
+                        {
+                            TableStorage.CreateTable("table" + k1.ToString());
+                        }
+                    }))
+                .ToArray());
 
             Assert.AreEqual(10, TableStorage.GetTables().Distinct().Count());
-        }
-
-        private static void CreateTables(object parameter)
-        {
-            if (parameter is ThreadParameter)
-            {
-                var castedParameters = (ThreadParameter)parameter;
-                for (int i = 0; i < 10; i++)
-                {
-                    castedParameters.TableStorage.CreateTable(i.ToString());
-                }
-            }
-        }
-
-        private class ThreadParameter
-        {
-            public ITableStorageProvider TableStorage { get; set; }
-            public string ThreadId { get; set; }
         }
     }
 }

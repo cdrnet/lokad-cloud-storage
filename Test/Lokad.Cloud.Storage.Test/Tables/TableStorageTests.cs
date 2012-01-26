@@ -119,13 +119,13 @@ namespace Lokad.Cloud.Storage.Test.Tables
             var missingPartition = Guid.NewGuid().ToString("N");
 
             var enumerable = TableStorage.Get<string>(TableName, missingPartition);
-            Assert.That(enumerable.Count() == 0, "#D01");
+            Assert.That(!enumerable.Any(), "#D01");
 
             var enumerable2 = TableStorage.Get<string>(TableName, missingPartition, "dummyRowKeyA", "dummyRowKeyB");
-            Assert.That(enumerable2.Count() == 0, "#D02");
+            Assert.That(!enumerable2.Any(), "#D02");
 
             var enumerable3 = TableStorage.Get<string>(TableName, missingPartition, new[] { "dummyRowKeyA", "dummyRowKeyB" });
-            Assert.That(enumerable3.Count() == 0, "#D02");
+            Assert.That(!enumerable3.Any(), "#D02");
         }
 
         [Test]
@@ -442,7 +442,7 @@ namespace Lokad.Cloud.Storage.Test.Tables
 
             // checking that all entities have been deleted
             var list = TableStorage.Get<string>(TableName, pkey, entities.Select(e => e.RowKey));
-            Assert.That(list.Count() == 0, "#A00");
+            Assert.That(!list.Any(), "#A00");
         }
 
         [Test]
