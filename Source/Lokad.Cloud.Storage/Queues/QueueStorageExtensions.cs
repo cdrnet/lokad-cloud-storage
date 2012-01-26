@@ -88,6 +88,12 @@ namespace Lokad.Cloud.Storage
             provider.Put(GetDefaultStorageName(typeof(T)), message);
         }
 
+        /// <summary>Put a message on a queue (derived from the message type T), but keep it invisible for a delay.</summary>
+        public static void PutWithDelay<T>(this IQueueStorageProvider provider, T message, TimeSpan delay)
+        {
+            provider.Put(GetDefaultStorageName(typeof(T)), message, delay: delay);
+        }
+
         /// <summary>Put messages on a queue (derived from the message type T).</summary>
         /// <typeparam name="T">Type of the messages.</typeparam>
         /// <param name="messages">Messages to be put.</param>

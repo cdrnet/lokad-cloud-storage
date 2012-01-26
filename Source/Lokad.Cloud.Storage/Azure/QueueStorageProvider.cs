@@ -264,13 +264,13 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public void Put<T>(string queueName, T message, IDataSerializer serializer = null)
+        public void Put<T>(string queueName, T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null)
         {
-            PutRange(queueName, new[] { message }, serializer);
+            PutRange(queueName, new[] { message }, timeToLive, delay, serializer);
         }
 
         /// <remarks></remarks>
-        public void PutRange<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
+        public void PutRange<T>(string queueName, IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null)
         {
             var dataSerializer = serializer ?? _defaultSerializer;
             var queue = _queueStorage.GetQueueReference(queueName);
@@ -282,20 +282,20 @@ namespace Lokad.Cloud.Storage.Azure
 
                 var queueMessage = SerializeCloudQueueMessage(queueName, message, dataSerializer);
 
-                PutRawMessage(queueMessage, queue);
+                PutRawMessage(queueMessage, queue, timeToLive, delay);
 
                 NotifySucceeded(StorageOperationType.QueuePut, stopwatch);
             }
         }
 
         /// <remarks></remarks>
-        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
+        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null)
         {
             var dataSerializer = serializer ?? _defaultSerializer;
             var queue = _queueStorage.GetQueueReference(queueName);
             var stopwatch = new Stopwatch();
 
-            List<Task> tasks = new List<Task>();
+            var tasks = new List<Task>();
 
             foreach (var message in messages)
             {
@@ -303,7 +303,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 var queueMessage = SerializeCloudQueueMessage(queueName, message, dataSerializer);
 
-                var task = Task.Factory.StartNew(() => PutRawMessage(queueMessage, queue));
+                var task = Task.Factory.StartNew(() => PutRawMessage(queueMessage, queue, timeToLive, delay));
                 task.ContinueWith(obj => NotifySucceeded(StorageOperationType.QueuePut, stopwatch), TaskContinuationOptions.OnlyOnRanToCompletion);
 
                 tasks.Add(task);
@@ -619,7 +619,7 @@ namespace Lokad.Cloud.Storage.Azure
             return KeepAliveVisibilityTimeout;
         }
 
-        public int ReviveMessages()
+        public int ReviveMessages(TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             var candidates = _blobStorage.ListBlobNames(ResilientLeasesContainerName)
                 .Where(name => !_blobStorage.IsBlobLocked(ResilientLeasesContainerName, name))
@@ -648,7 +648,7 @@ namespace Lokad.Cloud.Storage.Azure
                     var messageData = messageBlob.Value;
                     var queue = _queueStorage.GetQueueReference(messageData.QueueName);
                     var rawMessage = new CloudQueueMessage(messageData.Data);
-                    PutRawMessage(rawMessage, queue);
+                    PutRawMessage(rawMessage, queue, timeToLive, delay);
 
                     if (DeleteKeepAliveMessage(blobName, lease.Value))
                     {
@@ -764,7 +764,7 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public bool Abandon<T>(T message)
+        public bool Abandon<T>(T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             var stopwatch = new Stopwatch();
 
@@ -834,7 +834,7 @@ namespace Lokad.Cloud.Storage.Azure
                     }
                 }
             }
-            PutRawMessage(newRawMessage, queue);
+            PutRawMessage(newRawMessage, queue, timeToLive, delay);
 
             // 3. DELETE THE OLD MESSAGE FROM THE QUEUE
 
@@ -866,13 +866,13 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public int AbandonRange<T>(IEnumerable<T> messages)
+        public int AbandonRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
-            return messages.Count(Abandon);
+            return messages.Count(m => Abandon(m, timeToLive, delay));
         }
 
         /// <remarks></remarks>
-        public bool ResumeLater<T>(T message)
+        public bool ResumeLater<T>(T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             string queueName;
 
@@ -888,14 +888,14 @@ namespace Lokad.Cloud.Storage.Azure
                 queueName = inProcMsg.QueueName;
             }
 
-            Put(queueName, message);
+            Put(queueName, message, timeToLive, delay);
             return Delete(message);
         }
 
         /// <remarks></remarks>
-        public int ResumeLaterRange<T>(IEnumerable<T> messages)
+        public int ResumeLaterRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
-            return messages.Count(ResumeLater);
+            return messages.Count(m => ResumeLater(m, timeToLive, delay));
         }
 
         /// <remarks></remarks>
@@ -1040,7 +1040,7 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
-        public void RestorePersisted(string storeName, string key)
+        public void RestorePersisted(string storeName, string key, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             // 1. GET PERSISTED MESSAGE BLOB
 
@@ -1057,7 +1057,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             var queue = _queueStorage.GetQueueReference(persistedMessage.QueueName);
             var rawMessage = new CloudQueueMessage(persistedMessage.Data);
-            PutRawMessage(rawMessage, queue);
+            PutRawMessage(rawMessage, queue, timeToLive, delay);
 
             // 3. DELETE PERSISTED MESSAGE
 
@@ -1160,11 +1160,14 @@ namespace Lokad.Cloud.Storage.Azure
             return deleted;
         }
 
-        void PutRawMessage(CloudQueueMessage message, CloudQueue queue)
+        void PutRawMessage(CloudQueueMessage message, CloudQueue queue, TimeSpan timeToLive, TimeSpan delay)
         {
+            var ttlOrNot = timeToLive < CloudQueueMessage.MaxTimeToLive && timeToLive > TimeSpan.Zero ? timeToLive : new TimeSpan?();
+            var delayOrNot = delay < CloudQueueMessage.MaxTimeToLive && delay > TimeSpan.Zero ? delay : new TimeSpan?();
+
             try
             {
-                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () => queue.AddMessage(message));
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () => queue.AddMessage(message, ttlOrNot, delayOrNot));
             }
             catch (StorageClientException ex)
             {

@@ -42,14 +42,14 @@ namespace Lokad.Cloud.Storage
         /// <param name="queueName">Identifier of the queue where messages are put.</param>
         /// <param name="message">Message to be put.</param>
         /// <remarks>If the queue does not exist, it gets created.</remarks>
-        void Put<T>(string queueName, T message, IDataSerializer serializer = null);
+        void Put<T>(string queueName, T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null);
 
         /// <summary>Put messages on a queue.</summary>
         /// <typeparam name="T">Type of the messages.</typeparam>
         /// <param name="queueName">Identifier of the queue where messages are put.</param>
         /// <param name="messages">Messages to be put.</param>
         /// <remarks>If the queue does not exist, it gets created.</remarks>
-        void PutRange<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null);
+        void PutRange<T>(string queueName, IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null);
 
         /// <summary>
         /// Puts messages on a queue. Uses Tasks to increase thouroughput dramatically.
@@ -58,7 +58,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="queueName">Identifier of the queue where messages are put.</param>
         /// <param name="messages">Messages to be put.</param>
         /// <remarks>If the queue does not exist, it gets created.</remarks>
-        void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null);
+        void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null);
 
         /// <summary>Clear all the messages from the specified queue.</summary>
         void Clear(string queueName);
@@ -68,7 +68,7 @@ namespace Lokad.Cloud.Storage
         TimeSpan KeepAlive<T>(T message) where T : class;
 
         /// <summary>Revive messages that are no longer kept alive.</summary>
-        int ReviveMessages();
+        int ReviveMessages(TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan));
 
         /// <summary>Deletes a message being processed from the queue.</summary>
         /// <returns><c>True</c> if the message has been deleted.</returns>
@@ -89,7 +89,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="message">Message to be abandoned.</param>
         /// <returns><c>True</c> if the original message has been deleted.</returns>
         /// <remarks>Message must have first been retrieved through <see cref="Get{T}"/>.</remarks>
-        bool Abandon<T>(T message);
+        bool Abandon<T>(T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan));
 
         /// <summary>
         /// Abandon a set of messages being processed and put them visibly back on the queue.
@@ -98,7 +98,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="messages">Messages to be abandoned.</param>
         /// <returns>The number of original messages actually deleted.</returns>
         /// <remarks>Messages must have first been retrieved through <see cref="Get{T}"/>.</remarks>
-        int AbandonRange<T>(IEnumerable<T> messages);
+        int AbandonRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan));
 
         /// <summary>
         /// Resume a message being processed later and put it visibly back on the queue, without decreasing the poison detection dequeue count.
@@ -107,7 +107,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="message">Message to be resumed later.</param>
         /// <returns><c>True</c> if the original message has been deleted.</returns>
         /// <remarks>Message must have first been retrieved through <see cref="Get{T}"/>.</remarks>
-        bool ResumeLater<T>(T message);
+        bool ResumeLater<T>(T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan));
 
         /// <summary>
         /// Resume a set of messages being processed latern and put them visibly back on the queue, without decreasing the poison detection dequeue count.
@@ -116,7 +116,7 @@ namespace Lokad.Cloud.Storage
         /// <param name="messages">Messages to be resumed later.</param>
         /// <returns>The number of original messages actually deleted.</returns>
         /// <remarks>Messages must have first been retrieved through <see cref="Get{T}"/>.</remarks>
-        int ResumeLaterRange<T>(IEnumerable<T> messages);
+        int ResumeLaterRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan));
 
         /// <summary>
         /// Persist a message being processed to a store and remove it from the queue.
@@ -161,7 +161,7 @@ namespace Lokad.Cloud.Storage
         /// </summary>
         /// <param name="storeName">Name of the message persistence store.</param>
         /// <param name="key">Unique key of the persisted message as returned by ListPersisted.</param>
-        void RestorePersisted(string storeName, string key);
+        void RestorePersisted(string storeName, string key, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan));
 
         /// <summary>Deletes a queue.</summary>
         /// <returns><c>true</c> if the queue name has been actually deleted.</returns>

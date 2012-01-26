@@ -72,7 +72,7 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public void Put<T>(string queueName, T message, IDataSerializer serializer = null)
+        public void Put<T>(string queueName, T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null)
         {
             var dataSerializer = serializer ?? DefaultSerializer;
             lock (_sync)
@@ -94,21 +94,21 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public void PutRange<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
+        public void PutRange<T>(string queueName, IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null)
         {
             var dataSerializer = serializer ?? DefaultSerializer;
             lock (_sync)
             {
                 foreach(var message in messages)
                 {
-                    Put(queueName, message, dataSerializer);
+                    Put(queueName, message, timeToLive, delay, dataSerializer);
                 }
             }
         }
 
-        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, IDataSerializer serializer = null)
+        public void PutRangeParallel<T>(string queueName, IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan), IDataSerializer serializer = null)
         {
-            PutRange(queueName, messages, serializer);
+            PutRange(queueName, messages, timeToLive, delay, serializer);
         }
 
         /// <remarks></remarks>
@@ -132,7 +132,7 @@ namespace Lokad.Cloud.Storage.InMemory
             return TimeSpan.FromMinutes(5);
         }
 
-        public int ReviveMessages()
+        public int ReviveMessages(TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             return 0;
         }
@@ -168,7 +168,7 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public bool Abandon<T>(T message)
+        public bool Abandon<T>(T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             lock (_sync)
             {
@@ -198,23 +198,23 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public int AbandonRange<T>(IEnumerable<T> messages)
+        public int AbandonRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             lock (_sync)
             {
-                return messages.Count(Abandon);
+                return messages.Count(m => Abandon(m, timeToLive, delay));
             }
         }
 
         /// <remarks></remarks>
-        public bool ResumeLater<T>(T message)
+        public bool ResumeLater<T>(T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             // same as abandon as the InMemory provider applies no poison detection
             return Abandon(message);
         }
 
         /// <remarks></remarks>
-        public int ResumeLaterRange<T>(IEnumerable<T> messages)
+        public int ResumeLaterRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             // same as abandon as the InMemory provider applies no poison detection
             return AbandonRange(messages);
@@ -305,7 +305,7 @@ namespace Lokad.Cloud.Storage.InMemory
         }
 
         /// <remarks></remarks>
-        public void RestorePersisted(string storeName, string key)
+        public void RestorePersisted(string storeName, string key, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             lock (_sync)
             {
