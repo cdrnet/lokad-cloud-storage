@@ -6,12 +6,15 @@
 		<Root>$(MSBuildProjectDirectory)/../..</Root>
 		<OutNuGetPackages>$(MSBuildProjectDirectory)/out</OutNuGetPackages>
 		<StorageOut>$(MSBuildProjectDirectory)/../../Source/Lokad.Cloud.Storage/bin/Release</StorageOut>
+		<AutofacOut>$(MSBuildProjectDirectory)/../../Source/Lokad.Cloud.Storage.Autofac/bin/Release</AutofacOut>
 		<StoragePack>$(MSBuildProjectDirectory)/Lokad.Cloud.Storage</StoragePack>
+		<AutofacPack>$(MSBuildProjectDirectory)/Lokad.Cloud.Storage.Autofac</AutofacPack>
 		<NuGetExe>$(MSBuildProjectDirectory)/../../Tools/nuget.exe</NuGetExe>
 	</PropertyGroup>
 	
 	<ItemGroup>
 		<StorageNet40 Include="$(StorageOut)/Lokad.Cloud.Storage.dll;$(StorageOut)/Lokad.Cloud.Storage.pdb;$(StorageOut)/Lokad.Cloud.Storage.xml" />
+		<AutofacNet40 Include="$(AutofacOut)/Lokad.Cloud.Storage.Autofac.dll;$(AutofacOut)/Lokad.Cloud.Storage.Autofac.pdb" />
 	</ItemGroup>
 	
 	<Target Name="CopyContentFiles">
@@ -22,6 +25,10 @@
 		
 		<RemoveDir Directories="$(StoragePack)/lib" />
 		<Copy SourceFiles="@(StorageNet40)" DestinationFolder="$(StoragePack)/lib" />
+		
+		<RemoveDir Directories="$(AutofacPack)/content" />
+		<RemoveDir Directories="$(AutofacPack)/lib" />
+		<Copy SourceFiles="@(AutofacNet40)" DestinationFolder="$(AutofacPack)/lib" />
 	</Target>
 
 	<Target Name="UpdateNuspec" DependsOnTargets="CopyContentFiles">
@@ -30,15 +37,20 @@
 		<GetAssemblyIdentity AssemblyFiles="$(StoragePack)/lib/Lokad.Cloud.Storage.dll">
 			<Output TaskParameter="Assemblies" ItemName="StorageAssemblyInfo"/>
 		</GetAssemblyIdentity>
+		<GetAssemblyIdentity AssemblyFiles="$(AutofacPack)/lib/Lokad.Cloud.Storage.Autofac.dll">
+			<Output TaskParameter="Assemblies" ItemName="AutofacAssemblyInfo"/>
+		</GetAssemblyIdentity>
 		
 		<!-- Extract Assembly Versions -->
 		<PropertyGroup>
 			<StorageAssemblyVersion>%(StorageAssemblyInfo.Version)</StorageAssemblyVersion>
+			<AutofacAssemblyVersion>%(AutofacAssemblyInfo.Version)</AutofacAssemblyVersion>
 		</PropertyGroup>
 		
 		<!-- Package Versions (skip 4th part/build number, for semvar compliance) -->
 		<PropertyGroup>
 			<StoragePackVersion>$(StorageAssemblyVersion.Substring(0, $(StorageAssemblyVersion.LastIndexOf('.'))))</StoragePackVersion>
+			<AutofacPackVersion>$(AutofacAssemblyVersion.Substring(0, $(AutofacAssemblyVersion.LastIndexOf('.'))))</AutofacPackVersion>
 		</PropertyGroup>
 		
 		<XmlUpdate
@@ -46,12 +58,24 @@
 			XmlFileName="$(StoragePack)/Lokad.Cloud.Storage.nuspec"
 			XPath="//n:package/n:metadata/n:version"
 			Value="$(StoragePackVersion)"/>
+		
+		<XmlUpdate
+			Prefix="n" Namespace="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
+			XmlFileName="$(AutofacPack)/Lokad.Cloud.Storage.Autofac.nuspec"
+			XPath="//n:package/n:metadata/n:version"
+			Value="$(AutofacPackVersion)"/>
+		<XmlUpdate
+			Prefix="n" Namespace="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
+			XmlFileName="$(AutofacPack)/Lokad.Cloud.Storage.Autofac.nuspec"
+			XPath="//n:package/n:metadata/n:dependencies/n:dependency[@id='Lokad.Cloud.Storage']/@version"
+			Value="$(StoragePackVersion)"/>
 	</Target>
 
 	<Target Name="BuildPackages" DependsOnTargets="UpdateNuspec">
 		<RemoveDir Directories="$(OutNuGetPackages)" />
 		<MakeDir Directories="$(OutNuGetPackages)" />
 		<Exec Command="$(NuGetExe) pack $(StoragePack)/Lokad.Cloud.Storage.nuspec /Verbose /OutputDirectory $(OutNuGetPackages)" />
+		<Exec Command="$(NuGetExe) pack $(AutofacPack)/Lokad.Cloud.Storage.Autofac.nuspec /Verbose /OutputDirectory $(OutNuGetPackages)" />
 	</Target>
 
 </Project>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>Lokad.Cloud.Storage.Autofac</id>
+    <version>0.0.0</version>
+    <authors>Lokad.com</authors>
+    <owners>Lokad.com</owners>
+    <licenseUrl>http://www.opensource.org/licenses/bsd-license.php</licenseUrl>
+    <projectUrl>http://lokad.github.com/lokad-cloud/</projectUrl>
+    <iconUrl>http://lokad.github.com/images/lokad-cloud-logo-100-100.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Optional Autofac modules for the Lokad.Cloud.Storage.</description>
+    <language>en-US</language>
+    <tags>azure, storage, blob, queue, table, lokad, cloud, autofac</tags>
+    <dependencies>
+      <dependency id="Lokad.Cloud.Storage" version="0.0.0" />
+      <dependency id="Autofac" version="2.5.2.830" />
+    </dependencies>
+  </metadata>
+</package>
