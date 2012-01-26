@@ -22,31 +22,42 @@ namespace Lokad.Cloud.Storage.Autofac
     /// </summary>
     public sealed class AzureStorageModule : Module
     {
+        private readonly CloudStorageAccount _account;
+
+        public AzureStorageModule()
+        {
+        }
+
+        public AzureStorageModule(CloudStorageAccount account)
+        {
+            _account = Patch(account);
+        }
+
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(c => CloudStorage
-                .ForAzureAccount(Patch(c.Resolve<CloudStorageAccount>()))
+                .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .BuildStorageProviders());
 
             builder.Register(c => CloudStorage
-                .ForAzureAccount(Patch(c.Resolve<CloudStorageAccount>()))
+                .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .BuildBlobStorage());
 
             builder.Register(c => CloudStorage
-                .ForAzureAccount(Patch(c.Resolve<CloudStorageAccount>()))
+                .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
                 .BuildQueueStorage());
 
             builder.Register(c => CloudStorage
-                .ForAzureAccount(Patch(c.Resolve<CloudStorageAccount>()))
+                .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
                 .WithRuntimeFinalizer(c.ResolveOptional<IRuntimeFinalizer>())
@@ -54,7 +65,7 @@ namespace Lokad.Cloud.Storage.Autofac
 
             builder.Register(c => new NeutralLogStorage
             {
-                BlobStorage = CloudStorage.ForAzureAccount(Patch(c.Resolve<CloudStorageAccount>())).WithDataSerializer(new CloudFormatter()).BuildBlobStorage()
+                BlobStorage = CloudStorage.ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>())).WithDataSerializer(new CloudFormatter()).BuildBlobStorage()
             });
         }
 
