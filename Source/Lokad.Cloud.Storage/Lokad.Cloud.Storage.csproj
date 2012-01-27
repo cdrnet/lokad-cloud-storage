@@ -103,7 +103,6 @@
     <Compile Include="InMemory\MemoryBlobStorageProvider.cs" />
     <Compile Include="InMemory\MemoryQueueStorageProvider.cs" />
     <Compile Include="InMemory\MemoryTableStorageProvider.cs" />
-    <Compile Include="IRuntimeFinalizer.cs" />
     <Compile Include="Queues\IQueueStorageProvider.cs" />
     <Compile Include="Queues\MessageEnvelope.cs" />
     <Compile Include="Queues\MessageWrapper.cs" />

@@ -61,9 +61,6 @@ namespace Lokad.Cloud.Storage
             /// <remarks>Can be null if not needed</remarks>
             protected IStorageObserver Observer { get; set; }
 
-            /// <remarks>Can be null if not needed</remarks>
-            protected IRuntimeFinalizer RuntimeFinalizer { get; private set; }
-
             /// <remarks></remarks>
             protected CloudStorageBuilder()
             {
@@ -98,15 +95,6 @@ namespace Lokad.Cloud.Storage
                 return this;
             }
 
-            /// <summary>
-            /// Optionally provide a runtime finalizer.
-            /// </summary>
-            public CloudStorageBuilder WithRuntimeFinalizer(IRuntimeFinalizer runtimeFinalizer)
-            {
-                RuntimeFinalizer = runtimeFinalizer;
-                return this;
-            }
-
             /// <remarks></remarks>
             public abstract IBlobStorageProvider BuildBlobStorage();
 
@@ -126,8 +114,7 @@ namespace Lokad.Cloud.Storage
                 return new CloudStorageProviders(
                     blobStorage,
                     queueStorage,
-                    tableStorage,
-                    RuntimeFinalizer);
+                    tableStorage);
             }
         }
     }
@@ -194,8 +181,7 @@ namespace Lokad.Cloud.Storage
                 QueueClient(),
                 BuildBlobStorage(),
                 DataSerializer,
-                Observer,
-                RuntimeFinalizer);
+                Observer);
         }
 
         CloudBlobClient BlobClient()
