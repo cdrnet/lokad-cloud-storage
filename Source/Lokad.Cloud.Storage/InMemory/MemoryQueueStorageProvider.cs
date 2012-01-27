@@ -206,6 +206,19 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        public int AbandonAll()
+        {
+            int count = 0;
+            lock (_sync)
+            {
+                while (_inProcessMessages.Count > 0)
+                {
+                    count += AbandonRange(_inProcessMessages.Keys.ToList());
+                }
+            }
+            return count;
+        }
+
         /// <remarks></remarks>
         public bool ResumeLater<T>(T message, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {

@@ -19,11 +19,18 @@ namespace Lokad.Cloud.Storage.Autofac
     {
         protected override void Load(ContainerBuilder builder)
         {
-            builder.Register(c => CloudStorage.ForInMemoryStorage().BuildStorageProviders());
+            builder.Register(c => CloudStorage.ForInMemoryStorage().BuildStorageProviders())
+                .OnRelease(p => p.QueueStorage.AbandonAll());
 
-            builder.Register(c => new MemoryBlobStorageProvider()).As<IBlobStorageProvider>();
-            builder.Register(c => new MemoryQueueStorageProvider()).As<IQueueStorageProvider>();
-            builder.Register(c => new MemoryTableStorageProvider()).As<ITableStorageProvider>();
+            builder.Register(c => new MemoryBlobStorageProvider())
+                .As<IBlobStorageProvider>();
+
+            builder.Register(c => new MemoryQueueStorageProvider())
+                .As<IQueueStorageProvider>()
+                .OnRelease(p => p.AbandonAll());
+
+            builder.Register(c => new MemoryTableStorageProvider())
+                .As<ITableStorageProvider>();
 
             builder.Register(c => new NeutralLogStorage { BlobStorage = new MemoryBlobStorageProvider() });
         }

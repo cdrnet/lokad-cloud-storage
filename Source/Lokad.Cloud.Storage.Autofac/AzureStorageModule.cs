@@ -39,7 +39,8 @@ namespace Lokad.Cloud.Storage.Autofac
                 .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
-                .BuildStorageProviders());
+                .BuildStorageProviders())
+                .OnRelease(p => p.QueueStorage.AbandonAll());
 
             builder.Register(c => CloudStorage
                 .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))
@@ -51,7 +52,8 @@ namespace Lokad.Cloud.Storage.Autofac
                 .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
-                .BuildQueueStorage());
+                .BuildQueueStorage())
+                .OnRelease(p => p.AbandonAll());
 
             builder.Register(c => CloudStorage
                 .ForAzureAccount(_account ?? Patch(c.Resolve<CloudStorageAccount>()))

@@ -24,7 +24,8 @@ namespace Lokad.Cloud.Storage.Autofac
                 .ForInMemoryStorage()
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
-                .BuildStorageProviders());
+                .BuildStorageProviders())
+                .OnRelease(p => p.QueueStorage.AbandonAll());
 
             builder.Register(c => CloudStorage
                 .ForInMemoryStorage()
@@ -36,7 +37,8 @@ namespace Lokad.Cloud.Storage.Autofac
                 .ForInMemoryStorage()
                 .WithDataSerializer(c.Resolve<IDataSerializer>())
                 .WithObserver(c.ResolveOptional<IStorageObserver>())
-                .BuildQueueStorage());
+                .BuildQueueStorage())
+                .OnRelease(p => p.AbandonAll());
 
             builder.Register(c => CloudStorage
                 .ForInMemoryStorage()

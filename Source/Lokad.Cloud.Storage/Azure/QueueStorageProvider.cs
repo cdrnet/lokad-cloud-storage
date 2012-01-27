@@ -27,7 +27,7 @@ namespace Lokad.Cloud.Storage.Azure
     /// </para>
     /// <para>All the methods of <see cref="QueueStorageProvider"/> are thread-safe.</para>
     /// </remarks>
-    public class QueueStorageProvider : IQueueStorageProvider, IDisposable
+    public class QueueStorageProvider : IQueueStorageProvider
     {
         internal const string OverflowingMessagesContainerName = "lokad-cloud-overflowing-messages";
         internal const string ResilientMessagesContainerName = "lokad-cloud-resilient-messages";
@@ -68,16 +68,6 @@ namespace Lokad.Cloud.Storage.Azure
             _observer = observer;
 
             _inProcessMessages = new Dictionary<object, InProcessMessage>(20, new IdentityComparer());
-        }
-
-        /// <summary>
-        /// Disposing the provider will cause an abandon on all currently messages currently
-        /// in-process. At the end of the life-cycle of the provider, normally there is no
-        /// message in-process.
-        /// </summary>
-        public void Dispose()
-        {
-            AbandonRange(_inProcessMessages.Keys.ToArray());
         }
 
         /// <remarks></remarks>
@@ -858,6 +848,26 @@ namespace Lokad.Cloud.Storage.Azure
         public int AbandonRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             return messages.Count(m => Abandon(m, timeToLive, delay));
+        }
+
+        public int AbandonAll()
+        {
+            int count = 0;
+            while(true)
+            {
+                List<object> messages;
+                lock (_sync)
+                {
+                    messages = _inProcessMessages.Keys.ToList();
+                }
+
+                if (messages.Count == 0)
+                {
+                    return count;
+                }
+
+                count += AbandonRange(messages);
+            }
         }
 
         /// <remarks></remarks>

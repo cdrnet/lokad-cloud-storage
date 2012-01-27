@@ -101,6 +101,12 @@ namespace Lokad.Cloud.Storage
         int AbandonRange<T>(IEnumerable<T> messages, TimeSpan timeToLive = default(TimeSpan), TimeSpan delay = default(TimeSpan));
 
         /// <summary>
+        /// Abandon all messages still being processed. This is recommended to call e.g. when forcing a worker to shutting.
+        /// </summary>
+        /// <returns>The number of original messages actually deleted.</returns>
+        int AbandonAll();
+
+        /// <summary>
         /// Resume a message being processed later and put it visibly back on the queue, without decreasing the poison detection dequeue count.
         /// </summary>
         /// <typeparam name="T">Type of the message.</typeparam>
