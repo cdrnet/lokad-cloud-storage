@@ -359,6 +359,37 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             }
         }
 
+
+        [Test]
+        public void ListBlobLocations()
+        {
+            var prefix = Guid.NewGuid().ToString("N");
+
+            var prefixed = Range.Array(10).Select(i => prefix + Guid.NewGuid().ToString("N")).ToArray();
+            var unprefixed = Range.Array(13).Select(i => Guid.NewGuid().ToString("N")).ToArray();
+
+            foreach (var n in prefixed)
+            {
+                BlobStorage.PutBlob(ContainerName, n, n);
+            }
+
+            foreach (var n in unprefixed)
+            {
+                BlobStorage.PutBlob(ContainerName, n, n);
+            }
+
+            var list = BlobStorage.ListBlobLocations(ContainerName, prefix).ToArray();
+
+            Assert.AreEqual(prefixed.Length, list.Length, "#A00");
+
+            foreach (var n in list)
+            {
+                Assert.AreEqual(ContainerName, n.ContainerName);
+                Assert.IsTrue(prefixed.Contains(n.Path), "#A01");
+                Assert.IsFalse(unprefixed.Contains(n.Path), "#A02");
+            }
+        }
+
         [Test]
         public void ListBlobs()
         {

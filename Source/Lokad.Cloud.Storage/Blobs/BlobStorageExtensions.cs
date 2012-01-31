@@ -29,6 +29,54 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <summary>
+        /// List the blob locations of all blobs matching the provided blob name prefix.
+        /// </summary>
+        /// <remarks>
+        /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
+        /// </remarks>
+        public static IEnumerable<IBlobLocation> ListBlobLocations(this IBlobStorageProvider provider, string containerName, string blobNamePrefix = null)
+        {
+            return provider.ListBlobNames(containerName, blobNamePrefix)
+                .Select(name => new BlobLocation(containerName, name));
+        }
+
+        /// <summary>
+        /// List the blob locations of all blobs matching the provided blob name prefix.
+        /// </summary>
+        /// <remarks>
+        /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
+        /// </remarks>
+        public static IEnumerable<IBlobLocation> ListBlobLocations(this IBlobStorageProvider provider, IBlobLocation blobLocationPrefix)
+        {
+            return provider.ListBlobNames(blobLocationPrefix.ContainerName, blobLocationPrefix.Path)
+                .Select(name => new BlobLocation(blobLocationPrefix.ContainerName, name));
+        }
+
+        /// <summary>
+        /// List the blob locations (with the provided type) of all blobs matching the provided blob name prefix.
+        /// </summary>
+        /// <remarks>
+        /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
+        /// </remarks>
+        public static IEnumerable<IBlobLocationAndType<T>> ListBlobLocations<T>(this IBlobStorageProvider provider, string containerName, string blobNamePrefix = null)
+        {
+            return provider.ListBlobNames(containerName, blobNamePrefix)
+                .Select(name => new BlobLocationAndType<T>(containerName, name));
+        }
+
+        /// <summary>
+        /// List the blob locations (with the provided type) of all blobs matching the provided blob name prefix.
+        /// </summary>
+        /// <remarks>
+        /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
+        /// </remarks>
+        public static IEnumerable<IBlobLocationAndType<T>> ListBlobLocations<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> blobLocationPrefix)
+        {
+            return provider.ListBlobNames(blobLocationPrefix.ContainerName, blobLocationPrefix.Path)
+                .Select(name => new BlobLocationAndType<T>(blobLocationPrefix.ContainerName, name));
+        }
+
+        /// <summary>
         /// List and get all blobs matching the provided blob name prefix.
         /// </summary>
         /// <remarks>
