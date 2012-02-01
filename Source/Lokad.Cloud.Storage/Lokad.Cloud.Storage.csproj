@@ -64,6 +64,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DelegateFormatter.cs" />
     <Compile Include="Azure\RetryPolicies.cs" />
     <Compile Include="Azure\BlobStorageProvider.cs" />
     <Compile Include="Azure\DataCorruptionException.cs" />
