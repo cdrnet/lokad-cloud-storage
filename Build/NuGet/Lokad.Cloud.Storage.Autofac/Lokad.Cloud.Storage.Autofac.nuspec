@@ -9,7 +9,7 @@
     <projectUrl>http://lokad.github.com/lokad-cloud/</projectUrl>
     <iconUrl>http://lokad.github.com/images/lokad-cloud-logo-100-100.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Optional Autofac modules for the Lokad.Cloud.Storage.</description>
+    <description>Optional Autofac modules for Lokad.Cloud.Storage. You do NOT need this package, unless you want to integrate Lokad.Cloud.Storage into your already existing Autofac container quickly.</description>
     <language>en-US</language>
     <tags>azure, storage, blob, queue, table, lokad, cloud, autofac</tags>
     <dependencies>
