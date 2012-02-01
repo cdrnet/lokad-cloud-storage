@@ -88,12 +88,23 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <summary>
+        /// List and get all blobs matching the provided blob name prefix.
+        /// </summary>
+        /// <remarks>
+        /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
+        /// </remarks>
+        public static IEnumerable<T> ListBlobs<T>(this IBlobStorageProvider provider, IBlobLocation locationPrefix, int skip = 0, IDataSerializer serializer = null)
+        {
+            return provider.ListBlobs<T>(locationPrefix.ContainerName, locationPrefix.Path, skip, serializer);
+        }
+
+        /// <summary>
         /// Deletes a blob if it exists.
         /// </summary>
         /// <remarks>
         /// <para>This method is idempotent.</para>
         /// </remarks>
-        public static bool DeleteBlobIfExist<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location)
+        public static bool DeleteBlobIfExist(this IBlobStorageProvider provider, IBlobLocation location)
         {
             return provider.DeleteBlobIfExist(location.ContainerName, location.Path);
         }
@@ -116,13 +127,19 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <remarks></remarks>
+        public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocation location, IDataSerializer serializer = null)
+        {
+            return provider.GetBlob<T>(location.ContainerName, location.Path, serializer);
+        }
+
+        /// <remarks></remarks>
         public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, out string etag, IDataSerializer serializer = null)
         {
             return provider.GetBlob<T>(location.ContainerName, location.Path, out etag, serializer);
         }
 
         /// <remarks></remarks>
-        public static string GetBlobEtag<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location)
+        public static string GetBlobEtag(this IBlobStorageProvider provider, IBlobLocation location)
         {
             return provider.GetBlobEtag(location.ContainerName, location.Path);
         }
@@ -134,7 +151,19 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <remarks></remarks>
+        public static void PutBlob<T>(this IBlobStorageProvider provider, IBlobLocation location, T item, IDataSerializer serializer = null)
+        {
+            provider.PutBlob(location.ContainerName, location.Path, item, serializer);
+        }
+
+        /// <remarks></remarks>
         public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, bool overwrite, IDataSerializer serializer = null)
+        {
+            return provider.PutBlob(location.ContainerName, location.Path, item, overwrite, serializer);
+        }
+
+        /// <remarks></remarks>
+        public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocation location, T item, bool overwrite, IDataSerializer serializer = null)
         {
             return provider.PutBlob(location.ContainerName, location.Path, item, overwrite, serializer);
         }
@@ -161,6 +190,24 @@ namespace Lokad.Cloud.Storage
         {
             return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, t => update(t), serializer);
         }
+
+        /// <summary>
+        /// Updates a blob if it already exists.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The provided lambdas can be executed multiple times in case of
+        /// concurrency-related retrials, so be careful with side-effects
+        /// (like incrementing a counter in them).
+        /// </para>
+        /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
+        /// </remarks>
+        /// <returns>The value returned by the lambda, or empty if the blob did not exist.</returns>
+        public static Maybe<T> UpdateBlobIfExist<T>(this IBlobStorageProvider provider, IBlobLocation location, Func<T, T> update, IDataSerializer serializer = null)
+        {
+            return provider.UpsertBlobOrSkip(location.ContainerName, location.Path, () => Maybe<T>.Empty, t => update(t), serializer);
+        }
+
 
         /// <summary>
         /// Updates a blob if it already exists.
@@ -217,6 +264,27 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda.</returns>
         public static T UpsertBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, Func<T> insert, Func<T, T> update, IDataSerializer serializer = null)
+        {
+            return provider.UpsertBlobOrSkip<T>(location.ContainerName, location.Path, () => insert(), t => update(t), serializer).Value;
+        }
+
+        /// <summary>
+        /// Inserts or updates a blob depending on whether it already exists or not.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The provided lambdas can be executed multiple times in case of
+        /// concurrency-related retrials, so be careful with side-effects
+        /// (like incrementing a counter in them).
+        /// </para>
+        /// <para>
+        /// This method is idempotent if and only if the provided lambdas are idempotent
+        /// and if the object returned by the insert lambda is an invariant to the update lambda
+        /// (if the second condition is not met, it is idempotent after the first successful call).
+        /// </para>
+        /// </remarks>
+        /// <returns>The value returned by the lambda.</returns>
+        public static T UpsertBlob<T>(this IBlobStorageProvider provider, IBlobLocation location, Func<T> insert, Func<T, T> update, IDataSerializer serializer = null)
         {
             return provider.UpsertBlobOrSkip<T>(location.ContainerName, location.Path, () => insert(), t => update(t), serializer).Value;
         }

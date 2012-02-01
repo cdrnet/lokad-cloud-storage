@@ -79,6 +79,13 @@
     <Compile Include="Blobs\DevBlobStorageTests.cs" />
     <Compile Include="CloudStorageTests.cs" />
     <Compile Include="CompressedRawFormatterTests.cs" />
+    <Compile Include="Documents\AdhocDocumentSetTests.cs" />
+    <Compile Include="Documents\CustomMyDocumentSetTests.cs" />
+    <Compile Include="Documents\SimpleMyDocumentSetTests.cs" />
+    <Compile Include="Documents\DocumentSetTests.cs" />
+    <Compile Include="Documents\SimpleMyDocumentSet.cs" />
+    <Compile Include="Documents\MyDocument.cs" />
+    <Compile Include="Documents\CustomMyDocumentSet.cs" />
     <Compile Include="RawFormatterTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Queues\DevQueueStorageTests.cs" />
@@ -108,6 +115,7 @@
   <ItemGroup>
     <Content Include="Shared\_ReadMe.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
   </Target>

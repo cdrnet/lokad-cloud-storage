@@ -85,6 +85,10 @@
     <Compile Include="CloudStorage.cs" />
     <Compile Include="CloudStorageProviders.cs" />
     <Compile Include="CompressedRawFormatter.cs" />
+    <Compile Include="Documents\DocumentSet.cs" />
+    <Compile Include="Documents\EnumerableDocumentSet.cs" />
+    <Compile Include="Documents\IDocumentSet.cs" />
+    <Compile Include="Documents\IEnumerableDocumentSet.cs" />
     <Compile Include="Instrumentation\Events\MessagesRevivedEvent.cs" />
     <Compile Include="Instrumentation\StorageEventLevel.cs" />
     <Compile Include="Queues\KeepAliveMessageHandle.cs" />
@@ -149,6 +153,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

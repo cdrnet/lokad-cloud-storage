@@ -28,7 +28,7 @@ namespace Lokad.Cloud.Storage
         public string Path { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BlobLocation"/> class.
+        /// Initializes a new instance of the <see cref="BlobLocationAndType{T}"/> class.
         /// </summary>
         /// <param name="containerName">Name of the container.</param>
         /// <param name="path">The path.</param>
@@ -36,6 +36,16 @@ namespace Lokad.Cloud.Storage
         {
             ContainerName = containerName;
             Path = path;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BlobLocationAndType{T}"/> class,
+        /// pointing to the same location (copy) as the provided location.
+        /// </summary>
+        public BlobLocationAndType(IBlobLocation fromLocation)
+        {
+            ContainerName = fromLocation.ContainerName;
+            Path = fromLocation.Path;
         }
     }
 }

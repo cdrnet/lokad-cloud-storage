@@ -37,5 +37,15 @@ namespace Lokad.Cloud.Storage
             ContainerName = containerName;
             Path = path;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BlobLocation"/> class,
+        /// pointing to the same location (copy) as the provided location.
+        /// </summary>
+        public BlobLocation(IBlobLocation fromLocation)
+        {
+            ContainerName = fromLocation.ContainerName;
+            Path = fromLocation.Path;
+        }
     }
 }
