@@ -86,10 +86,9 @@
     <Compile Include="CloudStorage.cs" />
     <Compile Include="CloudStorageProviders.cs" />
     <Compile Include="CompressedRawFormatter.cs" />
+    <Compile Include="Documents\CompressedBinaryDocumentSet.cs" />
     <Compile Include="Documents\DocumentSet.cs" />
-    <Compile Include="Documents\EnumerableDocumentSet.cs" />
     <Compile Include="Documents\IDocumentSet.cs" />
-    <Compile Include="Documents\IEnumerableDocumentSet.cs" />
     <Compile Include="Instrumentation\Events\MessagesRevivedEvent.cs" />
     <Compile Include="Instrumentation\StorageEventLevel.cs" />
     <Compile Include="Queues\KeepAliveMessageHandle.cs" />

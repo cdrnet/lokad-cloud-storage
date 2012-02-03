@@ -4,13 +4,14 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 
 namespace Lokad.Cloud.Storage.Documents
 {
     /// <summary>
     /// Represents a set of documents and how they are persisted.
     /// </summary>
-    public interface IDocumentSet<TDocument, in TKey>
+    public interface IDocumentSet<TDocument, TKey>
     {
         /// <summary>
         /// Try to read the document, if it exists.
@@ -43,5 +44,28 @@ namespace Lokad.Cloud.Storage.Documents
         /// If the document does not exist yet, insert a new document with the provided insert function.
         /// </summary>
         TDocument UpdateOrInsert(TKey key, Func<TDocument, TDocument> updateDocument, Func<TDocument> insertDocument);
+
+        /// <summary>
+        /// List the keys of all documents. Not all document sets will support this,
+        /// those that do not will throw a NotSupportedException.
+        /// </summary>
+        /// <exception cref="NotSupportedException" />
+        IEnumerable<TKey> ListAllKeys();
+
+        /// <summary>
+        /// Read all documents matching the provided prefix.
+        /// Not all document sets will support this, those that
+        /// do not will throw a NotSupportedException.
+        /// </summary>
+        /// <exception cref="NotSupportedException" />
+        IEnumerable<TDocument> GetAll();
+
+        /// <summary>
+        /// Delete all document matching the provided prefix.
+        /// Not all document sets will support this, those that
+        /// do not will throw a NotSupportedException.
+        /// </summary>
+        /// <exception cref="NotSupportedException" />
+        void DeleteAll();
     }
 }

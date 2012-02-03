@@ -4,6 +4,8 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Lokad.Cloud.Storage.Documents
 {
@@ -12,15 +14,21 @@ namespace Lokad.Cloud.Storage.Documents
     /// </summary>
     public class DocumentSet<TDocument, TKey> : IDocumentSet<TDocument, TKey>
     {
-        public DocumentSet(IBlobStorageProvider blobs, Func<TKey, IBlobLocation> locationOfKey, IDataSerializer serializer = null)
+        public DocumentSet(
+            IBlobStorageProvider blobs,
+            Func<TKey, IBlobLocation> locationOfKey,
+            Func<IBlobLocation> commonPrefix = null,
+            IDataSerializer serializer = null)
         {
             Blobs = blobs;
             Serializer = serializer;
             LocationOfKey = locationOfKey;
+            CommonPrefixLocation = commonPrefix;
         }
 
         protected IBlobStorageProvider Blobs { get; private set; }
         protected Func<TKey, IBlobLocation> LocationOfKey { get; private set; }
+        protected Func<IBlobLocation> CommonPrefixLocation { get; private set; }
         protected IDataSerializer Serializer { get; set; }
 
         /// <summary>
@@ -105,6 +113,69 @@ namespace Lokad.Cloud.Storage.Documents
             var document = Blobs.UpsertBlob(location, insertDocument, updateDocument, Serializer);
             SetCache(location, document);
             return document;
+        }
+
+        /// <summary>
+        /// List the keys of all documents. Not all document sets will support this,
+        /// those that do not will throw a NotSupportedException.
+        /// </summary>
+        /// <exception cref="NotSupportedException" />
+        public virtual IEnumerable<TKey> ListAllKeys()
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Read all documents matching the provided prefix.
+        /// Not all document sets will support this, those that
+        /// do not will throw a NotSupportedException.
+        /// </summary>
+        /// <exception cref="NotSupportedException" />
+        public IEnumerable<TDocument> GetAll()
+        {
+            if (CommonPrefixLocation == null)
+            {
+                throw new NotSupportedException();
+            }
+
+            return GetAllInternal(CommonPrefixLocation());
+        }
+
+        /// <summary>
+        /// Delete all document matching the provided prefix.
+        /// Not all document sets will support this, those that
+        /// do not will throw a NotSupportedException.
+        /// </summary>
+        /// <exception cref="NotSupportedException" />
+        public void DeleteAll()
+        {
+            if (CommonPrefixLocation == null)
+            {
+                throw new NotSupportedException();
+            }
+
+            DeleteAllInternal(CommonPrefixLocation());
+        }
+
+        protected IEnumerable<TDocument> GetAllInternal(IBlobLocation prefix)
+        {
+            return Blobs
+                .ListBlobLocations(prefix.ContainerName, prefix.Path)
+                .Select(loc =>
+                    {
+                        TDocument doc;
+                        return TryGetCache(loc, out doc)
+                            ? new Maybe<TDocument>(doc)
+                            : Blobs.GetBlob<TDocument>(loc, Serializer);
+                    })
+                .Where(blob => blob.HasValue)
+                .Select(blob => blob.Value);
+        }
+
+        protected void DeleteAllInternal(IBlobLocation prefix)
+        {
+            RemoveCache(prefix);
+            Blobs.DeleteAllBlobs(prefix);
         }
 
         /// <summary>

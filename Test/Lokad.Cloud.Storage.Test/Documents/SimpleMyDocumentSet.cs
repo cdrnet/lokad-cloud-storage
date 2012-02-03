@@ -13,7 +13,10 @@ namespace Lokad.Cloud.Storage.Test.Documents
     public class SimpleMyDocumentSet : DocumentSet<MyDocument, int>
     {
         public SimpleMyDocumentSet(IBlobStorageProvider blobs)
-            : base(blobs, key => new BlobLocation("document-container", key.ToString()), new CloudFormatter())
+            : base(blobs,
+                key => new BlobLocation("document-container", key.ToString()),
+                () => new BlobLocation("document-container", ""),
+                new CloudFormatter())
         {
         }
     }

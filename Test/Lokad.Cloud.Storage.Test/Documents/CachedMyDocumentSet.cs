@@ -18,9 +18,10 @@ namespace Lokad.Cloud.Storage.Test.Documents
         private readonly MemoryCache _cache;
 
         public CachedMyDocumentSet(IBlobStorageProvider blobs)
-            : base(blobs, key => new BlobLocation("document-container", key.ToString()), new CloudFormatter())
+            : base(blobs, key => new BlobLocation("document-container", key.ToString()))
         {
             _cache = MemoryCache.Default;
+            Serializer = new CloudFormatter();
         }
 
         protected override bool TryGetCache(IBlobLocation location, out MyDocument document)

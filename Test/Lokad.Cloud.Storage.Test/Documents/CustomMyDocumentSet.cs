@@ -13,12 +13,12 @@ using Lokad.Cloud.Storage.Documents;
 namespace Lokad.Cloud.Storage.Test.Documents
 {
     /// <summary>
-    /// Full custom document set with ad-hoc serialization
+    /// Full custom document set with compressed BinaryWriter serialization
     /// </summary>
-    public class CustomMyDocumentSet : EnumerableDocumentSet<MyDocument, int, object>, IDataSerializer
+    public class CustomMyDocumentSet : CompressedBinaryDocumentSet<MyDocument, int>
     {
         public CustomMyDocumentSet(IBlobStorageProvider blobs)
-            : base(blobs, KeyToLocation, prefix => new BlobLocation("document-container", ""))
+            : base(blobs, KeyToLocation, () => new BlobLocation("document-container", ""))
         {
             Serializer = this;
         }
@@ -28,53 +28,31 @@ namespace Lokad.Cloud.Storage.Test.Documents
             return new BlobLocation("document-container", key.ToString());
         }
 
-        public override IEnumerable<int> ListAllKeys(object prefix = null)
+        public override IEnumerable<int> ListAllKeys()
         {
             return Blobs.ListBlobNames("document-container").Select(Int32.Parse);
         }
 
-        void IDataSerializer.Serialize(object instance, Stream destinationStream, Type type)
+        protected override void Serialize(MyDocument document, BinaryWriter writer)
         {
-            var document = instance as MyDocument;
-            if (document == null)
+            if (string.IsNullOrEmpty(document.ArbitraryString))
             {
-                throw new NotSupportedException();
+                writer.Write(0);
             }
-
-            using (var buffered = new BufferedStream(destinationStream, 4 * 1024))
-            using (var writer = new BinaryWriter(buffered))
+            else
             {
-                if (string.IsNullOrEmpty(document.ArbitraryString))
-                {
-                    writer.Write(0);
-                }
-                else
-                {
-                    var stringBytes = Encoding.UTF8.GetBytes(document.ArbitraryString);
-                    writer.Write(stringBytes.Length);
-                    writer.Write(stringBytes);
-                }
-
-                writer.Flush();
-                buffered.Flush();
+                var stringBytes = Encoding.UTF8.GetBytes(document.ArbitraryString);
+                writer.Write(stringBytes.Length);
+                writer.Write(stringBytes);
             }
         }
 
-        object IDataSerializer.Deserialize(Stream sourceStream, Type type)
+        protected override MyDocument Deserialize(BinaryReader reader)
         {
-            if (type != typeof(MyDocument))
-            {
-                throw new NotSupportedException();
-            }
-
-            using (var reader = new BinaryReader(sourceStream))
-            {
-                int textBytesCount = reader.ReadInt32();
-                var textBytes = reader.ReadBytes(textBytesCount);
-                var text = Encoding.UTF8.GetString(textBytes);
-
-                return new MyDocument { ArbitraryString = text };
-            }
+            int textBytesCount = reader.ReadInt32();
+            var textBytes = reader.ReadBytes(textBytesCount);
+            var text = Encoding.UTF8.GetString(textBytes);
+            return new MyDocument { ArbitraryString = text };
         }
     }
 }
