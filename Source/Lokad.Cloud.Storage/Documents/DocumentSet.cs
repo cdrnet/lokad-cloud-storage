@@ -28,7 +28,13 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public bool TryGet(TKey key, out TDocument document)
         {
-            var result = Blobs.GetBlob<TDocument>(LocationOfKey(key), Serializer);
+            var location = LocationOfKey(key);
+            if (TryGetCache(location, out document))
+            {
+                return true;
+            }
+
+            var result = Blobs.GetBlob<TDocument>(location, Serializer);
             if (!result.HasValue)
             {
                 document = default(TDocument);
@@ -44,7 +50,9 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public bool DeleteIfExist(TKey key)
         {
-            return Blobs.DeleteBlobIfExist(LocationOfKey(key));
+            var location = LocationOfKey(key);
+            RemoveCache(location);
+            return Blobs.DeleteBlobIfExist(location);
         }
 
         /// <summary>
@@ -52,7 +60,11 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public void InsertOrReplace(TKey key, TDocument document)
         {
-            Blobs.PutBlob(LocationOfKey(key), document, true, Serializer);
+            var location = LocationOfKey(key);
+            if (Blobs.PutBlob(location, document, true, Serializer))
+            {
+                SetCache(location, document);
+            }
         }
 
         /// <summary>
@@ -60,8 +72,15 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public TDocument UpdateIfExist(TKey key, Func<TDocument, TDocument> updateDocument)
         {
-            return Blobs.UpdateBlobIfExist(LocationOfKey(key), updateDocument, Serializer)
-                .GetValue(() => default(TDocument));
+            var location = LocationOfKey(key);
+            var result = Blobs.UpdateBlobIfExist(location, updateDocument, Serializer);
+            if (!result.HasValue)
+            {
+                return default(TDocument);
+            }
+
+            SetCache(location, result.Value);
+            return result.Value;
         }
 
         /// <summary>
@@ -70,7 +89,10 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public TDocument Update(TKey key, Func<TDocument, TDocument> updateDocument, Func<TDocument> defaultIfNotExist)
         {
-            return Blobs.UpsertBlob(LocationOfKey(key), () => updateDocument(defaultIfNotExist()), updateDocument, Serializer);
+            var location = LocationOfKey(key);
+            var document = Blobs.UpsertBlob(location, () => updateDocument(defaultIfNotExist()), updateDocument, Serializer);
+            SetCache(location, document);
+            return document;
         }
 
         /// <summary>
@@ -79,7 +101,36 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public TDocument UpdateOrInsert(TKey key, Func<TDocument, TDocument> updateDocument, Func<TDocument> insertDocument)
         {
-            return Blobs.UpsertBlob(LocationOfKey(key), insertDocument, updateDocument, Serializer);
+            var location = LocationOfKey(key);
+            var document = Blobs.UpsertBlob(location, insertDocument, updateDocument, Serializer);
+            SetCache(location, document);
+            return document;
+        }
+
+        /// <summary>
+        /// Override this method to plug in your cache provider, if needed.
+        /// By default, no caching is performed.
+        /// </summary>
+        protected virtual bool TryGetCache(IBlobLocation location, out TDocument document)
+        {
+            document = default(TDocument);
+            return false;
+        }
+
+        /// <summary>
+        /// Override this method to plug in your cache provider, if needed.
+        /// By default, no caching is performed.
+        /// </summary>
+        protected virtual void SetCache(IBlobLocation location, TDocument document)
+        {
+        }
+
+        /// <summary>
+        /// Override this method to plug in your cache provider, if needed.
+        /// By default, no caching is performed.
+        /// </summary>
+        protected virtual void RemoveCache(IBlobLocation location)
+        {
         }
     }
 }

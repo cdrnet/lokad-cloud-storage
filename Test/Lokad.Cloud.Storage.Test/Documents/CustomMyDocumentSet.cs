@@ -36,7 +36,7 @@ namespace Lokad.Cloud.Storage.Test.Documents
         void IDataSerializer.Serialize(object instance, Stream destinationStream, Type type)
         {
             var document = instance as MyDocument;
-            if (instance == null)
+            if (document == null)
             {
                 throw new NotSupportedException();
             }

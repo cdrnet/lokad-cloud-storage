@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Lokad.Cloud.Storage.Documents
 {
@@ -43,7 +44,18 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public IEnumerable<TDocument> GetAll(TPrefix prefix = default(TPrefix))
         {
-            return Blobs.ListBlobs<TDocument>(LocationOfPrefix(prefix), serializer: Serializer);
+            IBlobLocation location = LocationOfPrefix(prefix);
+            var names = Blobs.ListBlobLocations(location.ContainerName, location.Path);
+
+            return names.Select(loc =>
+                {
+                    TDocument doc;
+                    return TryGetCache(loc, out doc)
+                        ? new Maybe<TDocument>(doc)
+                        : Blobs.GetBlob<TDocument>(loc, Serializer);
+                })
+                .Where(blob => blob.HasValue)
+                .Select(blob => blob.Value);
         }
 
         /// <summary>
@@ -51,7 +63,9 @@ namespace Lokad.Cloud.Storage.Documents
         /// </summary>
         public void DeleteAll(TPrefix prefix = default(TPrefix))
         {
-            Blobs.DeleteAllBlobs(LocationOfPrefix(prefix));
+            var location = LocationOfPrefix(prefix);
+            RemoveCache(location);
+            Blobs.DeleteAllBlobs(location);
         }
     }
 }
