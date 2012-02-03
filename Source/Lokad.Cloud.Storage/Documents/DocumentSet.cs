@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Lokad.Cloud.Storage.Documents
 {
@@ -50,6 +49,7 @@ namespace Lokad.Cloud.Storage.Documents
             }
 
             document = result.Value;
+            SetCache(location, result.Value);
             return true;
         }
 
@@ -138,7 +138,7 @@ namespace Lokad.Cloud.Storage.Documents
                 throw new NotSupportedException();
             }
 
-            return GetAllInternal(CommonPrefixLocation());
+            return GetAllInternal(Blobs.ListBlobLocations(CommonPrefixLocation()));
         }
 
         /// <summary>
@@ -157,19 +157,25 @@ namespace Lokad.Cloud.Storage.Documents
             DeleteAllInternal(CommonPrefixLocation());
         }
 
-        protected IEnumerable<TDocument> GetAllInternal(IBlobLocation prefix)
+        protected IEnumerable<TDocument> GetAllInternal(IEnumerable<IBlobLocation> locations)
         {
-            return Blobs
-                .ListBlobLocations(prefix)
-                .Select(loc =>
+            foreach (var location in locations)
+            {
+                TDocument doc;
+                if (TryGetCache(location, out doc))
+                {
+                    yield return doc;
+                }
+                else
+                {
+                    var blob = Blobs.GetBlob<TDocument>(location, Serializer);
+                    if (blob.HasValue)
                     {
-                        TDocument doc;
-                        return TryGetCache(loc, out doc)
-                            ? new Maybe<TDocument>(doc)
-                            : Blobs.GetBlob<TDocument>(loc, Serializer);
-                    })
-                .Where(blob => blob.HasValue)
-                .Select(blob => blob.Value);
+                        SetCache(location, blob.Value);
+                        yield return blob.Value;
+                    }
+                }
+            }
         }
 
         protected void DeleteAllInternal(IBlobLocation prefix)
