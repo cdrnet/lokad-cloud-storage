@@ -18,10 +18,10 @@ namespace Lokad.Cloud.Storage.Documents
         public CompressedBinaryDocumentSet(
             IBlobStorageProvider blobs,
             Func<TKey, IBlobLocation> locationOfKey,
-            Func<IBlobLocation> commonPrefix = null,
-            IDataSerializer serializer = null)
-            : base(blobs, locationOfKey, commonPrefix, serializer)
+            Func<IBlobLocation> commonPrefix = null)
+            : base(blobs, locationOfKey, commonPrefix)
         {
+            Serializer = this;
         }
 
         protected abstract void Serialize(TDocument document, BinaryWriter writer);

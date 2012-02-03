@@ -20,7 +20,6 @@ namespace Lokad.Cloud.Storage.Test.Documents
         public CustomMyDocumentSet(IBlobStorageProvider blobs)
             : base(blobs, KeyToLocation, () => new BlobLocation("document-container", ""))
         {
-            Serializer = this;
         }
 
         private static IBlobLocation KeyToLocation(int key)
