@@ -160,7 +160,7 @@ namespace Lokad.Cloud.Storage.Documents
         protected IEnumerable<TDocument> GetAllInternal(IBlobLocation prefix)
         {
             return Blobs
-                .ListBlobLocations(prefix.ContainerName, prefix.Path)
+                .ListBlobLocations(prefix)
                 .Select(loc =>
                     {
                         TDocument doc;

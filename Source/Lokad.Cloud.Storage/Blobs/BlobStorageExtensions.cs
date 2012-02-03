@@ -29,6 +29,18 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <summary>
+        /// List the blob names of all blobs matching the provided blob name prefix.
+        /// </summary>
+        /// <remarks>
+        /// <para>This method is sideeffect-free, except for infrastructure effects like thread pool usage.</para>
+        /// </remarks>
+        public static IEnumerable<T> ListBlobNames<T>(this IBlobStorageProvider provider, IBlobLocation locationPrefix) where T : UntypedBlobName
+        {
+            return provider.ListBlobNames(locationPrefix.ContainerName, locationPrefix.Path)
+                .Select(UntypedBlobName.Parse<T>);
+        }
+
+        /// <summary>
         /// List the blob locations of all blobs matching the provided blob name prefix.
         /// </summary>
         /// <remarks>
