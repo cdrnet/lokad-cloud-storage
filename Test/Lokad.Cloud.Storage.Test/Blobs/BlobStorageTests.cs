@@ -4,6 +4,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Lokad.Cloud.Storage.Test.Shared;
 using NUnit.Framework;
@@ -15,18 +16,18 @@ namespace Lokad.Cloud.Storage.Test.Blobs
     [TestFixture]
     public abstract class BlobStorageTests
     {
-        private const string ContainerName = "tests-blobstorageprovider-mycontainer";
-        private const string BlobName = "myprefix/myblob";
+        protected const string ContainerName = "tests-blobstorageprovider-mycontainer";
+        protected const string BlobName = "myprefix/myblob";
 
         protected readonly IBlobStorageProvider BlobStorage;
 
-        protected BlobStorageTests(CloudStorageProviders storage)
+        protected BlobStorageTests(IBlobStorageProvider storage)
         {
-            BlobStorage = storage.BlobStorage;
+            BlobStorage = storage;
         }
 
         [TestFixtureSetUp]
-        public void Setup()
+        public void FixtureSetUp()
         {
             BlobStorage.CreateContainerIfNotExist(ContainerName);
             BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
@@ -141,7 +142,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
-        public void EtagChangesWithBlogChange()
+        public virtual void EtagChangesWithBlogChange()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
             var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
@@ -449,6 +450,9 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             var result = BlobStorage.TryAcquireLease(ContainerName, blobName);
             Assert.IsTrue(result.IsSuccess);
             Assert.IsNotNullOrEmpty(result.Value);
+
+            // cleanup
+            BlobStorage.TryReleaseLease(ContainerName, blobName, result.Value);
         }
 
         [Test]
@@ -458,11 +462,15 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             var result = BlobStorage.TryAcquireLease(ContainerName, blobName);
             Assert.IsTrue(result.IsSuccess);
             Assert.IsNotNullOrEmpty(result.Value);
+            var leaseId = result.Value;
 
             // Second trial should fail
             result = BlobStorage.TryAcquireLease(ContainerName, blobName);
             Assert.IsFalse(result.IsSuccess);
             Assert.AreEqual("Conflict", result.Error);
+
+            // cleanup
+            BlobStorage.TryReleaseLease(ContainerName, blobName, leaseId);
         }
 
         [Test]
@@ -477,8 +485,11 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public void CanNotReleaseLockedBlobWithoutMatchingLeaseId()
         {
             var blobName = CreateNewBlob();
-            BlobStorage.TryAcquireLease(ContainerName, blobName);
+            var result = BlobStorage.TryAcquireLease(ContainerName, blobName);
             Assert.IsFalse(BlobStorage.TryReleaseLease(ContainerName, blobName, Guid.NewGuid().ToString("N")).IsSuccess);
+
+            // cleanup
+            BlobStorage.TryReleaseLease(ContainerName, blobName, result.Value);
         }
 
         [Test]

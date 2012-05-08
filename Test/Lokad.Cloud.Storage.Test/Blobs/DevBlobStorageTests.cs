@@ -12,7 +12,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
     public class DevBlobStorageTests : BlobStorageTests
     {
         public DevBlobStorageTests()
-            : base(CloudStorage.ForDevelopmentStorage().BuildStorageProviders())
+            : base(CloudStorage.ForDevelopmentStorage().BuildBlobStorage())
         {
         }
     }

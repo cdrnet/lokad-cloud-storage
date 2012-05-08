@@ -39,6 +39,12 @@ namespace Lokad.Cloud.Storage
             return new AzureCloudStorageBuilder(new CloudStorageAccount(new StorageCredentialsAccountAndKey(accountName, key), useHttps));
         }
 
+        /// <summary>Caution, only provides a blob storage provider</summary>
+        public static CloudStorageBuilder ForLocalFileSystem(string rootPath)
+        {
+            return new FileStorageBuilder(rootPath);
+        }
+
         /// <remarks></remarks>
         public static CloudStorageBuilder ForDevelopmentStorage()
         {
@@ -207,6 +213,31 @@ namespace Lokad.Cloud.Storage
             queueClient.RetryPolicy = policies.ForAzureStorageClient;
             queueClient.Timeout = TimeSpan.FromSeconds(300);
             return queueClient;
+        }
+    }
+
+    internal sealed class FileStorageBuilder : CloudStorage.CloudStorageBuilder
+    {
+        private readonly string _rootPath;
+
+        internal FileStorageBuilder(string rootPath)
+        {
+            _rootPath = rootPath;
+        }
+
+        public override IBlobStorageProvider BuildBlobStorage()
+        {
+            return new FileSystem.FileBlobStorageProvider(_rootPath, DataSerializer);
+        }
+
+        public override ITableStorageProvider BuildTableStorage()
+        {
+            return null;
+        }
+
+        public override IQueueStorageProvider BuildQueueStorage()
+        {
+            return null;
         }
     }
 }

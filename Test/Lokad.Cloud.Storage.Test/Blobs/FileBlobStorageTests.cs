@@ -4,22 +4,24 @@
 #endregion
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
+using Lokad.Cloud.Storage.FileSystem;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Test.Blobs
 {
     [TestFixture]
-    [Category("InMemoryStorage")]
-    public class MemoryBlobStorageTests : BlobStorageTests
+    [Category("FileStorage")]
+    public class FileBlobStorageTests : BlobStorageTests
     {
-        private const string ContainerName1 = "container-1";
-        private const string ContainerName2 = "container-2";
-        private const string ContainerName3 = "container-3";
+        const string ContainerName1 = "container-1";
+        const string ContainerName2 = "container-2";
+        const string ContainerName3 = "container-3";
 
-        public MemoryBlobStorageTests()
-            : base(CloudStorage.ForInMemoryStorage().BuildBlobStorage())
+        public FileBlobStorageTests()
+            : base(new FileBlobStorageProvider(Path.Combine(Environment.CurrentDirectory, "TestData"), new CloudFormatter()))
         {
         }
 
@@ -29,6 +31,30 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             BlobStorage.DeleteContainerIfExist(ContainerName1);
             BlobStorage.DeleteContainerIfExist(ContainerName2);
             BlobStorage.DeleteContainerIfExist(ContainerName3);
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            var dir = Path.Combine(Environment.CurrentDirectory, "TestData");
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
+        [Test]
+        public override void EtagChangesWithBlogChange()
+        {
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
+
+            // File provider etags are not perfect
+            Thread.Sleep(1);
+
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var newEtag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
+            Assert.AreNotEqual(etag, newEtag, "#A00.");
         }
 
         [Test]

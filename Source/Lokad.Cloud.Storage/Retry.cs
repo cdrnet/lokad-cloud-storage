@@ -7,7 +7,7 @@ using System;
 using System.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 
-namespace Lokad.Cloud.Storage.Azure
+namespace Lokad.Cloud.Storage
 {
     internal static class Retry
     {

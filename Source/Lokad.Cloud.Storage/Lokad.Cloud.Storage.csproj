@@ -70,7 +70,7 @@
     <Compile Include="Azure\DataCorruptionException.cs" />
     <Compile Include="Azure\FatEntity.cs" />
     <Compile Include="Azure\QueueStorageProvider.cs" />
-    <Compile Include="Azure\Retry.cs" />
+    <Compile Include="Retry.cs" />
     <Compile Include="Azure\TableStorageProvider.cs" />
     <Compile Include="Blobs\BlobName.cs" />
     <Compile Include="Blobs\BlobStorageExtensions.cs" />
@@ -89,6 +89,8 @@
     <Compile Include="Documents\CompressedBinaryDocumentSet.cs" />
     <Compile Include="Documents\DocumentSet.cs" />
     <Compile Include="Documents\IDocumentSet.cs" />
+    <Compile Include="FileSystem\FileBlobStorageProvider.cs" />
+    <Compile Include="FileSystem\RetryPolicies.cs" />
     <Compile Include="Instrumentation\Events\MessagesRevivedEvent.cs" />
     <Compile Include="Instrumentation\StorageEventLevel.cs" />
     <Compile Include="Queues\KeepAliveMessageHandle.cs" />
