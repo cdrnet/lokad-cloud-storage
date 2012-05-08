@@ -92,33 +92,41 @@ namespace Lokad.Cloud.Storage
 
         static object InternalParse(string value, Type type)
         {
-            var func = GetValue(Parsers, type, s => Convert.ChangeType(s, Nullable.GetUnderlyingType(type) ?? type));
-            return func(value);
-        }
+            Func<string, object> parse;
+            var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+            if (Parsers.TryGetValue(underlyingType, out parse))
+            {
+                return parse(value);
+            }
 
+            if (String.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+
+            if (underlyingType.IsEnum)
+            {
+                return Enum.Parse(underlyingType, value);
+            }
+
+            return Convert.ChangeType(value, underlyingType);
+        }
 
         static string InternalPrint(object value, Type type)
         {
-            var func = GetValue(Printers, type, o => o.ToString());
-            return func(value);
-        }
-
-        /// <summary>Returns <paramref name="defaultValue"/> if the given <paramref name="key"/>
-        /// is not present within the dictionary.</summary>
-        /// <typeparam name="TKey">The type of the key.</typeparam>
-        /// <typeparam name="TValue">The type of the value.</typeparam>
-        /// <param name="self">The dictionary.</param>
-        /// <param name="key">The key to look for.</param>
-        /// <param name="defaultValue">The default value.</param>
-        /// <returns>value matching <paramref name="key"/> or <paramref name="defaultValue"/> if none is found</returns>
-        static TValue GetValue<TKey, TValue>(IDictionary<TKey, TValue> self, TKey key, TValue defaultValue)
-        {
-            TValue value;
-            if (self.TryGetValue(key, out value))
+            Func<object, string> print;
+            var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+            if (Printers.TryGetValue(underlyingType, out print))
             {
-                return value;
+                return print(value);
             }
-            return defaultValue;
+
+            if (value == null)
+            {
+                return string.Empty;
+            }
+
+            return value.ToString();
         }
 
         class ConverterTypeCache<T>
@@ -129,7 +137,6 @@ namespace Lokad.Cloud.Storage
 
             static ConverterTypeCache()
             {
-               
                 // HACK: optimize this to IL code, if needed
                 // NB: this approach could be used to generate F# style objects!
                 Members = 

@@ -125,6 +125,30 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             [Rank(1)] public int? IntId { get; set; }
         }
 
+        enum EnumK
+        {
+            A,
+            B
+        }
+
+        class PatternK : BlobName<string>
+        {
+            public override string ContainerName { get { return "my-test-container"; } }
+
+            [Rank(0)]
+            public string Id { get; set; }
+            [Rank(1)]
+            public EnumK K { get; set; }
+        }
+
+        class PatternKN : BlobName<string>
+        {
+            public override string ContainerName { get { return "my-test-container"; } }
+
+            [Rank(0)] public string Id { get; set; }
+            [Rank(1)] public EnumK? K { get; set; }
+        }
+
         [Test]
         public void Conversion_round_trip()
         {
@@ -161,6 +185,30 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             Assert.AreNotSame(original2, parsed2);
             Assert.AreEqual(original2.LongId, parsed2.LongId);
             Assert.AreEqual(original2.IntId, parsed2.IntId);
+        }
+
+        [Test]
+        public void Conversion_round_trip_Enum()
+        {
+            var original = new PatternK { Id = "abc", K = EnumK.B };
+            var name = UntypedBlobName.Print(original);
+            var parsed = UntypedBlobName.Parse<PatternK>(name);
+
+            Assert.AreNotSame(original, parsed);
+            Assert.AreEqual(original.Id, parsed.Id);
+            Assert.AreEqual(original.K, parsed.K);
+        }
+
+        [Test]
+        public void Conversion_round_trip_EnumNullable()
+        {
+            var original = new PatternKN { Id = "abc", K = EnumK.B };
+            var name = UntypedBlobName.Print(original);
+            var parsed = UntypedBlobName.Parse<PatternKN>(name);
+
+            Assert.AreNotSame(original, parsed);
+            Assert.AreEqual(original.Id, parsed.Id);
+            Assert.AreEqual(original.K, parsed.K);
         }
 
         [Test]
@@ -260,6 +308,20 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             Assert.AreEqual("10/", UntypedBlobName.Print(new PatternH { LongId = 10, IntId = null }));
             Assert.AreEqual(string.Empty, UntypedBlobName.Print(new PatternH { LongId = null, IntId = null }));
             Assert.AreEqual(string.Empty, UntypedBlobName.Print(new PatternH { LongId = null, IntId = 20 }));
+        }
+
+        [Test]
+        public void PartialPrint_Manage_Enum()
+        {
+            Assert.AreEqual("abc/A", UntypedBlobName.Print(new PatternK { Id = "abc", K = EnumK.A }));
+            Assert.AreEqual("abc/B", UntypedBlobName.Print(new PatternK { Id = "abc", K = EnumK.B }));
+        }
+
+        [Test]
+        public void PartialPrint_Manage_EnumNullable()
+        {
+            Assert.AreEqual("abc/A", UntypedBlobName.Print(new PatternKN { Id = "abc", K = EnumK.A }));
+            Assert.AreEqual("abc/", UntypedBlobName.Print(new PatternKN { Id = "abc", K = null }));
         }
 
         [Test]
