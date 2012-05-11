@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace Lokad.Cloud.Storage.InMemory
@@ -332,6 +334,17 @@ namespace Lokad.Cloud.Storage.InMemory
                 etag = Containers[containerName].BlobsEtag[blobName];
                 return true;
             }
+        }
+
+        public Task<string> PutBlobAsync(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            return Task.Factory.StartNew(
+                () =>
+                    {
+                        string etag;
+                        PutBlob(containerName, blobName, item, type, overwrite, expectedEtag, out etag, serializer);
+                        return etag;
+                    });
         }
 
         /// <remarks></remarks>

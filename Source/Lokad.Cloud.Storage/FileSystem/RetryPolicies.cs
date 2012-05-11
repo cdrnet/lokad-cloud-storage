@@ -27,6 +27,11 @@ namespace Lokad.Cloud.Storage.FileSystem
 
             return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
                 {
+                    if (lastException is AggregateException)
+                    {
+                        lastException = lastException.GetBaseException();
+                    }
+
                     if (currentRetryCount >= 30 || !(lastException is IOException))
                     {
                         retryInterval = TimeSpan.Zero;

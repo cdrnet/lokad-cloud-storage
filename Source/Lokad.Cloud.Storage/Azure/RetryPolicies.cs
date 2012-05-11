@@ -98,13 +98,16 @@ namespace Lokad.Cloud.Storage.Azure
         /// thinks we're a too heavy user. Blocks the thread while backing off to
         /// prevent further requests for a while (per thread).
         /// </summary>
+        /// <remarks>
+        /// Includes NetworkCorruption policy
+        /// </remarks>
         public ShouldRetry TransientServerErrorBackOff()
         {
             Guid sequence = Guid.NewGuid();
 
             return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
                 {
-                    if (currentRetryCount >= 30 || !TransientServerErrorExceptionFilter(lastException))
+                    if (currentRetryCount >= 30 || !(TransientServerErrorExceptionFilter(lastException) || NetworkCorruptionExceptionFilter(lastException)))
                     {
                         retryInterval = TimeSpan.Zero;
                         return false;
@@ -224,6 +227,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         static bool TransientServerErrorExceptionFilter(Exception exception)
         {
+            if (exception is AggregateException)
+            {
+                exception = exception.GetBaseException();
+            }
+
             var serverException = exception as StorageServerException;
             if (serverException != null)
             {
@@ -277,6 +285,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         static bool TransientTableErrorExceptionFilter(Exception exception)
         {
+            if (exception is AggregateException)
+            {
+                exception = exception.GetBaseException();
+            }
+
             var dataServiceRequestException = exception as DataServiceRequestException;
             if (dataServiceRequestException != null)
             {
@@ -338,6 +351,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         static bool SlowInstantiationExceptionFilter(Exception exception)
         {
+            if (exception is AggregateException)
+            {
+                exception = exception.GetBaseException();
+            }
+
             var storageException = exception as StorageClientException;
 
             // Blob Storage or Queue Storage exceptions
@@ -384,6 +402,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         static bool NetworkCorruptionExceptionFilter(Exception exception)
         {
+            if (exception is AggregateException)
+            {
+                exception = exception.GetBaseException();
+            }
+
             // Upload MD5 mismatch
             var clientException = exception as StorageClientException;
             if (clientException != null

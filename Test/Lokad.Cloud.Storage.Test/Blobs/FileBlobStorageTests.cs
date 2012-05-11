@@ -44,7 +44,29 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
-        public override void EtagChangesWithBlogChange()
+        public override void PutBlobEnforceMatchingEtagAsync()
+        {
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+
+            // File provider etags are not perfect
+            Thread.Sleep(10);
+
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
+            var task = BlobStorage.PutBlobTask(ContainerName, BlobName, 2, Guid.NewGuid().ToString());
+            task.Wait();
+
+            Assert.IsTrue(task.IsCompleted);
+            Assert.IsNull(task.Result, "#A00 Blob shouldn't be updated if etag is not matching");
+
+            task = BlobStorage.PutBlobTask(ContainerName, BlobName, 3, etag);
+            task.Wait();
+
+            Assert.IsTrue(task.IsCompleted);
+            Assert.IsNotNull(task.Result, "#A01 Blob should have been updated");
+        }
+
+        [Test]
+        public override void EtagChangesWithBlobChange()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
             var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);

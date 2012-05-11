@@ -70,6 +70,8 @@
     <Compile Include="Azure\DataCorruptionException.cs" />
     <Compile Include="Azure\FatEntity.cs" />
     <Compile Include="Azure\QueueStorageProvider.cs" />
+    <Compile Include="Instrumentation\Events\TaskFailedEvent.cs" />
+    <Compile Include="Instrumentation\Events\StorageOperationFailedEvent.cs" />
     <Compile Include="Retry.cs" />
     <Compile Include="Azure\TableStorageProvider.cs" />
     <Compile Include="Blobs\BlobName.cs" />
@@ -124,6 +126,7 @@
     <Compile Include="Tables\CloudTable.cs" />
     <Compile Include="Tables\ITableStorageProvider.cs" />
     <Compile Include="Tables\TableStorageExtensions.cs" />
+    <Compile Include="TaskAsyncHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Instrumentation\_readme.txt" />
@@ -155,7 +158,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

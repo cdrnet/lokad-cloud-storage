@@ -111,15 +111,14 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Shared\_ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\Source\Lokad.Cloud.Storage\Lokad.Cloud.Storage.csproj">
       <Project>{0F9244AB-3B7C-4F98-9D44-E46FBC65522C}</Project>
       <Name>Lokad.Cloud.Storage</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Shared\_ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
   </Target>

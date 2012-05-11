@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace Lokad.Cloud.Storage.FileSystem
@@ -324,6 +325,7 @@ namespace Lokad.Cloud.Storage.FileSystem
             var file = new FileInfo(path);
             if (!string.IsNullOrEmpty(expectedEtag) && (etag = GetEtag(file)) != expectedEtag)
             {
+                etag = null;
                 return false;
             }
 
@@ -374,6 +376,18 @@ namespace Lokad.Cloud.Storage.FileSystem
                 etag = null;
                 return false;
             }
+        }
+
+        public Task<string> PutBlobAsync(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            // TODO: Implement native Task properly using FileSystem async api
+            return Task.Factory.StartNew(
+                () =>
+                    {
+                        string etag;
+                        PutBlob(containerName, blobName, item, type, overwrite, expectedEtag, out etag, serializer);
+                        return etag;
+                    });
         }
 
         public Maybe<T> UpdateBlobIfExist<T>(string containerName, string blobName, Func<T, T> update, IDataSerializer serializer = null)

@@ -9,38 +9,29 @@ using System.Xml.Linq;
 namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
     /// <summary>
-    /// Raised whenever a storage operation is retried.
-    /// Useful for analyzing retry policy behavior.
+    /// Generic task error.
     /// </summary>
-    public class StorageOperationRetriedEvent : IStorageEvent
+    public class TaskFailedEvent : IStorageEvent
     {
-        public StorageEventLevel Level { get { return StorageEventLevel.Trace; } }
+        public StorageEventLevel Level { get { return StorageEventLevel.Warning; } }
         public Exception Exception { get; private set; }
-        public string Policy { get; private set; }
-        public int Trial { get; private set; }
-        public TimeSpan Interval { get; private set; }
-        public Guid TrialSequence { get; private set; }
 
-        public StorageOperationRetriedEvent(Exception exception, string policy, int trial, TimeSpan interval, Guid trialSequence)
+        public TaskFailedEvent(Exception exception)
         {
             Exception = exception;
-            Policy = policy;
-            Trial = trial;
-            Interval = interval;
-            TrialSequence = trialSequence;
         }
 
         public string Describe()
         {
-            return string.Format("Storage: Operation was retried on policy {0} ({1} trial): {2}",
-                Policy, Trial, Exception != null ? Exception.Message : string.Empty);
+            return string.Format("Storage: generic task failure: {0}",
+                Exception != null ? Exception.Message : string.Empty);
         }
 
         public XElement DescribeMeta()
         {
             var meta = new XElement("Meta",
                 new XElement("Component", "Lokad.Cloud.Storage"),
-                new XElement("Event", "StorageOperationRetriedEvent"));
+                new XElement("Event", "TaskFailedEvent"));
 
             if (Exception != null)
             {

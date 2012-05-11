@@ -79,6 +79,22 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
+        public void PutBlobEnforceNoOverwriteAsync()
+        {
+            string firstEtag;
+            BlobStorage.PutBlob(ContainerName, BlobName, 1, true, out firstEtag);
+
+            var task = BlobStorage.PutBlobTask(ContainerName, BlobName, 6, false);
+            task.Wait();
+
+            Assert.IsTrue(task.IsCompleted, "#A00");
+            Assert.IsNull(task.Result, "#A01");
+
+            Assert.IsTrue(BlobStorage.GetBlob<int>(ContainerName, BlobName).HasValue, "#A02");
+            Assert.AreEqual(1, BlobStorage.GetBlob<int>(ContainerName, BlobName).Value, "#A03");
+        }
+
+        [Test]
         public void PutBlobEnforceOverwrite()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
@@ -87,6 +103,22 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             var isSaved = BlobStorage.PutBlob(ContainerName, BlobName, 6, true, out etag);
             Assert.IsTrue(isSaved, "#A00");
             Assert.IsNotNull(etag, "#A01");
+
+            var maybe = BlobStorage.GetBlob<int>(ContainerName, BlobName);
+            Assert.IsTrue(maybe.HasValue, "#A02");
+            Assert.AreEqual(6, maybe.Value, "#A03");
+        }
+
+        [Test]
+        public void PutBlobEnforceOverwriteAsync()
+        {
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+
+            var task = BlobStorage.PutBlobTask(ContainerName, BlobName, 6, true);
+            task.Wait();
+
+            Assert.IsTrue(task.IsCompleted, "#A00");
+            Assert.IsNotNull(task.Result, "#A01");
 
             var maybe = BlobStorage.GetBlob<int>(ContainerName, BlobName);
             Assert.IsTrue(maybe.HasValue, "#A02");
@@ -133,7 +165,26 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
-        public void EtagChangesOnlyWithBlogChange()
+        public virtual void PutBlobEnforceMatchingEtagAsync()
+        {
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+
+            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
+            var task = BlobStorage.PutBlobTask(ContainerName, BlobName, 2, Guid.NewGuid().ToString());
+            task.Wait();
+
+            Assert.IsTrue(task.IsCompleted);
+            Assert.IsNull(task.Result, "#A00 Blob shouldn't be updated if etag is not matching");
+
+            task = BlobStorage.PutBlobTask(ContainerName, BlobName, 3, etag);
+            task.Wait();
+
+            Assert.IsTrue(task.IsCompleted);
+            Assert.IsNotNull(task.Result, "#A01 Blob should have been updated");
+        }
+
+        [Test]
+        public void EtagChangesOnlyWithBlobChange()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
             var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
@@ -142,7 +193,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
-        public virtual void EtagChangesWithBlogChange()
+        public virtual void EtagChangesWithBlobChange()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
             var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);

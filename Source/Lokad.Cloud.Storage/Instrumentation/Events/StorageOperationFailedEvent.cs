@@ -9,38 +9,31 @@ using System.Xml.Linq;
 namespace Lokad.Cloud.Storage.Instrumentation.Events
 {
     /// <summary>
-    /// Raised whenever a storage operation is retried.
-    /// Useful for analyzing retry policy behavior.
+    /// Raised whenever a storage operation has finally failed (maybe after giving up retrials).
     /// </summary>
-    public class StorageOperationRetriedEvent : IStorageEvent
+    public class StorageOperationFailedEvent : IStorageEvent
     {
-        public StorageEventLevel Level { get { return StorageEventLevel.Trace; } }
+        public StorageEventLevel Level { get { return StorageEventLevel.Error; } }
+        public StorageOperationType OperationType { get; private set; }
         public Exception Exception { get; private set; }
-        public string Policy { get; private set; }
-        public int Trial { get; private set; }
-        public TimeSpan Interval { get; private set; }
-        public Guid TrialSequence { get; private set; }
 
-        public StorageOperationRetriedEvent(Exception exception, string policy, int trial, TimeSpan interval, Guid trialSequence)
+        public StorageOperationFailedEvent(StorageOperationType operationType, Exception exception)
         {
+            OperationType = operationType;
             Exception = exception;
-            Policy = policy;
-            Trial = trial;
-            Interval = interval;
-            TrialSequence = trialSequence;
         }
 
         public string Describe()
         {
-            return string.Format("Storage: Operation was retried on policy {0} ({1} trial): {2}",
-                Policy, Trial, Exception != null ? Exception.Message : string.Empty);
+            return string.Format("Storage: {0} operation failed: {1}",
+                OperationType, Exception != null ? Exception.Message : string.Empty);
         }
 
         public XElement DescribeMeta()
         {
             var meta = new XElement("Meta",
                 new XElement("Component", "Lokad.Cloud.Storage"),
-                new XElement("Event", "StorageOperationRetriedEvent"));
+                new XElement("Event", "StorageOperationFailedEvent"));
 
             if (Exception != null)
             {

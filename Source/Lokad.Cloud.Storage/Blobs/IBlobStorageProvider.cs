@@ -5,6 +5,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace Lokad.Cloud.Storage
@@ -195,6 +197,20 @@ namespace Lokad.Cloud.Storage
         /// object stored in the blob at compile time, but it can only be determined at run time.
         /// In all other cases, you should use the generic overloads of the method.</remarks>
         bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string etag, IDataSerializer serializer = null);
+
+        /// <summary>ASYNC: Puts a blob and optionally overwrite.</summary>
+        /// <param name="containerName">Name of the container.</param>
+        /// <param name="blobName">Name of the blob.</param>
+        /// <param name="item">Item to be put.</param>
+        /// <param name="type">The type of the blob.</param>
+        /// <param name="overwrite">Indicates whether existing blob should be overwritten
+        /// if it exists.</param>
+        /// <param name="etag">New etag (identifier used to track for blob change) if
+        /// the blob is written, or <c>null</c> if no blob is written.</param>
+        /// <remarks>Creates the container if it does not exist beforehand.</remarks>
+        Task<string> PutBlobAsync(string containerName, string blobName,
+            object item, Type type, bool overwrite, string expectedEtag,
+            CancellationToken cancellationToken, IDataSerializer serializer = null);
 
         /// <summary>
         /// Updates a blob if it already exists.

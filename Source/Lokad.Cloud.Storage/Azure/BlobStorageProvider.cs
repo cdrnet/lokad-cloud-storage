@@ -12,6 +12,7 @@ using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
@@ -262,7 +263,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
+                    Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                         {
                             stream.Seek(0, SeekOrigin.Begin);
                             blob.DownloadToStream(stream);
@@ -321,7 +322,7 @@ namespace Lokad.Cloud.Storage.Azure
                 // if no such container, return empty
                 try
                 {
-                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
+                    Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                         {
                             stream.Seek(0, SeekOrigin.Begin);
                             blob.DownloadToStream(stream);
@@ -398,7 +399,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                 using (var stream = new MemoryStream())
                 {
-                    Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
+                    Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                         {
                             stream.Seek(0, SeekOrigin.Begin);
                             blob.DownloadToStream(stream, options);
@@ -498,6 +499,12 @@ namespace Lokad.Cloud.Storage.Azure
         }
 
         /// <remarks></remarks>
+        public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string outEtag, IDataSerializer serializer = null)
+        {
+            return PutBlob(containerName, blobName, item, type, overwrite, null, out outEtag, serializer);
+        }
+
+        /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string outEtag, IDataSerializer serializer = null)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -586,10 +593,125 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
-        public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string outEtag, IDataSerializer serializer = null)
+        /// <returns>Task with the resulting ETag (or null if not written).</returns>
+        public Task<string> PutBlobAsync(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, CancellationToken cancellationToken, IDataSerializer serializer = null)
         {
-            return PutBlob(containerName, blobName, item, type, overwrite, null, out outEtag, serializer);
+            var stopwatch = Stopwatch.StartNew();
+            var completionSource = new TaskCompletionSource<string>();
+
+            // serialize to byte array (we're not "streaming" anyway; much easier to deal with than stream in async)
+            var stream = new MemoryStream();
+            (serializer ?? _defaultSerializer).Serialize(item, stream, type);
+
+            var container = _blobStorage.GetContainerReference(containerName);
+            var blob = container.GetBlockBlobReference(blobName);
+            ApplyContentHash(blob, stream);
+
+            BlobRequestOptions options;
+            if (!overwrite) // no overwrite authorized, blob must NOT exists
+            {
+                options = new BlobRequestOptions { AccessCondition = AccessCondition.IfNotModifiedSince(DateTime.MinValue) };
+            }
+            else // overwrite is OK
+            {
+                options = string.IsNullOrEmpty(expectedEtag) ?
+                    // case with no etag constraint
+                    new BlobRequestOptions { AccessCondition = AccessCondition.None } :
+                    // case with etag constraint
+                    new BlobRequestOptions { AccessCondition = AccessCondition.IfMatch(expectedEtag) };
+            }
+
+            Retry.Task(_policies.TransientServerErrorBackOff, cancellationToken,
+                () =>
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+                        return Task.Factory.FromAsync(blob.BeginUploadFromStream, blob.EndUploadFromStream, stream, options, null);
+                    },
+                () =>
+                    {
+                        // "return true"
+                        NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
+                        completionSource.TrySetResult(blob.Properties.ETag);
+                    },
+                exception =>
+                    {
+                        if (exception is AggregateException)
+                        {
+                            exception = exception.GetBaseException();
+                        }
+
+                        var storageClientException = exception as StorageClientException;
+                        if (storageClientException != null)
+                        {
+                            if (storageClientException.ErrorCode == StorageErrorCode.ConditionFailed)
+                            {
+                                // "return false"; success because it behaved as excpected - the expected etag was not matching so it was not overwritten
+                                completionSource.TrySetResult(null);
+                                NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
+                                return;
+                            }
+
+                            if (storageClientException.ErrorCode == StorageErrorCode.BlobAlreadyExists && !overwrite)
+                            {
+                                // See http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/fff78a35-3242-4186-8aee-90d27fbfbfd4
+                                // and http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/86b9f184-c329-4c30-928f-2991f31e904b/
+
+                                // "return false"; success because it behaved as excpected - the expected etag was not matching so it was not overwritten
+                                completionSource.TrySetResult(null);
+                                NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
+                                return;
+                            }
+
+                            // if the container does not exist, it gets created
+                            if (storageClientException.ErrorCode == StorageErrorCode.ContainerNotFound)
+                            {
+                                Retry.Task(_policies.SlowInstantiation, cancellationToken, () =>
+                                    {
+                                        Retry.Get(_policies.TransientServerErrorBackOff, CancellationToken.None, container.CreateIfNotExist);
+                                        return Retry.TaskAsTask(_policies.TransientServerErrorBackOff, cancellationToken,
+                                            () =>
+                                                {
+                                                    stream.Seek(0, SeekOrigin.Begin);
+                                                    return Task.Factory.FromAsync(blob.BeginUploadFromStream, blob.EndUploadFromStream, stream, options, null);
+                                                },
+                                            () => blob.Properties.ETag);
+                                    },
+                                    etag =>
+                                        {
+                                            completionSource.TrySetResult(etag);
+                                            NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
+                                        },
+                                    e =>
+                                        {
+                                            if (e is AggregateException)
+                                            {
+                                                e = e.GetBaseException();
+                                            }
+
+                                            var sce = e as StorageClientException;
+                                            if (sce != null && sce.ErrorCode == StorageErrorCode.ConditionFailed)
+                                            {
+                                                // "return false"; success because it behaved as excpected - the expected etag was not matching so it was not overwritten
+                                                completionSource.TrySetResult(null);
+                                                NotifySucceeded(StorageOperationType.BlobPut, stopwatch);
+                                            }
+                                            else
+                                            {
+                                                completionSource.TrySetException(e);
+                                                NotifyFailed(StorageOperationType.BlobPut, e);
+                                            }
+                                        },
+                                    () => completionSource.TrySetCanceled());
+                                return;
+                            }
+                        }
+
+                        completionSource.TrySetException(exception);
+                        NotifyFailed(StorageOperationType.BlobPut, exception);
+                    },
+                () => completionSource.TrySetCanceled());
+
+            return completionSource.Task;
         }
 
         /// <param name="blob"></param>
@@ -619,7 +741,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             try
             {
-                Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
+                Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                     {
                         stream.Seek(0, SeekOrigin.Begin);
                         blob.UploadFromStream(stream, options);
@@ -705,7 +827,7 @@ namespace Lokad.Cloud.Storage.Azure
                 {
                     using (var readStream = new MemoryStream())
                     {
-                        Retry.Do(_policies.NetworkCorruption, _policies.TransientServerErrorBackOff, CancellationToken.None, () =>
+                        Retry.Do(_policies.TransientServerErrorBackOff, CancellationToken.None, () =>
                             {
                                 readStream.Seek(0, SeekOrigin.Begin);
                                 blob.DownloadToStream(readStream);
@@ -973,6 +1095,14 @@ namespace Lokad.Cloud.Storage.Azure
             if (_observer != null)
             {
                 _observer.Notify(new StorageOperationSucceededEvent(operationType, stopwatch.Elapsed));
+            }
+        }
+
+        private void NotifyFailed(StorageOperationType operationType, Exception exception)
+        {
+            if (_observer != null)
+            {
+                _observer.Notify(new StorageOperationFailedEvent(operationType, exception));
             }
         }
     }
