@@ -5,7 +5,7 @@
 
 using System;
 using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Test.Blobs
@@ -69,28 +69,25 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
-        public void BlobsGetCreatedMultiThread()
+        public void BlobsGetCreatedParallel()
         {
             const string blobPrefix = "mockBlobPrefix";
 
             BlobStorage.CreateContainerIfNotExist(ContainerName1);
             BlobStorage.CreateContainerIfNotExist(ContainerName2);
 
-            var threads = Enumerable.Range(0, 32).Select(i => new Thread(AddValueToContainer)).ToArray();
-
-            var threadParameters =
-                Enumerable.Range(0, 32).Select(
-                    i =>
-                    i <= 15
-                        ? new ThreadParameters("threadId" + i, ContainerName1, BlobStorage)
-                        : new ThreadParameters("threadId" + i, ContainerName2, BlobStorage)).ToArray();
-
-            foreach (var i in Enumerable.Range(0, 32))
-            {
-                threads[i].Start(threadParameters[i]);
-            }
-
-            Thread.Sleep(2000);
+            Parallel.For(0, 32, new ParallelOptions { MaxDegreeOfParallelism = 32 }, k =>
+                {
+                    var container = k <= 15 ? ContainerName1 : ContainerName2;
+                    var random = new Random(Guid.NewGuid().GetHashCode());
+                    for (int i = 0; i < 100; i++)
+                    {
+                        BlobStorage.PutBlob(
+                            container,
+                            "mockBlobPrefix" + k + "/blob" + i,
+                            random.NextDouble());
+                    }
+                });
 
             Assert.AreEqual(
                 1600,
@@ -101,38 +98,6 @@ namespace Lokad.Cloud.Storage.Test.Blobs
                 1600,
                 BlobStorage.ListBlobNames(ContainerName2, blobPrefix).Count(),
                 "second container with corresponding prefix does not hold 1 blobs");
-        }
-
-        private static void AddValueToContainer(object parameters)
-        {
-            if (parameters is ThreadParameters)
-            {
-                var castedParameters = (ThreadParameters)parameters;
-                var random = new Random();
-                for (int i = 0; i < 100; i++)
-                {
-                    castedParameters.BlobStorage.PutBlob(
-                        castedParameters.ContainerName,
-                        "mockBlobPrefix" + castedParameters.ThreadId + "/blob" + i,
-                        random.NextDouble());
-                }
-            }
-        }
-
-        private class ThreadParameters
-        {
-            public IBlobStorageProvider BlobStorage { get; private set; }
-
-            public string ThreadId { get; private set; }
-
-            public string ContainerName { get; private set; }
-
-            public ThreadParameters(string threadId, string containerName, IBlobStorageProvider blobStorage)
-            {
-                BlobStorage = blobStorage;
-                ThreadId = threadId;
-                ContainerName = containerName;
-            }
         }
     }
 }
