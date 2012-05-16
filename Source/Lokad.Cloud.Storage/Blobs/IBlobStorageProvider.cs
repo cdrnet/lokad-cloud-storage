@@ -103,6 +103,13 @@ namespace Lokad.Cloud.Storage
         /// In all other cases, you should use the generic overloads of the method.</remarks>
         Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag, IDataSerializer serializer = null);
 
+        /// <summary>ASYNC: Gets a blob.</summary>
+        /// <param name="containerName">Name of the container.</param>
+        /// <param name="blobName">Name of the blob.</param>
+        /// <param name="type">The type of the blob.</param>
+        Task<BlobWithETag<object>> GetBlobAsync(string containerName, string blobName, Type type,
+            CancellationToken cancellationToken, IDataSerializer serializer = null);
+
         /// <summary>
         /// Gets a blob in intermediate XML representation for inspection and recovery,
         /// if supported by the serialization formatter.
@@ -147,6 +154,11 @@ namespace Lokad.Cloud.Storage
         /// Gets the current etag of the blob, or <c>null</c> if the blob does not exists.
         /// </summary>
         string GetBlobEtag(string containerName, string blobName);
+
+        /// <summary>
+        /// ASYNC: Gets the current etag of the blob, or <c>null</c> if the blob does not exists.
+        /// </summary>
+        Task<string> GetBlobEtagAsync(string containerName, string blobName, CancellationToken cancellationToken);
 
         /// <summary>Puts a blob (overwrite if the blob already exists).</summary>
         /// <remarks>Creates the container if it does not exist beforehand.</remarks>
@@ -240,6 +252,22 @@ namespace Lokad.Cloud.Storage
         /// </remarks>
         /// <returns>The value returned by the lambda, or empty if the blob did not exist or no change was applied.</returns>
         Maybe<T> UpdateBlobIfExistOrSkip<T>(string containerName, string blobName, Func<T, Maybe<T>> update, IDataSerializer serializer = null);
+
+        /// <summary>
+        /// ASYNC: Updates a blob if it already exists.
+        /// If the insert or update lambdas return empty, the blob will not be changed.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The provided lambdas can be executed multiple times in case of
+        /// concurrency-related retrials, so be careful with side-effects
+        /// (like incrementing a counter in them).
+        /// </para>
+        /// <para>This method is idempotent if and only if the provided lambdas are idempotent.</para>
+        /// </remarks>
+        /// <returns>The value returned by the lambda, or empty if the blob did not exist or no change was applied.</returns>
+        Task<BlobWithETag<T>> UpsertBlobOrSkipAsync<T>(string containerName, string blobName,
+            Func<Maybe<T>> insert, Func<T, Maybe<T>> update, CancellationToken cancellationToken, IDataSerializer serializer = null);
 
         /// <summary>
         /// Updates a blob if it already exists.

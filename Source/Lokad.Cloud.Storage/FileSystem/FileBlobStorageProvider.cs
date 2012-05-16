@@ -171,10 +171,11 @@ namespace Lokad.Cloud.Storage.FileSystem
                     return Maybe<object>.Empty;
                 }
 
-                etag = GetEtag(file);
                 using (var stream = file.OpenRead())
+                using (var epStream = new MetadataPrefixStream(stream))
                 {
-                    var deserialized = (serializer ?? _defaultSerializer).TryDeserialize(stream, type);
+                    etag = epStream.ReadETag();
+                    var deserialized = (serializer ?? _defaultSerializer).TryDeserialize(epStream, type);
                     return deserialized.IsSuccess ? new Maybe<object>(deserialized.Value) : Maybe<object>.Empty;
                 }
             }
@@ -188,6 +189,18 @@ namespace Lokad.Cloud.Storage.FileSystem
                 etag = null;
                 return Maybe<object>.Empty;
             }
+        }
+
+        public Task<BlobWithETag<object>> GetBlobAsync(string containerName, string blobName, Type type, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            // TODO: Implement native Task properly using FileSystem async api
+            return Task.Factory.StartNew(
+                () =>
+                    {
+                        string etag;
+                        var blob = GetBlob(containerName, blobName, type, out etag, serializer);
+                        return blob.Convert(o => new BlobWithETag<object> { Blob = o, ETag = etag }, () => default(BlobWithETag<object>));
+                    });
         }
 
         public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag, IDataSerializer serializer = null)
@@ -209,10 +222,11 @@ namespace Lokad.Cloud.Storage.FileSystem
                     return Maybe<XElement>.Empty;
                 }
 
-                etag = GetEtag(file);
                 using (var stream = file.OpenRead())
+                using (var epStream = new MetadataPrefixStream(stream))
                 {
-                    var unpacked = formatter.TryUnpackXml(stream);
+                    etag = epStream.ReadETag();
+                    var unpacked = formatter.TryUnpackXml(epStream);
                     return unpacked.IsSuccess ? new Maybe<XElement>(unpacked.Value) : Maybe<XElement>.Empty;
                 }
             }
@@ -274,7 +288,11 @@ namespace Lokad.Cloud.Storage.FileSystem
                     return null;
                 }
 
-                return GetEtag(file);
+                using (var stream = file.OpenRead())
+                using (var epStream = new MetadataPrefixStream(stream))
+                {
+                    return epStream.ReadETag();
+                }
             }
             catch (FileNotFoundException)
             {
@@ -284,6 +302,12 @@ namespace Lokad.Cloud.Storage.FileSystem
             {
                 return null;
             }
+        }
+
+        public Task<string> GetBlobEtagAsync(string containerName, string blobName, CancellationToken cancellationToken)
+        {
+            // TODO: Implement native Task properly using FileSystem async api
+            return TaskAsyncHelper.FromMethod(() => GetBlobEtag(containerName, blobName));
         }
 
         public void PutBlob<T>(string containerName, string blobName, T item, IDataSerializer serializer = null)
@@ -323,12 +347,6 @@ namespace Lokad.Cloud.Storage.FileSystem
             }
 
             var file = new FileInfo(path);
-            if (!string.IsNullOrEmpty(expectedEtag) && (etag = GetEtag(file)) != expectedEtag)
-            {
-                etag = null;
-                return false;
-            }
-
             if (overwrite)
             {
                 // retry in case it is currently locked by another operation
@@ -338,12 +356,18 @@ namespace Lokad.Cloud.Storage.FileSystem
                 {
                     try
                     {
-                        using (var stream = file.Open(FileMode.Create, FileAccess.Write, FileShare.None))
+                        using (var stream = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+                        using (var epStream = new MetadataPrefixStream(stream))
                         {
-                            (serializer ?? _defaultSerializer).Serialize(item, stream, type);
+                            if (!string.IsNullOrEmpty(expectedEtag) && epStream.ReadETag() != expectedEtag)
+                            {
+                                etag = null;
+                                return false;
+                            }
+
+                            etag = WriteToStream(epStream, item, type, serializer);
                         }
 
-                        etag = GetEtag(file);
                         return true;
                     }
                     catch (IOException exception)
@@ -364,11 +388,11 @@ namespace Lokad.Cloud.Storage.FileSystem
             try
             {
                 using (var stream = file.Open(FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var epStream = new MetadataPrefixStream(stream))
                 {
-                    (serializer ?? _defaultSerializer).Serialize(item, stream, type);
+                    etag = WriteToStream(epStream, item, type, serializer);
                 }
 
-                etag = GetEtag(file);
                 return true;
             }
             catch (IOException)
@@ -433,11 +457,12 @@ namespace Lokad.Cloud.Storage.FileSystem
                 try
                 {
                     using (var file = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+                    using (var epStream = new MetadataPrefixStream(file))
                     {
                         var input = Maybe<T>.Empty;
-                        if (file.Length != 0)
+                        if (epStream.Length != 0)
                         {
-                            var deserialized = (serializer ?? _defaultSerializer).TryDeserializeAs<T>(file);
+                            var deserialized = (serializer ?? _defaultSerializer).TryDeserializeAs<T>(epStream);
                             if (deserialized.IsSuccess)
                             {
                                 input = deserialized.Value;
@@ -447,22 +472,13 @@ namespace Lokad.Cloud.Storage.FileSystem
                         var output = input.HasValue ? update(input.Value) : insert();
                         if (output.HasValue)
                         {
-                            byte[] result;
-                            using (var resultStream = new MemoryStream())
-                            {
-                                (serializer ?? _defaultSerializer).Serialize(output.Value, resultStream, typeof(T));
-                                result = resultStream.ToArray();
-                            }
-
-                            file.Seek(0, SeekOrigin.Begin);
-                            file.Write(result, 0, result.Length);
-                            file.SetLength(result.Length);
-
+                            WriteToStream(epStream, output.Value, typeof(T), serializer);
                             return output.Value;
                         }
 
                         if (!input.HasValue)
                         {
+                            epStream.Close();
                             file.Close();
                             File.Delete(path);
                         }
@@ -482,6 +498,34 @@ namespace Lokad.Cloud.Storage.FileSystem
                     Thread.Sleep(retryInterval);
                 }
             }
+        }
+
+        public Task<BlobWithETag<T>> UpsertBlobOrSkipAsync<T>(string containerName, string blobName,
+            Func<Maybe<T>> insert, Func<T, Maybe<T>> update, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            return Retry.TaskAsTask(_policies.OptimisticConcurrency, cancellationToken,
+                () => GetBlobAsync(containerName, blobName, typeof(T), cancellationToken, serializer)
+                    .Then(b =>
+                        {
+                            var output = (b == null) ? insert() : update((T)b.Blob);
+                            if (!output.HasValue)
+                            {
+                                return TaskAsyncHelper.FromResult(default(BlobWithETag<T>));
+                            }
+
+                            var putTask = (b == null)
+                                ? PutBlobAsync(containerName, blobName, output.Value, typeof(T), false, null, cancellationToken, serializer)
+                                : PutBlobAsync(containerName, blobName, output.Value, typeof(T), true, b.ETag, cancellationToken, serializer);
+                            return putTask.Then(etag =>
+                                {
+                                    if (etag == null)
+                                    {
+                                        throw new ConcurrencyException();
+                                    }
+
+                                    return new BlobWithETag<T> { Blob = output.Value, ETag = etag };
+                                });
+                        }));
         }
 
         /// <remarks></remarks>
@@ -506,72 +550,133 @@ namespace Lokad.Cloud.Storage.FileSystem
         public Result<string> TryAcquireLease(string containerName, string blobName)
         {
             var path = Path.Combine(_root, containerName, blobName);
-            var file = new FileInfo(path);
+            try
+            {
+                var file = new FileInfo(path);
+                if (!file.Exists)
+                {
+                    return null;
+                }
 
-            if (!file.Exists)
+                using (var stream = file.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                using (var epStream = new MetadataPrefixStream(stream))
+                {
+                    var flags = epStream.ReadFlags();
+                    if ((flags & 0x1) == 0x1)
+                    {
+                        // already locked, conflict
+                        return Result<string>.CreateError("Conflict");
+                    }
+
+                    epStream.WriteFlags((byte)(flags | 0x1));
+                    return Result.CreateSuccess(epStream.ReadETag());
+                }
+            }
+            catch (FileNotFoundException)
             {
                 return Result<string>.CreateError("NotFound");
             }
-
-            // not atomic, but good enough for now
-            if (file.IsReadOnly)
+            catch (DirectoryNotFoundException)
             {
-                return Result<string>.CreateError("Conflict");
+                return Result<string>.CreateError("NotFound");
             }
-
-            file.IsReadOnly = true;
-            return Result.CreateSuccess(GetEtag(file));
         }
 
         public Result<string> TryReleaseLease(string containerName, string blobName, string leaseId)
         {
-            var file = GetFile(containerName, blobName);
-            if (!file.Exists || !file.IsReadOnly)
+            var path = Path.Combine(_root, containerName, blobName);
+            try
+            {
+                var file = new FileInfo(path);
+                if (!file.Exists)
+                {
+                    return null;
+                }
+
+                using (var stream = file.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                using (var epStream = new MetadataPrefixStream(stream))
+                {
+                    var flags = epStream.ReadFlags();
+                    if ((flags & 0x1) == 0x0)
+                    {
+                        // not locked
+                        return Result<string>.CreateError("NotFound");
+                    }
+
+                    if (leaseId != epStream.ReadETag())
+                    {
+                        // locked by another leaseId, conflict
+                        return Result<string>.CreateError("Conflict");
+                    }
+
+                    epStream.WriteFlags((byte)(flags & ~0x1));
+                    return Result.CreateSuccess("OK");
+                }
+            }
+            catch (FileNotFoundException)
             {
                 return Result<string>.CreateError("NotFound");
             }
-
-            if (GetEtag(file) != leaseId)
+            catch (DirectoryNotFoundException)
             {
-                return Result<string>.CreateError("Conflict");
+                return Result<string>.CreateError("NotFound");
             }
-
-            file.IsReadOnly = false;
-            return Result<string>.CreateSuccess("OK");
         }
 
         public Result<string> TryRenewLease(string containerName, string blobName, string leaseId)
         {
-            var file = GetFile(containerName, blobName);
-            if (!file.Exists || !file.IsReadOnly)
-            {
-                return Result<string>.CreateError("NotFound");
-            }
-
-            if (GetEtag(file) != leaseId)
-            {
-                return Result<string>.CreateError("Conflict");
-            }
-
-            return Result<string>.CreateSuccess("OK");
-        }
-
-        FileInfo GetFile(string containerName, string blobName)
-        {
-            return new FileInfo(Path.Combine(_root, containerName, blobName));
-        }
-
-        static string GetEtag(FileInfo file)
-        {
+            var path = Path.Combine(_root, containerName, blobName);
             try
             {
-                // BUG: Very quick overwrites could generate the same ETag
-                return string.Format("{0}-{1}", file.LastWriteTimeUtc.Ticks, file.Length);
+                var file = new FileInfo(path);
+                if (!file.Exists)
+                {
+                    return null;
+                }
+
+                using (var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                using (var epStream = new MetadataPrefixStream(stream))
+                {
+                    var flags = epStream.ReadFlags();
+                    if ((flags & 0x1) == 0x0)
+                    {
+                        // not locked
+                        return Result<string>.CreateError("NotFound");
+                    }
+
+                    if (leaseId != epStream.ReadETag())
+                    {
+                        // locked by another leaseId, conflict
+                        return Result<string>.CreateError("Conflict");
+                    }
+
+                    return Result.CreateSuccess("OK");
+                }
             }
             catch (FileNotFoundException)
             {
-                return null;
+                return Result<string>.CreateError("NotFound");
             }
+            catch (DirectoryNotFoundException)
+            {
+                return Result<string>.CreateError("NotFound");
+            }
+        }
+
+        /// <returns>New ETag</returns>
+        private string WriteToStream(MetadataPrefixStream stream, object item, Type type, IDataSerializer serializer = null)
+        {
+            byte[] result;
+            using (var resultStream = new MemoryStream())
+            {
+                (serializer ?? _defaultSerializer).Serialize(item, resultStream, type);
+                result = resultStream.ToArray();
+            }
+
+            stream.Seek(0, SeekOrigin.Begin);
+            stream.Write(result, 0, result.Length);
+            stream.SetLength(result.Length);
+            return stream.WriteNewETag();
         }
     }
 }

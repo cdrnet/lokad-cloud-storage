@@ -32,7 +32,7 @@ namespace Lokad.Cloud.Storage.FileSystem
                         lastException = lastException.GetBaseException();
                     }
 
-                    if (currentRetryCount >= 30 || !(lastException is IOException))
+                    if (currentRetryCount >= 30 || !(lastException is IOException) && !(lastException is ConcurrencyException))
                     {
                         retryInterval = TimeSpan.Zero;
                         return false;

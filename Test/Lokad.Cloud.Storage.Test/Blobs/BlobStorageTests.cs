@@ -4,8 +4,9 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Lokad.Cloud.Storage.Test.Shared;
 using NUnit.Framework;
 
@@ -49,19 +50,38 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         }
 
         [Test]
+        public void GetAndDeleteAsync()
+        {
+            BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
+            Assert.IsNull(BlobStorage.GetBlobAsync<int>(ContainerName, BlobName).Result, "#A00");
+        }
+
+        [Test]
         public void BlobHasEtag()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
-            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
-            Assert.IsNotNull(etag, "#A00");
+            Assert.IsNotNull(BlobStorage.GetBlobEtag(ContainerName, BlobName), "#A00");
+        }
+
+        [Test]
+        public void BlobHasEtagAsync()
+        {
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            Assert.IsNotNull(BlobStorage.GetBlobEtagAsync(ContainerName, BlobName).Result, "#A00");
         }
 
         [Test]
         public void MissingBlobHasNoEtag()
         {
             BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
-            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
-            Assert.IsNull(etag, "#A00");
+            Assert.IsNull(BlobStorage.GetBlobEtag(ContainerName, BlobName), "#A00");
+        }
+
+        [Test]
+        public void MissingBlobHasNoEtagAsync()
+        {
+            BlobStorage.DeleteBlobIfExist(ContainerName, BlobName);
+            Assert.IsNull(BlobStorage.GetBlobEtagAsync(ContainerName, BlobName).Result, "#A00");
         }
 
         [Test]
@@ -81,17 +101,9 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         [Test]
         public void PutBlobEnforceNoOverwriteAsync()
         {
-            string firstEtag;
-            BlobStorage.PutBlob(ContainerName, BlobName, 1, true, out firstEtag);
-
-            var task = BlobStorage.PutBlobTask(ContainerName, BlobName, 6, false);
-            task.Wait();
-
-            Assert.IsTrue(task.IsCompleted, "#A00");
-            Assert.IsNull(task.Result, "#A01");
-
-            Assert.IsTrue(BlobStorage.GetBlob<int>(ContainerName, BlobName).HasValue, "#A02");
-            Assert.AreEqual(1, BlobStorage.GetBlob<int>(ContainerName, BlobName).Value, "#A03");
+            BlobStorage.PutBlob(ContainerName, BlobName, 1, true);
+            Assert.IsNull(BlobStorage.PutBlobAsync(ContainerName, BlobName, 6, false).Result, "#A01");
+            Assert.AreEqual(1, BlobStorage.GetBlobAsync<int>(ContainerName, BlobName).Result.Blob, "#A02");
         }
 
         [Test]
@@ -113,16 +125,8 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public void PutBlobEnforceOverwriteAsync()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
-
-            var task = BlobStorage.PutBlobTask(ContainerName, BlobName, 6, true);
-            task.Wait();
-
-            Assert.IsTrue(task.IsCompleted, "#A00");
-            Assert.IsNotNull(task.Result, "#A01");
-
-            var maybe = BlobStorage.GetBlob<int>(ContainerName, BlobName);
-            Assert.IsTrue(maybe.HasValue, "#A02");
-            Assert.AreEqual(6, maybe.Value, "#A03");
+            Assert.IsNotNull(BlobStorage.PutBlobAsync(ContainerName, BlobName, 6, true).Result, "#A01");
+            Assert.AreEqual(6, BlobStorage.GetBlobAsync<int>(ContainerName, BlobName).Result.Blob, "#A02");
         }
 
         /// <summary>The purpose of this test is to further check MD5 behavior
@@ -168,19 +172,9 @@ namespace Lokad.Cloud.Storage.Test.Blobs
         public virtual void PutBlobEnforceMatchingEtagAsync()
         {
             BlobStorage.PutBlob(ContainerName, BlobName, 1);
-
-            var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
-            var task = BlobStorage.PutBlobTask(ContainerName, BlobName, 2, Guid.NewGuid().ToString());
-            task.Wait();
-
-            Assert.IsTrue(task.IsCompleted);
-            Assert.IsNull(task.Result, "#A00 Blob shouldn't be updated if etag is not matching");
-
-            task = BlobStorage.PutBlobTask(ContainerName, BlobName, 3, etag);
-            task.Wait();
-
-            Assert.IsTrue(task.IsCompleted);
-            Assert.IsNotNull(task.Result, "#A01 Blob should have been updated");
+            var etag = BlobStorage.GetBlobEtagAsync(ContainerName, BlobName).Result;
+            Assert.IsNull(BlobStorage.PutBlobAsync(ContainerName, BlobName, 2, Guid.NewGuid().ToString()).Result, "#A00 Blob shouldn't be updated if etag is not matching");
+            Assert.IsNotNull(BlobStorage.PutBlobAsync(ContainerName, BlobName, 3, etag).Result, "#A01 Blob should have been updated");
         }
 
         [Test]
@@ -190,6 +184,15 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             var etag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
             var newEtag = BlobStorage.GetBlobEtag(ContainerName, BlobName);
             Assert.AreEqual(etag, newEtag, "#A00");
+        }
+
+        [Test]
+        public void EtagChangesOnlyWithBlobChangeAsync()
+        {
+            BlobStorage.PutBlob(ContainerName, BlobName, 1);
+            var etag = BlobStorage.GetBlobEtagAsync(ContainerName, BlobName);
+            var newEtag = BlobStorage.GetBlobEtagAsync(ContainerName, BlobName);
+            Assert.AreEqual(etag.Result, newEtag.Result, "#A00");
         }
 
         [Test]
@@ -236,7 +239,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
 
             int inserted = 0, updated = 10;
 
-// ReSharper disable AccessToModifiedClosure
+            // ReSharper disable AccessToModifiedClosure
 
             // skip insert
             Assert.IsFalse(BlobStorage.UpsertBlobOrSkip(ContainerName, blobName, () => Maybe<int>.Empty, x => ++updated).HasValue);
@@ -265,7 +268,50 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             // cleanup
             BlobStorage.DeleteBlobIfExist(ContainerName, blobName);
 
-// ReSharper restore AccessToModifiedClosure
+            // ReSharper restore AccessToModifiedClosure
+        }
+
+        /// <remarks>
+        /// ASYNC: This test does not check the behavior in case of concurrency stress.
+        /// </remarks>
+        [Test]
+        public void UpsertBlockOrSkipNoStressAsync()
+        {
+            var blobName = "test" + Guid.NewGuid().ToString("N");
+            Assert.IsNull(BlobStorage.GetBlobAsync<int>(ContainerName, blobName).Result);
+
+            int inserted = 0, updated = 10;
+
+            // ReSharper disable AccessToModifiedClosure
+
+            // skip insert
+            Assert.IsNull(BlobStorage.UpsertBlobOrSkipAsync(ContainerName, blobName, () => Maybe<int>.Empty, x => Interlocked.Increment(ref updated)).Result);
+            Assert.AreEqual(0, inserted);
+            Assert.AreEqual(10, updated);
+            Assert.IsNull(BlobStorage.GetBlobAsync<int>(ContainerName, blobName).Result);
+
+            // do insert
+            Assert.IsNotNull(BlobStorage.UpsertBlobOrSkipAsync<int>(ContainerName, blobName, () => Interlocked.Increment(ref inserted), x => Interlocked.Increment(ref updated)).Result);
+            Assert.AreEqual(1, inserted);
+            Assert.AreEqual(10, updated);
+            Assert.AreEqual(1, BlobStorage.GetBlobAsync<int>(ContainerName, blobName).Result.Blob);
+
+            // skip update
+            Assert.IsNull(BlobStorage.UpsertBlobOrSkipAsync<int>(ContainerName, blobName, () => Interlocked.Increment(ref inserted), x => Maybe<int>.Empty).Result);
+            Assert.AreEqual(1, inserted);
+            Assert.AreEqual(10, updated);
+            Assert.AreEqual(1, BlobStorage.GetBlobAsync<int>(ContainerName, blobName).Result.Blob);
+
+            // do update
+            Assert.IsNotNull(BlobStorage.UpsertBlobOrSkipAsync<int>(ContainerName, blobName, () => Interlocked.Increment(ref inserted), x => Interlocked.Increment(ref updated)).Result);
+            Assert.AreEqual(1, inserted);
+            Assert.AreEqual(11, updated);
+            Assert.AreEqual(11, BlobStorage.GetBlobAsync<int>(ContainerName, blobName).Result.Blob);
+
+            // cleanup
+            BlobStorage.DeleteBlobIfExist(ContainerName, blobName);
+
+            // ReSharper restore AccessToModifiedClosure
         }
 
         /// <remarks>
@@ -285,6 +331,32 @@ namespace Lokad.Cloud.Storage.Test.Blobs
             Assert.IsFalse(array.Any(x => !x.HasValue), "No skips");
 
             var sorted = array.Select(m => m.Value)
+                .OrderBy(i => i)
+                .ToArray();
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.AreEqual(i + 1, sorted[i], "Concurrency should be resolved, every call should increment by one.");
+            }
+        }
+
+        /// <remarks>
+        /// ASYNC: Loose check of the behavior under concurrency stress.
+        /// </remarks>
+        [Test]
+        public void UpsertBlockOrSkipWithStressAsync()
+        {
+            BlobStorage.PutBlobAsync(ContainerName, BlobName, 0).Wait();
+
+            var array = new Task<BlobWithETag<int>>[8];
+            array = array
+                .AsParallel()
+                .Select(k => BlobStorage.UpsertBlobOrSkipAsync<int>(ContainerName, BlobName, () => 1, i => i + 1))
+                .ToArray();
+
+            Assert.IsFalse(array.Any(x => x.Result == null), "No skips");
+
+            var sorted = array.Select(m => m.Result.Blob)
                 .OrderBy(i => i)
                 .ToArray();
 

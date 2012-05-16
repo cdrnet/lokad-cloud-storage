@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -19,6 +20,8 @@ using Lokad.Cloud.Storage.Instrumentation.Events;
 using Lokad.Cloud.Storage.Shared.Threading;
 using Microsoft.WindowsAzure.StorageClient;
 using Microsoft.WindowsAzure.StorageClient.Protocol;
+
+// ReSharper disable CSharpWarnings::CS1591
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -50,7 +53,6 @@ namespace Lokad.Cloud.Storage.Azure
             _observer = observer;
         }
 
-        /// <remarks></remarks>
         public IEnumerable<string> ListContainers(string containerNamePrefix = null)
         {
             var enumerator = String.IsNullOrEmpty(containerNamePrefix)
@@ -71,7 +73,6 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public bool CreateContainerIfNotExist(string containerName)
         {
             //workaround since Azure is presently returning OutOfRange exception when using a wrong name.
@@ -96,7 +97,6 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public bool DeleteContainerIfExist(string containerName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -117,7 +117,6 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public IEnumerable<string> ListBlobNames(string containerName, string blobNamePrefix = null)
         {
             // Enumerated blobs do not have a "name" property,
@@ -180,7 +179,6 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public IEnumerable<T> ListBlobs<T>(string containerName, string blobNamePrefix = null, int skip = 0, IDataSerializer serializer = null)
         {
             var names = ListBlobNames(containerName, blobNamePrefix);
@@ -195,7 +193,6 @@ namespace Lokad.Cloud.Storage.Azure
                 .Select(blob => blob.Value);
         }
 
-        /// <remarks></remarks>
         public bool DeleteBlobIfExist(string containerName, string blobName)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -212,19 +209,17 @@ namespace Lokad.Cloud.Storage.Azure
             }
             catch (StorageClientException ex) // no such container, return false
             {
-                if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                    || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                        || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                if (IsNotFoundException(ex))
                 {
                     // success anyway since the condition was not met
                     NotifySucceeded(StorageOperationType.BlobDelete, stopwatch);
                     return false;
                 }
+
                 throw;
             }
         }
 
-        /// <remarks></remarks>
         public void DeleteAllBlobs(string containerName, string blobNamePrefix = null)
         {
             // TODO: Parallelize
@@ -234,21 +229,18 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public Maybe<T> GetBlob<T>(string containerName, string blobName, IDataSerializer serializer = null)
         {
             string ignoredEtag;
             return GetBlob<T>(containerName, blobName, out ignoredEtag, serializer);
         }
 
-        /// <remarks></remarks>
         public Maybe<T> GetBlob<T>(string containerName, string blobName, out string etag, IDataSerializer serializer = null)
         {
             return GetBlob(containerName, blobName, typeof(T), out etag, serializer)
                 .Convert(o => (T)o, Maybe<T>.Empty);
         }
 
-        /// <remarks></remarks>
         public Maybe<object> GetBlob(string containerName, string blobName, Type type, out string etag, IDataSerializer serializer = null)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -274,9 +266,7 @@ namespace Lokad.Cloud.Storage.Azure
                 }
                 catch (StorageClientException ex)
                 {
-                    if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                        || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                            || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                    if (IsNotFoundException(ex))
                     {
                         return Maybe<object>.Empty;
                     }
@@ -303,7 +293,63 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
+        public Task<BlobWithETag<object>> GetBlobAsync(string containerName, string blobName, Type type, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var completionSource = new TaskCompletionSource<BlobWithETag<object>>();
+
+            var container = _blobStorage.GetContainerReference(containerName);
+            var blob = container.GetBlockBlobReference(blobName);
+
+            var stream = new MemoryStream();
+            completionSource.Task.ContinueWith(t => stream.Dispose());
+
+            Retry.Task(_policies.TransientServerErrorBackOff, cancellationToken,
+                () =>
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+                        return Task.Factory.FromAsync(blob.BeginDownloadToStream, blob.EndDownloadToStream, stream, null)
+                            .Then(() => VerifyContentHash(blob, stream, containerName, blobName));
+                    },
+                () =>
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+                        var deserialized = (serializer ?? _defaultSerializer).TryDeserialize(stream, type);
+                        if (deserialized.IsSuccess)
+                        {
+                            NotifySucceeded(StorageOperationType.BlobGet, stopwatch);
+                            completionSource.TrySetResult(new BlobWithETag<object>
+                                {
+                                    ETag = blob.Properties.ETag,
+                                    Blob = deserialized.Value
+                                });
+                        }
+                        else
+                        {
+                            if (_observer != null)
+                            {
+                                _observer.Notify(new BlobDeserializationFailedEvent(deserialized.Error, containerName, blobName));
+                            }
+                            completionSource.TrySetResult(null);
+                        }
+                    },
+                exception =>
+                    {
+                        if (IsNotFoundException(exception))
+                        {
+                            completionSource.TrySetResult(null);
+                        }
+                        else
+                        {
+                            NotifyFailed(StorageOperationType.BlobGet, exception);
+                            completionSource.TrySetException(exception);
+                        }
+                    },
+                () => completionSource.TrySetCanceled());
+
+            return completionSource.Task;
+        }
+
         public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag, IDataSerializer serializer = null)
         {
             etag = null;
@@ -333,9 +379,7 @@ namespace Lokad.Cloud.Storage.Azure
                 }
                 catch (StorageClientException ex)
                 {
-                    if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                        || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                            || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                    if (IsNotFoundException(ex))
                     {
                         return Maybe<XElement>.Empty;
                     }
@@ -372,7 +416,6 @@ namespace Lokad.Cloud.Storage.Azure
             return result;
         }
 
-        /// <remarks></remarks>
         public Maybe<T> GetBlobIfModified<T>(string containerName, string blobName, string oldEtag, out string newEtag, IDataSerializer serializer = null)
         {
             var dataSerializer = serializer ?? _defaultSerializer;
@@ -437,10 +480,7 @@ namespace Lokad.Cloud.Storage.Azure
                     return Maybe<T>.Empty;
                 }
 
-                // call fails due to misc problems
-                if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                    || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                        || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                if (IsNotFoundException(ex))
                 {
                     return Maybe<T>.Empty;
                 }
@@ -449,7 +489,6 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public string GetBlobEtag(string containerName, string blobName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -462,49 +501,69 @@ namespace Lokad.Cloud.Storage.Azure
             }
             catch (StorageClientException ex)
             {
-                if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                    || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                        || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                if (IsNotFoundException(ex))
                 {
                     return null;
                 }
+
                 throw;
             }
         }
 
-        /// <remarks></remarks>
+        public Task<string> GetBlobEtagAsync(string containerName, string blobName, CancellationToken cancellationToken)
+        {
+            var completionSource = new TaskCompletionSource<string>();
+
+            var container = _blobStorage.GetContainerReference(containerName);
+            var blob = container.GetBlockBlobReference(blobName);
+
+            Retry.Task(_policies.TransientServerErrorBackOff, cancellationToken,
+                () => Task.Factory.FromAsync(blob.BeginFetchAttributes, blob.EndFetchAttributes, null),
+                () => completionSource.TrySetResult(blob.Properties.ETag),
+                exception =>
+                    {
+                        if (IsNotFoundException(exception))
+                        {
+                            completionSource.TrySetResult(null);
+                        }
+                        else
+                        {
+                            NotifyFailed(StorageOperationType.BlobGet, exception);
+                            completionSource.TrySetException(exception);
+                        }
+                    },
+                () => completionSource.TrySetCanceled());
+
+            return completionSource.Task;
+        }
+
         public void PutBlob<T>(string containerName, string blobName, T item, IDataSerializer serializer = null)
         {
             PutBlob(containerName, blobName, item, true, serializer);
         }
 
-        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, IDataSerializer serializer = null)
         {
             string ignored;
             return PutBlob(containerName, blobName, item, overwrite, out ignored, serializer);
         }
 
-        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag, IDataSerializer serializer = null)
         {
             return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag, serializer);
         }
 
-        /// <remarks></remarks>
         public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag, IDataSerializer serializer = null)
         {
             string outEtag;
             return PutBlob(containerName, blobName, item, typeof (T), true, expectedEtag, out outEtag, serializer);
         }
 
-        /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, out string outEtag, IDataSerializer serializer = null)
         {
             return PutBlob(containerName, blobName, item, type, overwrite, null, out outEtag, serializer);
         }
 
-        /// <remarks></remarks>
         public bool PutBlob(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, out string outEtag, IDataSerializer serializer = null)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -599,12 +658,13 @@ namespace Lokad.Cloud.Storage.Azure
             var stopwatch = Stopwatch.StartNew();
             var completionSource = new TaskCompletionSource<string>();
 
-            // serialize to byte array (we're not "streaming" anyway; much easier to deal with than stream in async)
-            var stream = new MemoryStream();
-            (serializer ?? _defaultSerializer).Serialize(item, stream, type);
-
             var container = _blobStorage.GetContainerReference(containerName);
             var blob = container.GetBlockBlobReference(blobName);
+
+            var stream = new MemoryStream();
+            completionSource.Task.ContinueWith(t => stream.Dispose());
+
+            (serializer ?? _defaultSerializer).Serialize(item, stream, type);
             ApplyContentHash(blob, stream);
 
             BlobRequestOptions options;
@@ -760,21 +820,18 @@ namespace Lokad.Cloud.Storage.Azure
             return blob.Properties.ETag;
         }
 
-        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExist<T>(
             string containerName, string blobName, Func<T, T> update, IDataSerializer serializer = null)
         {
             return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, t => update(t), serializer);
         }
 
-        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExistOrSkip<T>(
             string containerName, string blobName, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
             return UpsertBlobOrSkip(containerName, blobName, () => Maybe<T>.Empty, update, serializer);
         }
 
-        /// <remarks></remarks>
         public Maybe<T> UpdateBlobIfExistOrDelete<T>(
             string containerName, string blobName, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
@@ -787,13 +844,11 @@ namespace Lokad.Cloud.Storage.Azure
             return result;
         }
 
-        /// <remarks></remarks>
         public T UpsertBlob<T>(string containerName, string blobName, Func<T> insert, Func<T, T> update, IDataSerializer serializer = null)
         {
             return UpsertBlobOrSkip<T>(containerName, blobName, () => insert(), t => update(t), serializer).Value;
         }
 
-        /// <remarks></remarks>
         public Maybe<T> UpsertBlobOrSkip<T>(
             string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
@@ -851,9 +906,7 @@ namespace Lokad.Cloud.Storage.Azure
                 catch (StorageClientException ex)
                 {
                     // creating the container when missing
-                    if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                        || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                            || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                    if (IsNotFoundException(ex))
                     {
                         input = Maybe<T>.Empty;
 
@@ -905,7 +958,37 @@ namespace Lokad.Cloud.Storage.Azure
             throw new TimeoutException("Failed to resolve optimistic concurrency errors within a limited number of retrials");
         }
 
-        /// <remarks></remarks>
+        public Task<BlobWithETag<T>> UpsertBlobOrSkipAsync<T>(string containerName, string blobName,
+            Func<Maybe<T>> insert, Func<T, Maybe<T>> update, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            return Retry.TaskAsTask(_policies.OptimisticConcurrency, cancellationToken,
+                () => GetBlobAsync(containerName, blobName, typeof(T), cancellationToken, serializer)
+                    .Then(b =>
+                        {
+                            var output = (b == null) ? insert() : update((T)b.Blob);
+                            if (!output.HasValue)
+                            {
+                                NotifySucceeded(StorageOperationType.BlobUpsertOrSkip, stopwatch);
+                                return TaskAsyncHelper.FromResult(default(BlobWithETag<T>));
+                            }
+
+                            var putTask = (b == null)
+                                ? PutBlobAsync(containerName, blobName, output.Value, typeof(T), false, null, cancellationToken, serializer)
+                                : PutBlobAsync(containerName, blobName, output.Value, typeof(T), true, b.ETag, cancellationToken, serializer);
+                            return putTask.Then(etag =>
+                                {
+                                    if (etag == null)
+                                    {
+                                        throw new ConcurrencyException();
+                                    }
+
+                                    NotifySucceeded(StorageOperationType.BlobUpsertOrSkip, stopwatch);
+                                    return new BlobWithETag<T> { Blob = output.Value, ETag = etag };
+                                });
+                        }));
+        }
+
         public Maybe<T> UpsertBlobOrDelete<T>(
             string containerName, string blobName, Func<Maybe<T>> insert, Func<T, Maybe<T>> update, IDataSerializer serializer = null)
         {
@@ -970,7 +1053,6 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public bool IsBlobLocked(string containerName, string blobName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -983,17 +1065,15 @@ namespace Lokad.Cloud.Storage.Azure
             }
             catch (StorageClientException ex)
             {
-                if (ex.ErrorCode == StorageErrorCode.ContainerNotFound
-                    || ex.ErrorCode == StorageErrorCode.BlobNotFound
-                        || ex.ErrorCode == StorageErrorCode.ResourceNotFound)
+                if (IsNotFoundException(ex))
                 {
                     return false;
                 }
+
                 throw;
             }
         }
 
-        /// <remarks></remarks>
         public Result<string> TryAcquireLease(string containerName, string blobName)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -1035,19 +1115,16 @@ namespace Lokad.Cloud.Storage.Azure
             }
         }
 
-        /// <remarks></remarks>
         public Result<string> TryReleaseLease(string containerName, string blobName, string leaseId)
         {
             return TryLeaseAction(containerName, blobName, LeaseAction.Release, leaseId);
         }
 
-        /// <remarks></remarks>
         public Result<string> TryRenewLease(string containerName, string blobName, string leaseId)
         {
             return TryLeaseAction(containerName, blobName, LeaseAction.Renew, leaseId);
         }
 
-        /// <remarks></remarks>
         private Result<string> TryLeaseAction(string containerName, string blobName, LeaseAction action, string leaseId = null)
         {
             var container = _blobStorage.GetContainerReference(containerName);
@@ -1088,6 +1165,20 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 response.Close();
             }
+        }
+
+        private static bool IsNotFoundException(Exception exception)
+        {
+            if (exception is AggregateException)
+            {
+                exception = exception.GetBaseException();
+            }
+
+            var sce = exception as StorageClientException;
+            return sce != null && (
+                sce.ErrorCode == StorageErrorCode.ContainerNotFound ||
+                sce.ErrorCode == StorageErrorCode.BlobNotFound ||
+                sce.ErrorCode == StorageErrorCode.ResourceNotFound);
         }
 
         private void NotifySucceeded(StorageOperationType operationType, Stopwatch stopwatch)

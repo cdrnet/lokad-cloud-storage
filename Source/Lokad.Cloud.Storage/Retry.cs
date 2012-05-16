@@ -1,4 +1,4 @@
-﻿#region Copyright (c) Lokad 2009-2011
+﻿#region Copyright (c) Lokad 2009-2012
 // This code is released under the terms of the new BSD licence.
 // URL: http://www.lokad.com/
 #endregion
@@ -12,8 +12,6 @@ namespace Lokad.Cloud.Storage
 {
     internal static class Retry
     {
-        
-
         public static void Do(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Action action)
         {
             var policy = retryPolicy();

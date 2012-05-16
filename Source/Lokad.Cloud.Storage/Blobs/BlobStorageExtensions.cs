@@ -7,11 +7,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedMethodReturnValue.Global
+// ReSharper disable CheckNamespace
+// ReSharper disable CSharpWarnings::CS1591
 
 namespace Lokad.Cloud.Storage
 {
@@ -134,49 +134,41 @@ namespace Lokad.Cloud.Storage
             provider.DeleteAllBlobs(locationPrefix.ContainerName, locationPrefix.Path);
         }
 
-        /// <remarks></remarks>
         public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, IDataSerializer serializer = null)
         {
             return provider.GetBlob<T>(location.ContainerName, location.Path, serializer);
         }
 
-        /// <remarks></remarks>
         public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocation location, IDataSerializer serializer = null)
         {
             return provider.GetBlob<T>(location.ContainerName, location.Path, serializer);
         }
 
-        /// <remarks></remarks>
         public static Maybe<T> GetBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, out string etag, IDataSerializer serializer = null)
         {
             return provider.GetBlob<T>(location.ContainerName, location.Path, out etag, serializer);
         }
 
-        /// <remarks></remarks>
         public static string GetBlobEtag(this IBlobStorageProvider provider, IBlobLocation location)
         {
             return provider.GetBlobEtag(location.ContainerName, location.Path);
         }
 
-        /// <remarks></remarks>
         public static void PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, IDataSerializer serializer = null)
         {
             provider.PutBlob(location.ContainerName, location.Path, item, serializer);
         }
 
-        /// <remarks></remarks>
         public static void PutBlob<T>(this IBlobStorageProvider provider, IBlobLocation location, T item, IDataSerializer serializer = null)
         {
             provider.PutBlob(location.ContainerName, location.Path, item, serializer);
         }
 
-        /// <remarks></remarks>
         public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, bool overwrite, IDataSerializer serializer = null)
         {
             return provider.PutBlob(location.ContainerName, location.Path, item, overwrite, serializer);
         }
 
-        /// <remarks></remarks>
         public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocation location, T item, bool overwrite, IDataSerializer serializer = null)
         {
             return provider.PutBlob(location.ContainerName, location.Path, item, overwrite, serializer);
@@ -186,53 +178,6 @@ namespace Lokad.Cloud.Storage
         public static bool PutBlob<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, string etag, IDataSerializer serializer = null)
         {
             return provider.PutBlob(location.ContainerName, location.Path, item, etag, serializer);
-        }
-
-
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, string containerName, string blobName, T item, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobAsync(containerName, blobName, item, typeof(T), true, null, CancellationToken.None, serializer);
-        }
-
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, string containerName, string blobName, T item, bool overwrite, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobAsync(containerName, blobName, item, typeof(T), overwrite, null, CancellationToken.None, serializer);
-        }
-
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, string containerName, string blobName, T item, string expectedEtag, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobAsync(containerName, blobName, item, typeof(T), true, expectedEtag, CancellationToken.None, serializer);
-        }
-
-        public static Task<string> PutBlobTask(this IBlobStorageProvider provider, string containerName, string blobName, object item, Type type, bool overwrite, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobAsync(containerName, blobName, item, type, overwrite, null, CancellationToken.None, serializer);
-        }
-
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobTask(location.ContainerName, location.Path, item, serializer);
-        }
-
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, IBlobLocation location, T item, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobTask(location.ContainerName, location.Path, item, serializer);
-        }
-
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, bool overwrite, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobTask(location.ContainerName, location.Path, item, overwrite, serializer);
-        }
-
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, IBlobLocation location, T item, bool overwrite, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobTask(location.ContainerName, location.Path, item, overwrite, serializer);
-        }
-
-        /// <summary>Push the blob only if etag is matching the etag of the blob in BlobStorage</summary>
-        public static Task<string> PutBlobTask<T>(this IBlobStorageProvider provider, IBlobLocationAndType<T> location, T item, string etag, IDataSerializer serializer = null)
-        {
-            return provider.PutBlobTask(location.ContainerName, location.Path, item, etag, serializer);
         }
 
         /// <summary>

@@ -171,6 +171,17 @@ namespace Lokad.Cloud.Storage.InMemory
             }
         }
 
+        public Task<BlobWithETag<object>> GetBlobAsync(string containerName, string blobName, Type type, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            return TaskAsyncHelper.FromMethod(
+                () =>
+                    {
+                        string etag;
+                        var blob = GetBlob(containerName, blobName, type, out etag, serializer);
+                        return blob.Convert(o => new BlobWithETag<object> { Blob = o, ETag = etag }, () => default(BlobWithETag<object>));
+                    });
+        }
+
         /// <remarks></remarks>
         public Maybe<XElement> GetBlobXml(string containerName, string blobName, out string etag, IDataSerializer serializer = null)
         {
@@ -252,6 +263,11 @@ namespace Lokad.Cloud.Storage.InMemory
                     ? Containers[containerName].BlobsEtag[blobName]
                     : null;
             }
+        }
+
+        public Task<string> GetBlobEtagAsync(string containerName, string blobName, CancellationToken cancellationToken)
+        {
+            return TaskAsyncHelper.FromMethod(() => GetBlobEtag(containerName, blobName));
         }
 
         /// <remarks></remarks>
@@ -338,7 +354,7 @@ namespace Lokad.Cloud.Storage.InMemory
 
         public Task<string> PutBlobAsync(string containerName, string blobName, object item, Type type, bool overwrite, string expectedEtag, CancellationToken cancellationToken, IDataSerializer serializer = null)
         {
-            return Task.Factory.StartNew(
+            return TaskAsyncHelper.FromMethod(
                 () =>
                     {
                         string etag;
@@ -410,6 +426,28 @@ namespace Lokad.Cloud.Storage.InMemory
                 }
 
                 return output;
+            }
+        }
+
+        public Task<BlobWithETag<T>> UpsertBlobOrSkipAsync<T>(string containerName, string blobName,
+            Func<Maybe<T>> insert, Func<T, Maybe<T>> update, CancellationToken cancellationToken, IDataSerializer serializer = null)
+        {
+            lock (_syncRoot)
+            {
+                return GetBlobAsync(containerName, blobName, typeof(T), cancellationToken, serializer)
+                    .Then(b =>
+                    {
+                        var output = (b == null) ? insert() : update((T)b.Blob);
+                        if (!output.HasValue)
+                        {
+                            return TaskAsyncHelper.FromResult(default(BlobWithETag<T>));
+                        }
+
+                        var putTask = (b == null)
+                            ? PutBlobAsync(containerName, blobName, output.Value, typeof(T), false, null, cancellationToken, serializer)
+                            : PutBlobAsync(containerName, blobName, output.Value, typeof(T), true, b.ETag, cancellationToken, serializer);
+                        return putTask.Then(etag => new BlobWithETag<T> { Blob = output.Value, ETag = etag });
+                    });
             }
         }
 

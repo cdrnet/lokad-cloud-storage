@@ -64,12 +64,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Blobs\BlobWithETag.cs" />
+    <Compile Include="Blobs\BlobStorageAsyncExtensions.cs" />
+    <Compile Include="ConcurrencyException.cs" />
     <Compile Include="DelegateFormatter.cs" />
     <Compile Include="Azure\RetryPolicies.cs" />
     <Compile Include="Azure\BlobStorageProvider.cs" />
     <Compile Include="Azure\DataCorruptionException.cs" />
     <Compile Include="Azure\FatEntity.cs" />
     <Compile Include="Azure\QueueStorageProvider.cs" />
+    <Compile Include="FileSystem\MetadataPrefixStream.cs" />
     <Compile Include="Instrumentation\Events\TaskFailedEvent.cs" />
     <Compile Include="Instrumentation\Events\StorageOperationFailedEvent.cs" />
     <Compile Include="Retry.cs" />
