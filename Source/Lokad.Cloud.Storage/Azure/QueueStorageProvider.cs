@@ -58,13 +58,13 @@ namespace Lokad.Cloud.Storage.Azure
         public QueueStorageProvider(
             CloudQueueClient queueStorage,
             IBlobStorageProvider blobStorage,
-            IDataSerializer defaultSerializer,
+            IDataSerializer defaultSerializer = null,
             IStorageObserver observer = null)
         {
             _policies = new RetryPolicies(observer);
             _queueStorage = queueStorage;
             _blobStorage = blobStorage;
-            _defaultSerializer = defaultSerializer;
+            _defaultSerializer = defaultSerializer ?? new CloudFormatter();
             _observer = observer;
 
             _inProcessMessages = new Dictionary<object, InProcessMessage>(20, new IdentityComparer());

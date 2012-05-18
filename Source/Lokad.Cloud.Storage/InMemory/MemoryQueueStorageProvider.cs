@@ -24,12 +24,12 @@ namespace Lokad.Cloud.Storage.InMemory
         internal IDataSerializer DefaultSerializer { get; set; }
         
         /// <summary>Default constructor.</summary>
-        public MemoryQueueStorageProvider()
+        public MemoryQueueStorageProvider(IDataSerializer defaultSerializer = null)
         {
             _queues = new Dictionary<string, Queue<byte[]>>();
             _inProcessMessages = new Dictionary<object, Tu>();
             _persistedMessages = new HashSet<Tuple<string, string, string, byte[]>>();
-            DefaultSerializer = new CloudFormatter();
+            DefaultSerializer = defaultSerializer ?? new CloudFormatter();
         }
 
         /// <remarks></remarks>

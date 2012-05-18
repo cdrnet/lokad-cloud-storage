@@ -5,6 +5,7 @@
 
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Net;
 using Lokad.Cloud.Storage.Instrumentation;
 using Microsoft.WindowsAzure;
@@ -129,26 +130,17 @@ namespace Lokad.Cloud.Storage
     {
         public override IBlobStorageProvider BuildBlobStorage()
         {
-            return new InMemory.MemoryBlobStorageProvider
-            {
-                DefaultSerializer = DataSerializer
-            };
+            return new InMemory.MemoryBlobStorageProvider(DataSerializer);
         }
 
         public override ITableStorageProvider BuildTableStorage()
         {
-            return new InMemory.MemoryTableStorageProvider
-            {
-                DataSerializer = DataSerializer
-            };
+            return new InMemory.MemoryTableStorageProvider(DataSerializer);
         }
 
         public override IQueueStorageProvider BuildQueueStorage()
         {
-            return new InMemory.MemoryQueueStorageProvider
-            {
-                DefaultSerializer = DataSerializer
-            };
+            return new InMemory.MemoryQueueStorageProvider(DataSerializer);
         }
     }
 
@@ -227,7 +219,7 @@ namespace Lokad.Cloud.Storage
 
         public override IBlobStorageProvider BuildBlobStorage()
         {
-            return new FileSystem.FileBlobStorageProvider(_rootPath, DataSerializer);
+            return new FileSystem.FileBlobStorageProvider(Path.Combine(_rootPath, "blobs"), DataSerializer);
         }
 
         public override ITableStorageProvider BuildTableStorage()

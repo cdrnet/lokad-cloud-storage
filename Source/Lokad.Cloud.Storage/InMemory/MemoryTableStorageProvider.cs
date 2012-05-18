@@ -31,11 +31,11 @@ namespace Lokad.Cloud.Storage.InMemory
         /// <summary>
         /// Constructor for <see cref="MemoryTableStorageProvider"/>.
         /// </summary>
-        public MemoryTableStorageProvider()
+        public MemoryTableStorageProvider(IDataSerializer defaultSerializer = null)
         {
             _tables = new Dictionary<string, List<MockTableEntry>>();
             _syncRoot = new object();
-            DataSerializer = new CloudFormatter();
+            DataSerializer = defaultSerializer ?? new CloudFormatter();
         }
 
         /// <see cref="ITableStorageProvider.CreateTable"/>

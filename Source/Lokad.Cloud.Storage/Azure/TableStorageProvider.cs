@@ -39,11 +39,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         /// <summary>IoC constructor.</summary>
         /// <param name="observer">Can be <see langword="null"/>.</param>
-        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer, IStorageObserver observer = null)
+        public TableStorageProvider(CloudTableClient tableStorage, IDataSerializer serializer = null, IStorageObserver observer = null)
         {
             _policies = new RetryPolicies(observer);
             _tableStorage = tableStorage;
-            _serializer = serializer;
+            _serializer = serializer ?? new CloudFormatter();
             _observer = observer;
         }
 

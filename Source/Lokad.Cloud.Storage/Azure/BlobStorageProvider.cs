@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -45,11 +44,11 @@ namespace Lokad.Cloud.Storage.Azure
 
         /// <summary>IoC constructor.</summary>
         /// <param name="observer">Can be <see langword="null"/>.</param>
-        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer defaultSerializer, IStorageObserver observer = null)
+        public BlobStorageProvider(CloudBlobClient blobStorage, IDataSerializer defaultSerializer = null, IStorageObserver observer = null)
         {
             _policies = new RetryPolicies(observer);
             _blobStorage = blobStorage;
-            _defaultSerializer = defaultSerializer;
+            _defaultSerializer = defaultSerializer ?? new CloudFormatter();
             _observer = observer;
         }
 

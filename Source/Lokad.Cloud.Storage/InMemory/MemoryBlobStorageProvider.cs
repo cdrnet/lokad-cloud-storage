@@ -30,11 +30,11 @@ namespace Lokad.Cloud.Storage.InMemory
         internal IDataSerializer DefaultSerializer { get; set; }
 
         /// <remarks></remarks>
-        public MemoryBlobStorageProvider()
+        public MemoryBlobStorageProvider(IDataSerializer defaultSerializer = null)
         {
             _containers = new Dictionary<string, MockContainer>();
             _syncRoot = new object();
-            DefaultSerializer = new CloudFormatter();
+            DefaultSerializer = defaultSerializer ?? new CloudFormatter();
         }
 
         /// <remarks></remarks>
