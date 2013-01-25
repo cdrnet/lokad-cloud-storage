@@ -8,8 +8,11 @@ using System.ComponentModel;
 using System.IO;
 using System.Net;
 using Lokad.Cloud.Storage.Instrumentation;
-using Microsoft.WindowsAzure;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Auth;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Lokad.Cloud.Storage
 {
@@ -37,7 +40,7 @@ namespace Lokad.Cloud.Storage
         /// <remarks></remarks>
         public static CloudStorageBuilder ForAzureAccountAndKey(string accountName, string key, bool useHttps = true)
         {
-            return new AzureCloudStorageBuilder(new CloudStorageAccount(new StorageCredentialsAccountAndKey(accountName, key), useHttps));
+            return new AzureCloudStorageBuilder(new CloudStorageAccount(new StorageCredentials(accountName, key), useHttps));
         }
 
         /// <summary>Caution, only provides a blob storage provider</summary>
@@ -186,7 +189,7 @@ namespace Lokad.Cloud.Storage
         {
             var policies = new Azure.RetryPolicies(Observer);
             var blobClient = _storageAccount.CreateCloudBlobClient();
-            blobClient.RetryPolicy = policies.ForAzureStorageClient;
+            blobClient.RetryPolicy = policies.ForAzureStorageClient();
             return blobClient;
         }
 
@@ -194,7 +197,7 @@ namespace Lokad.Cloud.Storage
         {
             var policies = new Azure.RetryPolicies(Observer);
             var tableClient = _storageAccount.CreateCloudTableClient();
-            tableClient.RetryPolicy = policies.ForAzureStorageClient;
+            tableClient.RetryPolicy = policies.ForAzureStorageClient();
             return tableClient;
         }
 
@@ -202,8 +205,8 @@ namespace Lokad.Cloud.Storage
         {
             var policies = new Azure.RetryPolicies(Observer);
             var queueClient = _storageAccount.CreateCloudQueueClient();
-            queueClient.RetryPolicy = policies.ForAzureStorageClient;
-            queueClient.Timeout = TimeSpan.FromSeconds(300);
+            queueClient.RetryPolicy = policies.ForAzureStorageClient();
+            queueClient.ServerTimeout = TimeSpan.FromSeconds(300);
             return queueClient;
         }
     }

@@ -5,7 +5,8 @@
 
 using System;
 using System.IO;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.RetryPolicies;
 
 namespace Lokad.Cloud.Storage.FileSystem
 {
@@ -21,26 +22,36 @@ namespace Lokad.Cloud.Storage.FileSystem
         /// <summary>
         /// Retry policy for optimistic concurrency retrials.
         /// </summary>
-        public ShouldRetry OptimisticConcurrency()
+        public IRetryPolicy OptimisticConcurrency()
         {
-            var random = new Random();
+            return new OptimisticConcurrencyRetry();
+        }
 
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        internal class OptimisticConcurrencyRetry : IRetryPolicy
+        {
+            public IRetryPolicy CreateInstance()
+            {
+                return new OptimisticConcurrencyRetry();
+            }
+
+            public bool ShouldRetry(int currentRetryCount, int statusCode, Exception lastException, out TimeSpan retryInterval,
+                                    OperationContext operationContext)
+            {
+                var random = new Random();
+                if (lastException is AggregateException)
                 {
-                    if (lastException is AggregateException)
-                    {
-                        lastException = lastException.GetBaseException();
-                    }
+                    lastException = lastException.GetBaseException();
+                }
 
-                    if (currentRetryCount >= 30 || !(lastException is IOException) && !(lastException is ConcurrencyException))
-                    {
-                        retryInterval = TimeSpan.Zero;
-                        return false;
-                    }
+                if (currentRetryCount >= 30 || !(lastException is IOException) && !(lastException is ConcurrencyException))
+                {
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                }
 
-                    retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(1000, 5 + currentRetryCount * currentRetryCount * 5)));
-                    return true;
-                };
+                retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(1000, 5 + currentRetryCount * currentRetryCount * 5)));
+                return true;
+            }
         }
     }
 }
