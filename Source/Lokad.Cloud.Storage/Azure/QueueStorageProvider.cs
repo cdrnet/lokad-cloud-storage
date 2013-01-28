@@ -1282,7 +1282,18 @@ namespace Lokad.Cloud.Storage.Azure
             try
             {
                 var queue = _queueStorage.GetQueueReference(queueName);
-                return Retry.Get(_policies.TransientServerErrorBackOff(), CancellationToken.None, ()=>queue.ApproximateMessageCount.Value);
+                queue.FetchAttributes();
+                return Retry.Get(_policies.TransientServerErrorBackOff(), CancellationToken.None, () =>
+                                                                                                      {
+                                                                                                          if (queue.ApproximateMessageCount.HasValue)
+                                                                                                          {
+                                                                                                              return queue.ApproximateMessageCount.Value;
+                                                                                                          }
+                                                                                                          else
+                                                                                                          {
+                                                                                                              return 0;
+                                                                                                          }
+                                                                                                      });
             }
             catch (StorageException ex)
             {
