@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -98,8 +99,7 @@ namespace Lokad.Cloud.Storage.Azure
             catch (StorageException ex)
             {
                 // if the queue does not exist return an empty collection.
-                if (ex.RequestInformation.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.ResourceNotFound
-                    || ex.RequestInformation.ExtendedErrorInformation.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
+                if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
                 {
                     return new T[0];
                 }
@@ -376,8 +376,7 @@ namespace Lokad.Cloud.Storage.Azure
             catch (StorageException ex)
             {
                 // if the queue does not exist do nothing
-                if (ex.RequestInformation.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.ResourceNotFound
-                    || ex.RequestInformation.ExtendedErrorInformation.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
+                if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
                 {
                     return;
                 }
@@ -1104,7 +1103,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
             catch (StorageException ex)
             {
-                if (ex.RequestInformation.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.ResourceNotFound)
+                if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
                 {
                     return false;
                 }
@@ -1175,8 +1174,7 @@ namespace Lokad.Cloud.Storage.Azure
             catch (StorageException ex)
             {
                 // HACK: not storage status error code yet
-                if (ex.RequestInformation.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.ResourceNotFound
-                    || ex.RequestInformation.ExtendedErrorInformation.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
+                if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
                 {
                     // It usually takes time before the queue gets available
                     // (the queue might also have been freshly deleted).
@@ -1264,8 +1262,7 @@ namespace Lokad.Cloud.Storage.Azure
             }
             catch (StorageException ex)
             {
-                if (ex.RequestInformation.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.ResourceNotFound
-                    || ex.RequestInformation.ExtendedErrorInformation.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
+                if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
                 {
                     return false;
                 }
@@ -1298,8 +1295,7 @@ namespace Lokad.Cloud.Storage.Azure
             catch (StorageException ex)
             {
                 // if the queue does not exist, return 0 (no queue)
-                if (ex.RequestInformation.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.ResourceNotFound
-                    || ex.RequestInformation.ExtendedErrorInformation.ErrorCode == QueueErrorCodeStrings.QueueNotFound)
+                if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
                 {
                     return 0;
                 }
