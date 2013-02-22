@@ -11,7 +11,11 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Queue.Protocol;
+using Microsoft.WindowsAzure.Storage.RetryPolicies;
+using Microsoft.WindowsAzure.Storage.Shared.Protocol;
+using Microsoft.WindowsAzure.Storage.Table.Protocol;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -31,65 +35,107 @@ namespace Lokad.Cloud.Storage.Azure
         /// <summary>
         /// Retry policy for optimistic concurrency retrials.
         /// </summary>
-        public ShouldRetry OptimisticConcurrency()
+        public IRetryPolicy OptimisticConcurrency()
         {
-            var random = new Random();
-            Guid sequence = Guid.NewGuid();
+            return new OptimisticConcurrencyAzureRetry(_observer);
+        }
 
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        internal class OptimisticConcurrencyAzureRetry : IRetryPolicy
+        {
+            private readonly IStorageObserver storageObserver;
+
+            public OptimisticConcurrencyAzureRetry(IStorageObserver storageObserver)
+            {
+                this.storageObserver = storageObserver;
+            }
+
+            public IRetryPolicy CreateInstance()
+            {
+                return new OptimisticConcurrencyAzureRetry(storageObserver);
+            }
+
+            public bool ShouldRetry(int currentRetryCount, int statusCode, Exception lastException,
+                                    out TimeSpan retryInterval,
+                                    OperationContext operationContext)
+            {
+                var random = new Random();
+                Guid sequence = Guid.NewGuid();
+
+                if (currentRetryCount >= 30)
                 {
-                    if (currentRetryCount >= 30)
-                    {
-                        retryInterval = TimeSpan.Zero;
-                        return false;
-                    }
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                }
 
-                    retryInterval = TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount * currentRetryCount * 10)));
+                retryInterval =
+                    TimeSpan.FromMilliseconds(random.Next(Math.Min(10000, 10 + currentRetryCount*currentRetryCount*10)));
 
-                    if (_observer != null)
-                    {
-                        _observer.Notify(new StorageOperationRetriedEvent(lastException, "OptimisticConcurrency", currentRetryCount, retryInterval, sequence));
-                    }
+                if (storageObserver != null)
+                {
+                    storageObserver.Notify(new StorageOperationRetriedEvent(lastException, "OptimisticConcurrency",
+                                                                      currentRetryCount, retryInterval, sequence));
+                }
 
-                    return true;
-                };
+                return true;
+            }
         }
 
         /// <summary>
         /// Retry policy which is applied to all Azure storage clients. Ignores the actual exception.
         /// </summary>
-        public ShouldRetry ForAzureStorageClient()
+        public IRetryPolicy ForAzureStorageClient()
         {
-            // [abdullin]: in short this gives us MinBackOff + 2^(10)*Rand.(~0.5.Seconds()) at the last retry.
+            return new ForAzureStorageClientRetry(_observer);
+        }
 
-            // TODO (ruegg, 2011-05-26): This policy might actually be counterproductive and interfere with the other policies. Investigate.
+        /// <summary>
+        /// Retry policy which is applied to all Azure storage clients. Ignores the actual exception.
+        /// </summary>
+        internal class ForAzureStorageClientRetry : IRetryPolicy
+        {
+            private readonly IStorageObserver storageObserver;
 
-            var random = new Random();
-            Guid sequence = Guid.NewGuid();
+            public ForAzureStorageClientRetry(IStorageObserver storageObserver)
+            {
+                this.storageObserver = storageObserver;
+            }
 
-            double deltaBackoff = TimeSpan.FromSeconds(0.5).TotalMilliseconds;
-            double minBackoff = Microsoft.WindowsAzure.StorageClient.RetryPolicies.DefaultMinBackoff.TotalMilliseconds;
-            double maxBackoff = Microsoft.WindowsAzure.StorageClient.RetryPolicies.DefaultMaxBackoff.TotalMilliseconds;
+            public IRetryPolicy CreateInstance()
+            {
+                return new ForAzureStorageClientRetry(storageObserver);
+            }
 
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+            public bool ShouldRetry(int currentRetryCount, int statusCode, Exception lastException, out TimeSpan retryInterval,
+                                    OperationContext operationContext)
+            {
+
+                // TODO (ruegg, 2011-05-26): This policy might actually be counterproductive and interfere with the other policies. Investigate.
+
+                var random = new Random();
+                Guid sequence = Guid.NewGuid();
+
+                double deltaBackoff = TimeSpan.FromSeconds(0.5).TotalMilliseconds;
+                const double minBackoff = 1;
+                const double maxBackoff = 90;
+                if (currentRetryCount >= 10)
                 {
-                    if (currentRetryCount >= 10)
-                    {
-                        retryInterval = TimeSpan.Zero;
-                        return false;
-                    }
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                }
 
-                    retryInterval = TimeSpan.FromMilliseconds(Math.Min(
-                        maxBackoff,
-                        minBackoff + ((Math.Pow(2.0, currentRetryCount) - 1.0) * random.Next((int)(deltaBackoff * 0.8), (int)(deltaBackoff * 1.2)))));
+                retryInterval = TimeSpan.FromMilliseconds(Math.Min(
+                    maxBackoff,
+                    minBackoff +
+                    ((Math.Pow(2.0, currentRetryCount) - 1.0)*random.Next((int) (deltaBackoff*0.8), (int) (deltaBackoff*1.2)))));
 
-                    if (_observer != null)
-                    {
-                        _observer.Notify(new StorageOperationRetriedEvent(lastException, "StorageClient", currentRetryCount, retryInterval, sequence));
-                    }
+                if (storageObserver != null)
+                {
+                    storageObserver.Notify(new StorageOperationRetriedEvent(lastException, "StorageClient", currentRetryCount,
+                                                                            retryInterval, sequence));
+                }
 
-                    return true;
-                };
+                return true;
+            }
         }
 
         /// <summary>
@@ -101,39 +147,77 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks>
         /// Includes NetworkCorruption policy
         /// </remarks>
-        public ShouldRetry TransientServerErrorBackOff()
+        public IRetryPolicy TransientServerErrorBackOff()
         {
-            Guid sequence = Guid.NewGuid();
+            return new TransientServerErrorBackOffRetry(_observer);
+        }
 
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        internal class TransientServerErrorBackOffRetry : IRetryPolicy
+        {
+            private readonly IStorageObserver storageObserver;
+
+            public TransientServerErrorBackOffRetry(IStorageObserver storageObserver)
+            {
+                this.storageObserver = storageObserver;
+            }
+
+            public IRetryPolicy CreateInstance()
+            {
+                return new TransientServerErrorBackOffRetry(storageObserver);
+            }
+
+            public bool ShouldRetry(int currentRetryCount, int statusCode, Exception lastException,
+                                    out TimeSpan retryInterval,
+                                    OperationContext operationContext)
+            {
+                Guid sequence = Guid.NewGuid();
+
+                if (currentRetryCount >= 30 || !(TransientServerErrorExceptionFilter(lastException) || NetworkCorruptionExceptionFilter(lastException)))
                 {
-                    if (currentRetryCount >= 30 || !(TransientServerErrorExceptionFilter(lastException) || NetworkCorruptionExceptionFilter(lastException)))
-                    {
-                        retryInterval = TimeSpan.Zero;
-                        return false;
-                    }
+                    retryInterval = TimeSpan.Zero;
+                    return false;
+                }
 
-                    // quadratic backoff, capped at 5 minutes
-                    var c = currentRetryCount + 1;
-                    retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
+                // quadratic backoff, capped at 5 minutes
+                var c = currentRetryCount + 1;
+                retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
 
-                    if (_observer != null)
-                    {
-                        _observer.Notify(new StorageOperationRetriedEvent(lastException, "TransientServerError", currentRetryCount, retryInterval, sequence));
-                    }
+                if (storageObserver != null)
+                {
+                    storageObserver.Notify(new StorageOperationRetriedEvent(lastException, "TransientServerError", currentRetryCount, retryInterval, sequence));
+                }
 
-                    return true;
-                };
+                return true;
+            }
         }
 
         /// <summary>Similar to <see cref="TransientServerErrorBackOff"/>, yet
         /// the Table Storage comes with its own set or exceptions/.</summary>
-        public ShouldRetry TransientTableErrorBackOff()
+        public IRetryPolicy TransientTableErrorBackOff()
         {
-            Guid sequence = Guid.NewGuid();
+            return new TransientTableErrorBackOffRetry(_observer);
+        }
 
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        internal class TransientTableErrorBackOffRetry : IRetryPolicy
+        {
+            private readonly IStorageObserver storageObserver;
+
+            public TransientTableErrorBackOffRetry(IStorageObserver storageObserver)
             {
+                this.storageObserver = storageObserver;
+            }
+
+            public IRetryPolicy CreateInstance()
+            {
+                return new TransientTableErrorBackOffRetry(storageObserver);
+            }
+
+            public bool ShouldRetry(int currentRetryCount, int statusCode, Exception lastException,
+                                    out TimeSpan retryInterval,
+                                    OperationContext operationContext)
+            {
+                Guid sequence = Guid.NewGuid();
+
                 if (currentRetryCount >= 30 || !TransientTableErrorExceptionFilter(lastException))
                 {
                     retryInterval = TimeSpan.Zero;
@@ -144,25 +228,44 @@ namespace Lokad.Cloud.Storage.Azure
                 var c = currentRetryCount + 1;
                 retryInterval = TimeSpan.FromSeconds(Math.Min(300, c * c));
 
-                if (_observer != null)
+                if (storageObserver != null)
                 {
-                    _observer.Notify(new StorageOperationRetriedEvent(lastException, "TransientTableError", currentRetryCount, retryInterval, sequence));
+                    storageObserver.Notify(new StorageOperationRetriedEvent(lastException, "TransientTableError", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
-            };
+            }
         }
 
         /// <summary>
         /// Very patient retry policy to deal with container, queue or table instantiation
         /// that happens just after a deletion.
         /// </summary>
-        public ShouldRetry SlowInstantiation()
+        public IRetryPolicy SlowInstantiation()
         {
-            Guid sequence = Guid.NewGuid();
+            return new SlowInstantiationRetry(_observer);
+        }
 
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        internal class SlowInstantiationRetry : IRetryPolicy
+        {
+            private readonly IStorageObserver storageObserver;
+
+            public SlowInstantiationRetry(IStorageObserver storageObserver)
             {
+                this.storageObserver = storageObserver;
+            }
+
+            public IRetryPolicy CreateInstance()
+            {
+                return new SlowInstantiationRetry(storageObserver);
+            }
+
+            public bool ShouldRetry(int currentRetryCount, int statusCode, Exception lastException,
+                                    out TimeSpan retryInterval,
+                                    OperationContext operationContext)
+            {
+                Guid sequence = Guid.NewGuid();
+
                 if (currentRetryCount >= 30 || !SlowInstantiationExceptionFilter(lastException))
                 {
                     retryInterval = TimeSpan.Zero;
@@ -172,24 +275,43 @@ namespace Lokad.Cloud.Storage.Azure
                 // linear backoff
                 retryInterval = TimeSpan.FromMilliseconds(100 * currentRetryCount);
 
-                if (_observer != null)
+                if (storageObserver != null)
                 {
-                    _observer.Notify(new StorageOperationRetriedEvent(lastException, "SlowInstantiation", currentRetryCount, retryInterval, sequence));
+                    storageObserver.Notify(new StorageOperationRetriedEvent(lastException, "SlowInstantiation", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
-            };
+            }
         }
 
         /// <summary>
         /// Limited retry related to MD5 validation failure.
         /// </summary>
-        public ShouldRetry NetworkCorruption()
+        public IRetryPolicy NetworkCorruption()
         {
-            Guid sequence = Guid.NewGuid();
+            return new NetworkCorruptionRetry(_observer);
+        }
 
-            return delegate(int currentRetryCount, Exception lastException, out TimeSpan retryInterval)
+        internal class NetworkCorruptionRetry : IRetryPolicy
+        {
+            private readonly IStorageObserver storageObserver;
+
+            public NetworkCorruptionRetry(IStorageObserver storageObserver)
             {
+                this.storageObserver = storageObserver;
+            }
+
+            public IRetryPolicy CreateInstance()
+            {
+                return new NetworkCorruptionRetry(storageObserver);
+            }
+
+            public bool ShouldRetry(int currentRetryCount, int statusCode, Exception lastException,
+                                    out TimeSpan retryInterval,
+                                    OperationContext operationContext)
+            {
+                Guid sequence = Guid.NewGuid();
+
                 if (currentRetryCount >= 3 || !NetworkCorruptionExceptionFilter(lastException))
                 {
                     retryInterval = TimeSpan.Zero;
@@ -199,25 +321,19 @@ namespace Lokad.Cloud.Storage.Azure
                 // no backoff, retry immediately
                 retryInterval = TimeSpan.Zero;
 
-                if (_observer != null)
+                if (storageObserver != null)
                 {
-                    _observer.Notify(new StorageOperationRetriedEvent(lastException, "NetworkCorruption", currentRetryCount, retryInterval, sequence));
+                    storageObserver.Notify(new StorageOperationRetriedEvent(lastException, "NetworkCorruption", currentRetryCount, retryInterval, sequence));
                 }
 
                 return true;
-            };
-        }
-
-        static bool IsErrorCodeMatch(StorageException exception, params StorageErrorCode[] codes)
-        {
-            return exception != null
-                && codes.Contains(exception.ErrorCode);
+            }
         }
 
         static bool IsErrorStringMatch(StorageException exception, params string[] errorStrings)
         {
-            return exception != null && exception.ExtendedErrorInformation != null
-                && errorStrings.Contains(exception.ExtendedErrorInformation.ErrorCode);
+            return exception != null && exception.RequestInformation.ExtendedErrorInformation != null
+                && errorStrings.Contains(exception.RequestInformation.ExtendedErrorInformation.ErrorCode);
         }
 
         static bool IsErrorStringMatch(string exceptionErrorString, params string[] errorStrings)
@@ -232,16 +348,9 @@ namespace Lokad.Cloud.Storage.Azure
                 exception = exception.GetBaseException();
             }
 
-            var serverException = exception as StorageServerException;
+            var serverException = exception as StorageException;
             if (serverException != null)
             {
-                if (IsErrorCodeMatch(serverException,
-                    StorageErrorCode.ServiceInternalError,
-                    StorageErrorCode.ServiceTimeout))
-                {
-                    return true;
-                }
-
                 if (IsErrorStringMatch(serverException,
                     StorageErrorCodeStrings.InternalError,
                     StorageErrorCodeStrings.ServerBusy,
@@ -356,7 +465,7 @@ namespace Lokad.Cloud.Storage.Azure
                 exception = exception.GetBaseException();
             }
 
-            var storageException = exception as StorageClientException;
+            var storageException = exception as StorageException;
 
             // Blob Storage or Queue Storage exceptions
             // Table Storage may throw exception of type 'StorageClientException'
@@ -364,9 +473,9 @@ namespace Lokad.Cloud.Storage.Azure
             {
                 // 'client' exceptions reflect server-side problems (delayed instantiation)
 
-                if (IsErrorCodeMatch(storageException,
-                    StorageErrorCode.ResourceNotFound,
-                    StorageErrorCode.ContainerNotFound))
+                if (IsErrorStringMatch(storageException,
+                    StorageErrorCodeStrings.ResourceNotFound,
+                    StorageErrorCodeStrings.ContainerNotFound))
                 {
                     return true;
                 }
@@ -408,12 +517,11 @@ namespace Lokad.Cloud.Storage.Azure
             }
 
             // Upload MD5 mismatch
-            var clientException = exception as StorageClientException;
+            var clientException = exception as StorageException;
             if (clientException != null
-                && clientException.ErrorCode == StorageErrorCode.BadRequest
-                && clientException.ExtendedErrorInformation != null
-                && clientException.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.InvalidHeaderValue
-                && clientException.ExtendedErrorInformation.AdditionalDetails["HeaderName"] == "Content-MD5")
+                && clientException.RequestInformation.ExtendedErrorInformation != null
+                && clientException.RequestInformation.ExtendedErrorInformation.ErrorCode == StorageErrorCodeStrings.InvalidHeaderValue
+                && clientException.RequestInformation.ExtendedErrorInformation.AdditionalDetails["HeaderName"] == "Content-MD5")
             {
                 // network transport corruption (automatic), try again
                 return true;

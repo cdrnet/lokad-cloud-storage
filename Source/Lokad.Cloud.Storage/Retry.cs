@@ -6,15 +6,15 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage.RetryPolicies;
 
 namespace Lokad.Cloud.Storage
 {
     internal static class Retry
     {
-        public static void Do(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Action action)
+        public static void Do(this IRetryPolicy retryPolicy, CancellationToken cancellationToken, Action action)
         {
-            var policy = retryPolicy();
+            var policy = retryPolicy;
             int retryCount = 0;
 
             while (true)
@@ -28,7 +28,7 @@ namespace Lokad.Cloud.Storage
                 catch (Exception exception)
                 {
                     TimeSpan delay;
-                    if (policy(retryCount, exception, out delay))
+                    if (policy.ShouldRetry(retryCount, 0,exception, out delay,null))
                     {
                         retryCount++;
                         if (delay > TimeSpan.Zero)
@@ -44,10 +44,10 @@ namespace Lokad.Cloud.Storage
             }
         }
 
-        public static void Do(this RetryPolicy firstPolicy, RetryPolicy secondPolicy, CancellationToken cancellationToken, Action action)
+        public static void Do(this IRetryPolicy firstPolicy, IRetryPolicy secondPolicy, CancellationToken cancellationToken, Action action)
         {
-            var first = firstPolicy();
-            var second = secondPolicy();
+            var first = firstPolicy;
+            var second = secondPolicy;
             int retryCount = 0;
 
             while (true)
@@ -61,7 +61,7 @@ namespace Lokad.Cloud.Storage
                 catch (Exception exception)
                 {
                     TimeSpan delay;
-                    if (first(retryCount, exception, out delay))
+                    if (first.ShouldRetry(retryCount, 0, exception, out delay, null))
                     {
                         retryCount++;
                         if (delay > TimeSpan.Zero)
@@ -72,39 +72,7 @@ namespace Lokad.Cloud.Storage
                         continue;
                     }
 
-                    if (second(retryCount, exception, out delay))
-                    {
-                        retryCount++;
-                        if (delay > TimeSpan.Zero)
-                        {
-                            Thread.Sleep(delay);
-                        }
-
-                        continue;
-                    }
-
-                    throw;
-                }
-            }
-        }
-
-        public static T Get<T>(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<T> action)
-        {
-            var policy = retryPolicy();
-            int retryCount = 0;
-
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                try
-                {
-                    var result = action();
-                    return result;
-                }
-                catch (Exception exception)
-                {
-                    TimeSpan delay;
-                    if (policy(retryCount, exception, out delay))
+                    if (second.ShouldRetry(retryCount, 0, exception, out delay, null))
                     {
                         retryCount++;
                         if (delay > TimeSpan.Zero)
@@ -120,10 +88,9 @@ namespace Lokad.Cloud.Storage
             }
         }
 
-        public static T Get<T>(this RetryPolicy firstPolicy, RetryPolicy secondPolicy, CancellationToken cancellationToken, Func<T> action)
+        public static T Get<T>(this IRetryPolicy retryPolicy, CancellationToken cancellationToken, Func<T> action)
         {
-            var first = firstPolicy();
-            var second = secondPolicy();
+            var policy = retryPolicy;
             int retryCount = 0;
 
             while (true)
@@ -137,7 +104,7 @@ namespace Lokad.Cloud.Storage
                 catch (Exception exception)
                 {
                     TimeSpan delay;
-                    if (first(retryCount, exception, out delay))
+                    if (policy.ShouldRetry(retryCount, 0, exception, out delay, null))
                     {
                         retryCount++;
                         if (delay > TimeSpan.Zero)
@@ -148,7 +115,40 @@ namespace Lokad.Cloud.Storage
                         continue;
                     }
 
-                    if (second(retryCount, exception, out delay))
+                    throw;
+                }
+            }
+        }
+
+        public static T Get<T>(this IRetryPolicy firstPolicy, IRetryPolicy secondPolicy, CancellationToken cancellationToken, Func<T> action)
+        {
+            var first = firstPolicy;
+            var second = secondPolicy;
+            int retryCount = 0;
+
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    var result = action();
+                    return result;
+                }
+                catch (Exception exception)
+                {
+                    TimeSpan delay;
+                    if (first.ShouldRetry(retryCount, 0, exception, out delay, null))
+                    {
+                        retryCount++;
+                        if (delay > TimeSpan.Zero)
+                        {
+                            Thread.Sleep(delay);
+                        }
+
+                        continue;
+                    }
+
+                    if (second.ShouldRetry(retryCount, 0, exception, out delay, null))
                     {
                         retryCount++;
                         if (delay > TimeSpan.Zero)
@@ -165,9 +165,9 @@ namespace Lokad.Cloud.Storage
         }
 
         /// <remarks>Policy must support exceptions being null.</remarks>
-        public static void DoUntilTrue(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<bool> action)
+        public static void DoUntilTrue(this IRetryPolicy retryPolicy, CancellationToken cancellationToken, Func<bool> action)
         {
-            var policy = retryPolicy();
+            var policy = retryPolicy;
             int retryCount = 0;
 
             while (true)
@@ -181,7 +181,7 @@ namespace Lokad.Cloud.Storage
                     }
 
                     TimeSpan delay;
-                    if (policy(retryCount, null, out delay))
+                    if (policy.ShouldRetry(retryCount, 0, null, out delay, null))
                     {
                         retryCount++;
                         if (delay > TimeSpan.Zero)
@@ -197,7 +197,7 @@ namespace Lokad.Cloud.Storage
                 catch (Exception exception)
                 {
                     TimeSpan delay;
-                    if (policy(retryCount, exception, out delay))
+                    if (policy.ShouldRetry(retryCount, 0, exception, out delay, null))
                     {
                         retryCount++;
                         if (delay > TimeSpan.Zero)
@@ -213,47 +213,47 @@ namespace Lokad.Cloud.Storage
             }
         }
 
-        public static void Task(this RetryPolicy retryPolicy, CancellationToken cancellationToken,
+        public static void Task(this IRetryPolicy retryPolicy, CancellationToken cancellationToken,
             Func<Task> action, Action onSuccess = null, Action<Exception> onFinalError = null, Action onCancel = null)
         {
-            RetryTask(retryPolicy(), 0, cancellationToken, action, onSuccess, onFinalError, onCancel);
+            RetryTask(retryPolicy, 0, cancellationToken, action, onSuccess, onFinalError, onCancel);
         }
 
-        public static void Task<T>(this RetryPolicy retryPolicy, CancellationToken cancellationToken,
+        public static void Task<T>(this IRetryPolicy retryPolicy, CancellationToken cancellationToken,
             Func<Task<T>> action, Action<T> onSuccess = null, Action<Exception> onFinalError = null, Action onCancel = null)
         {
-            RetryTask(retryPolicy(), 0, cancellationToken, action, onSuccess, onFinalError, onCancel);
+            RetryTask(retryPolicy, 0, cancellationToken, action, onSuccess, onFinalError, onCancel);
         }
 
-        public static Task TaskAsTask(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task> action)
+        public static Task TaskAsTask(this IRetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task> action)
         {
             var tcs = new TaskCompletionSource<object>();
-            RetryTask(retryPolicy(), 0, cancellationToken, action, () => tcs.TrySetResult(null), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
+            RetryTask(retryPolicy, 0, cancellationToken, action, () => tcs.TrySetResult(null), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
             return tcs.Task;
         }
 
-        public static Task<TOut> TaskAsTask<TOut>(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task> action, Func<TOut> mapSuccess)
+        public static Task<TOut> TaskAsTask<TOut>(this IRetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task> action, Func<TOut> mapSuccess)
         {
             var tcs = new TaskCompletionSource<TOut>();
-            RetryTask(retryPolicy(), 0, cancellationToken, action, () => tcs.TrySetResult(mapSuccess()), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
+            RetryTask(retryPolicy, 0, cancellationToken, action, () => tcs.TrySetResult(mapSuccess()), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
             return tcs.Task;
         }
 
-        public static Task<T> TaskAsTask<T>(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task<T>> action)
+        public static Task<T> TaskAsTask<T>(this IRetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task<T>> action)
         {
             var tcs = new TaskCompletionSource<T>();
-            RetryTask(retryPolicy(), 0, cancellationToken, action, s => tcs.TrySetResult(s), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
+            RetryTask(retryPolicy, 0, cancellationToken, action, s => tcs.TrySetResult(s), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
             return tcs.Task;
         }
 
-        public static Task<TOut> TaskAsTask<TIn, TOut>(this RetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task<TIn>> action, Func<TIn, TOut> mapSuccess)
+        public static Task<TOut> TaskAsTask<TIn, TOut>(this IRetryPolicy retryPolicy, CancellationToken cancellationToken, Func<Task<TIn>> action, Func<TIn, TOut> mapSuccess)
         {
             var tcs = new TaskCompletionSource<TOut>();
-            RetryTask(retryPolicy(), 0, cancellationToken, action, s => tcs.TrySetResult(mapSuccess(s)), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
+            RetryTask(retryPolicy, 0, cancellationToken, action, s => tcs.TrySetResult(mapSuccess(s)), e => tcs.TrySetException(e), () => tcs.TrySetCanceled());
             return tcs.Task;
         }
 
-        static void RetryTask<T>(ShouldRetry shouldRetry, int retryCount, CancellationToken cancellationToken,
+        static void RetryTask<T>(IRetryPolicy retryPolicy, int retryCount, CancellationToken cancellationToken,
             Func<Task<T>> action, Action<T> onSuccess = null, Action<Exception> onFinalError = null, Action onCancel = null)
         {
             Task<T> mainTask;
@@ -286,7 +286,7 @@ namespace Lokad.Cloud.Storage
 
                             // Fail task if we don't retry
                             TimeSpan retryDelay;
-                            if (shouldRetry == null || !shouldRetry(retryCount, baseException, out retryDelay))
+                            if (retryPolicy == null || !retryPolicy.ShouldRetry(retryCount, 0, baseException, out retryDelay,null))
                             {
                                 if (onFinalError != null) onFinalError(baseException);
                                 return;
@@ -295,7 +295,7 @@ namespace Lokad.Cloud.Storage
                             // Retry immediately
                             if (retryDelay <= TimeSpan.Zero)
                             {
-                                RetryTask(shouldRetry, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
+                                RetryTask(retryPolicy, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
                                 return;
                             }
 
@@ -311,7 +311,7 @@ namespace Lokad.Cloud.Storage
                                         return;
                                     }
 
-                                    RetryTask(shouldRetry, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
+                                    RetryTask(retryPolicy, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
                                 }).Change(retryDelay, TimeSpan.FromMilliseconds(-1));
 
                             return;
@@ -333,7 +333,7 @@ namespace Lokad.Cloud.Storage
                 });
         }
 
-        static void RetryTask(ShouldRetry shouldRetry, int retryCount, CancellationToken cancellationToken,
+        static void RetryTask(IRetryPolicy retryPolicy, int retryCount, CancellationToken cancellationToken,
             Func<Task> action, Action onSuccess = null, Action<Exception> onFinalError = null, Action onCancel = null)
         {
             Task mainTask;
@@ -366,7 +366,7 @@ namespace Lokad.Cloud.Storage
 
                         // Fail task if we don't retry
                         TimeSpan retryDelay;
-                        if (shouldRetry == null || !shouldRetry(retryCount, baseException, out retryDelay))
+                        if (retryPolicy == null || !retryPolicy.ShouldRetry(retryCount, 0,baseException, out retryDelay, null))
                         {
                             if (onFinalError != null) onFinalError(baseException);
                             return;
@@ -375,7 +375,7 @@ namespace Lokad.Cloud.Storage
                         // Retry immediately
                         if (retryDelay <= TimeSpan.Zero)
                         {
-                            RetryTask(shouldRetry, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
+                            RetryTask(retryPolicy, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
                             return;
                         }
 
@@ -391,7 +391,7 @@ namespace Lokad.Cloud.Storage
                                 return;
                             }
 
-                            RetryTask(shouldRetry, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
+                            RetryTask(retryPolicy, retryCount + 1, cancellationToken, action, onSuccess, onFinalError, onCancel);
                         }).Change(retryDelay, TimeSpan.FromMilliseconds(-1));
 
                         return;

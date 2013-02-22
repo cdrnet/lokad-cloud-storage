@@ -73,7 +73,7 @@ namespace Lokad.Cloud.Storage.FileSystem
 
             try
             {
-                Retry.Do(_policies.OptimisticConcurrency, CancellationToken.None, () => Directory.Delete(container, true));
+                Retry.Do(_policies.OptimisticConcurrency(), CancellationToken.None, () => Directory.Delete(container, true));
                 return true;
             }
             catch (DirectoryNotFoundException)
@@ -129,7 +129,7 @@ namespace Lokad.Cloud.Storage.FileSystem
 
             try
             {
-                Retry.Do(_policies.OptimisticConcurrency, CancellationToken.None, () => File.Delete(path));
+                Retry.Do(_policies.OptimisticConcurrency(), CancellationToken.None, () => File.Delete(path));
                 return true;
             }
             catch (FileNotFoundException)
@@ -373,7 +373,7 @@ namespace Lokad.Cloud.Storage.FileSystem
                     catch (IOException exception)
                     {
                         TimeSpan retryInterval;
-                        if (!optimisticPolicy(retryCount++, exception, out retryInterval))
+                        if (!optimisticPolicy.ShouldRetry(retryCount++, 0,exception, out retryInterval,null))
                         {
                             throw;
                         }
@@ -489,7 +489,7 @@ namespace Lokad.Cloud.Storage.FileSystem
                 catch (IOException exception)
                 {
                     TimeSpan retryInterval;
-                    if (!optimisticPolicy(retryCount++, exception, out retryInterval))
+                    if (!optimisticPolicy.ShouldRetry(retryCount++,0, exception, out retryInterval,null))
                     {
                         throw;
                     }
@@ -503,7 +503,7 @@ namespace Lokad.Cloud.Storage.FileSystem
         public Task<BlobWithETag<T>> UpsertBlobOrSkipAsync<T>(string containerName, string blobName,
             Func<Maybe<T>> insert, Func<T, Maybe<T>> update, CancellationToken cancellationToken, IDataSerializer serializer = null)
         {
-            return Retry.TaskAsTask(_policies.OptimisticConcurrency, cancellationToken,
+            return Retry.TaskAsTask(_policies.OptimisticConcurrency(), cancellationToken,
                 () => GetBlobAsync(containerName, blobName, typeof(T), cancellationToken, serializer)
                     .Then(b =>
                         {

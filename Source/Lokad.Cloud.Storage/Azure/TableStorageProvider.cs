@@ -13,7 +13,11 @@ using System.Threading;
 using System.Web;
 using Lokad.Cloud.Storage.Instrumentation;
 using Lokad.Cloud.Storage.Instrumentation.Events;
-using Microsoft.WindowsAzure.StorageClient;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Shared.Protocol;
+using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.WindowsAzure.Storage.Table.DataServices;
+using Microsoft.WindowsAzure.Storage.Table.Protocol;
 
 namespace Lokad.Cloud.Storage.Azure
 {
@@ -51,8 +55,12 @@ namespace Lokad.Cloud.Storage.Azure
         public bool CreateTable(string tableName)
         {
             var flag = false;
-            Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () => flag = _tableStorage.CreateTableIfNotExist(tableName));
-
+            Retry.Do(_policies.SlowInstantiation(), CancellationToken.None,
+                    () =>
+                        {
+                            var table = _tableStorage.GetTableReference(tableName);
+                                flag = table.CreateIfNotExists();
+                            });
             return flag;
         }
 
@@ -60,7 +68,12 @@ namespace Lokad.Cloud.Storage.Azure
         public bool DeleteTable(string tableName)
         {
             var flag = false;
-            Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () => flag = _tableStorage.DeleteTableIfExist(tableName));
+            Retry.Do(_policies.SlowInstantiation(), CancellationToken.None,
+                  () =>
+                  {
+                      var table = _tableStorage.GetTableReference(tableName);
+                      flag = table.DeleteIfExists();
+                  });
 
             return flag;
         }
@@ -68,7 +81,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         public IEnumerable<string> GetTables()
         {
-            return _tableStorage.ListTables();
+            return _tableStorage.ListTables().Select(x=>x.Name);
         }
 
         /// <remarks></remarks>
@@ -76,7 +89,7 @@ namespace Lokad.Cloud.Storage.Azure
         {
             if(null == tableName) throw new ArgumentNullException("tableName");
 
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
             return GetInternal<T>(context, tableName, Maybe<string>.Empty);
         }
 
@@ -90,7 +103,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             var filter = string.Format("(PartitionKey eq '{0}')", HttpUtility.UrlEncode(partitionKey));
 
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
             return GetInternal<T>(context, tableName, filter);
         }
 
@@ -121,7 +134,7 @@ namespace Lokad.Cloud.Storage.Azure
                 filter += string.Format(" and (RowKey lt '{0}')", HttpUtility.UrlEncode(endRowKey));
             }
 
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
             return GetInternal<T>(context, tableName, filter);
         }
 
@@ -132,7 +145,7 @@ namespace Lokad.Cloud.Storage.Azure
             if(null == partitionKey) throw new ArgumentNullException("partitionKey");
             if(partitionKey.Contains("'")) throw new ArgumentOutOfRangeException("partitionKey", "Incorrect char.");
 
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
 
             foreach (var slice in Slice(rowKeys, MaxEntityTransactionCount))
             {
@@ -189,7 +202,7 @@ namespace Lokad.Cloud.Storage.Azure
                 QueryOperationResponse response = null;
                 FatEntity[] fatEntities = null;
 
-                Retry.Do(_policies.TransientTableErrorBackOff, CancellationToken.None, () =>
+                Retry.Do(_policies.TransientTableErrorBackOff(), CancellationToken.None, () =>
                     {
                         try
                         {
@@ -250,7 +263,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         void InsertInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
@@ -271,7 +284,7 @@ namespace Lokad.Cloud.Storage.Azure
                     cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
-                Retry.Do(_policies.TransientTableErrorBackOff, CancellationToken.None, () =>
+                Retry.Do(_policies.TransientTableErrorBackOff(), CancellationToken.None, () =>
                     {
                         try
                         {
@@ -288,18 +301,19 @@ namespace Lokad.Cloud.Storage.Azure
                                 if (errorCode == TableErrorCodeStrings.TableNotFound
                                     || errorCode == StorageErrorCodeStrings.ResourceNotFound)
                                 {
-                                    Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () =>
+                                    Retry.Do(_policies.SlowInstantiation(), CancellationToken.None, () =>
                                         {
                                             try
                                             {
-                                                _tableStorage.CreateTableIfNotExist(tableName);
+                                                var table = _tableStorage.GetTableReference(tableName);
+                                                table.CreateIfNotExists();
                                             }
                                             // HACK: incorrect behavior of the StorageClient (2010-09)
                                             // Fails to behave properly in multi-threaded situations
-                                            catch (StorageClientException cex)
+                                            catch (StorageException cex)
                                             {
-                                                if (cex.ExtendedErrorInformation == null
-                                                    || cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
+                                                if (cex.RequestInformation.ExtendedErrorInformation == null
+                                                    || cex.RequestInformation.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
                                                 {
                                                     throw;
                                                 }
@@ -375,7 +389,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         void UpdateInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities, bool force)
         {
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
@@ -398,7 +412,7 @@ namespace Lokad.Cloud.Storage.Azure
                     cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
-                Retry.Do(_policies.TransientTableErrorBackOff, CancellationToken.None, () =>
+                Retry.Do(_policies.TransientTableErrorBackOff(), CancellationToken.None, () =>
                     {
                         try
                         {
@@ -419,17 +433,18 @@ namespace Lokad.Cloud.Storage.Azure
                             }
                             else if (errorCode == TableErrorCodeStrings.TableNotFound)
                             {
-                                Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () =>
+                                Retry.Do(_policies.SlowInstantiation(), CancellationToken.None, () =>
                                     {
                                         try
                                         {
-                                            _tableStorage.CreateTableIfNotExist(tableName);
+                                            var table = _tableStorage.GetTableReference(tableName);
+                                            table.CreateIfNotExists();
                                         }
                                         // HACK: incorrect behavior of the StorageClient (2010-09)
                                         // Fails to behave properly in multi-threaded situations
-                                        catch (StorageClientException cex)
+                                        catch (StorageException cex)
                                         {
-                                            if (cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
+                                            if (cex.RequestInformation.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
                                             {
                                                 throw;
                                             }
@@ -485,23 +500,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// missing semantic from the Table Storage.</remarks>
         void UpsertInternal<T>(string tableName, IEnumerable<CloudEntity<T>> entities)
         {
-            if (_tableStorage.BaseUri.Host == "127.0.0.1")
-            {
-                // HACK: Dev Storage of v1.6 tools does NOT support Upsert yet -> emulate
-
-                // checking for entities that already exist
-                var partitionKey = entities.First().PartitionKey;
-                var existingKeys = new HashSet<string>(
-                Get<T>(tableName, partitionKey, entities.Select(e => e.RowKey)).Select(e => e.RowKey));
-
-                // inserting or updating depending on the presence of the keys
-                Insert(tableName, entities.Where(e => !existingKeys.Contains(e.RowKey)));
-                Update(tableName, entities.Where(e => existingKeys.Contains(e.RowKey)), true);
-
-                return;
-            }
-
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
             context.MergeOption = MergeOption.AppendOnly;
             context.ResolveType = ResolveFatEntityType;
 
@@ -524,7 +523,7 @@ namespace Lokad.Cloud.Storage.Azure
                     cloudEntityOfFatEntity.Add(fatEntity.Item1, fatEntity.Item2);
                 }
 
-                Retry.Do(_policies.TransientTableErrorBackOff, CancellationToken.None, () =>
+                Retry.Do(_policies.TransientTableErrorBackOff(), CancellationToken.None, () =>
                 {
                     try
                     {
@@ -545,17 +544,18 @@ namespace Lokad.Cloud.Storage.Azure
                         }
                         else if (errorCode == TableErrorCodeStrings.TableNotFound)
                         {
-                            Retry.Do(_policies.SlowInstantiation, CancellationToken.None, () =>
+                            Retry.Do(_policies.SlowInstantiation(), CancellationToken.None, () =>
                             {
                                 try
                                 {
-                                    _tableStorage.CreateTableIfNotExist(tableName);
+                                    var table = _tableStorage.GetTableReference(tableName);
+                                    table.CreateIfNotExists();
                                 }
                                 // HACK: incorrect behavior of the StorageClient (2010-09)
                                 // Fails to behave properly in multi-threaded situations
-                                catch (StorageClientException cex)
+                                catch (StorageException cex)
                                 {
-                                    if (cex.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
+                                    if (cex.RequestInformation.ExtendedErrorInformation.ErrorCode != TableErrorCodeStrings.TableAlreadyExists)
                                     {
                                         throw;
                                     }
@@ -646,7 +646,7 @@ namespace Lokad.Cloud.Storage.Azure
         /// <remarks></remarks>
         void DeleteInternal<T>(string tableName, string partitionKey, IEnumerable<Tuple<string,string>> rowKeysAndETags, bool force)
         {
-            var context = _tableStorage.GetDataServiceContext();
+            var context = _tableStorage.GetTableServiceContext();
 
             var stopwatch = new Stopwatch();
 
@@ -683,7 +683,7 @@ namespace Lokad.Cloud.Storage.Azure
 
                     try // HACK: nested try/catch to handle the special case where the table is missing
                     {
-                        Retry.Do(_policies.TransientTableErrorBackOff, CancellationToken.None, () => context.SaveChanges(SaveChangesOptions.Batch));
+                        Retry.Do(_policies.TransientTableErrorBackOff(), CancellationToken.None, () => context.SaveChanges(SaveChangesOptions.Batch));
                     }
                     catch (DataServiceRequestException ex)
                     {
@@ -714,7 +714,7 @@ namespace Lokad.Cloud.Storage.Azure
                         .Select(e => Tuple.Create(e.RowKey, MapETag(e.ETag, force))).ToArray();
 
                     // entities with same name will be added again
-                    context = _tableStorage.GetDataServiceContext();
+                    context = _tableStorage.GetTableServiceContext();
 
                     // HACK: [vermorel] yes, gotos are horrid, but other solutions are worst here.
                     goto DeletionStart;

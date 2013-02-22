@@ -360,6 +360,7 @@ namespace Lokad.Cloud.Storage.Test.Blobs
                 .OrderBy(i => i)
                 .ToArray();
 
+
             for (int i = 0; i < array.Length; i++)
             {
                 Assert.AreEqual(i + 1, sorted[i], "Concurrency should be resolved, every call should increment by one.");

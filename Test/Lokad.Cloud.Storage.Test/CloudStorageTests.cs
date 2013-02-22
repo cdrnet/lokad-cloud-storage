@@ -6,6 +6,7 @@
 using Lokad.Cloud.Storage.Azure;
 using Lokad.Cloud.Storage.InMemory;
 using Microsoft.WindowsAzure;
+using Microsoft.WindowsAzure.Storage;
 using NUnit.Framework;
 
 namespace Lokad.Cloud.Storage.Test
@@ -28,13 +29,13 @@ namespace Lokad.Cloud.Storage.Test
         [Test]
         public void CanBuildStorageProvidersForAzureAccount()
         {
-            Verify<BlobStorageProvider>(CloudStorage.ForAzureAccount(CloudStorageAccount.Parse("USeDevelopmentStorage=true")).BuildStorageProviders());
+            Verify<BlobStorageProvider>(CloudStorage.ForAzureAccount(CloudStorageAccount.Parse("UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1")).BuildStorageProviders());
         }
 
         [Test]
         public void CanBuildStorageProvidersForAzureConnectionString()
         {
-            Verify<BlobStorageProvider>(CloudStorage.ForAzureConnectionString("USeDevelopmentStorage=true").BuildStorageProviders());
+            Verify<BlobStorageProvider>(CloudStorage.ForAzureConnectionString("UseDevelopmentStorage=true;DevelopmentStorageProxyUri=http://127.0.0.1").BuildStorageProviders());
         }
 
         [Test]
