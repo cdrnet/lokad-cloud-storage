@@ -312,18 +312,19 @@ namespace Lokad.Cloud.Storage.FileSystem
 
         public void PutBlob<T>(string containerName, string blobName, T item, IDataSerializer serializer = null)
         {
-            PutBlob(containerName, blobName, item, true, serializer);
+            string ignored;
+            PutBlob(containerName, blobName, item, typeof(T), true, null, out ignored, serializer);
         }
 
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, IDataSerializer serializer = null)
         {
             string ignored;
-            return PutBlob(containerName, blobName, item, overwrite, out ignored, serializer);
+            return PutBlob(containerName, blobName, item, typeof(T), overwrite, null, out ignored, serializer);
         }
 
         public bool PutBlob<T>(string containerName, string blobName, T item, bool overwrite, out string etag, IDataSerializer serializer = null)
         {
-            return PutBlob(containerName, blobName, item, typeof(T), overwrite, out etag, serializer);
+            return PutBlob(containerName, blobName, item, typeof(T), overwrite, null, out etag, serializer);
         }
 
         public bool PutBlob<T>(string containerName, string blobName, T item, string expectedEtag, IDataSerializer serializer = null)
