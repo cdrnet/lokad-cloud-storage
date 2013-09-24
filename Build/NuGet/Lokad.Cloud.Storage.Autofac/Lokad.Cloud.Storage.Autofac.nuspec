@@ -14,7 +14,7 @@
     <tags>azure, storage, blob, queue, table, lokad, cloud, autofac</tags>
     <dependencies>
       <dependency id="Lokad.Cloud.Storage" version="0.0.0" />
-      <dependency id="Autofac" version="2.5.2.830" />
+      <dependency id="Autofac" version="3.1.1" />
     </dependencies>
   </metadata>
 </package>
