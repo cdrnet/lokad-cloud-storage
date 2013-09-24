@@ -663,7 +663,7 @@ namespace Lokad.Cloud.Storage.Azure
             AccessCondition accessCondition;
             if (!overwrite) // no overwrite authorized, blob must NOT exists
             {
-                accessCondition = AccessCondition.GenerateIfNotModifiedSinceCondition(DateTime.MinValue);
+                accessCondition = AccessCondition.GenerateIfNotModifiedSinceCondition(new DateTime(1, 1, 2, 0, 0, 0, DateTimeKind.Utc));
             }
             else // overwrite is OK
             {
@@ -783,7 +783,7 @@ namespace Lokad.Cloud.Storage.Azure
 
             if (!overwrite) // no overwrite authorized, blob must NOT exists
             {
-                accessCondition = AccessCondition.GenerateIfNotModifiedSinceCondition(DateTime.MinValue);
+                accessCondition = AccessCondition.GenerateIfNotModifiedSinceCondition(new DateTime(1, 1, 2, 0, 0, 0, DateTimeKind.Utc));
             }
             else // overwrite is OK
             {
