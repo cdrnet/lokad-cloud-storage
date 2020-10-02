@@ -1,3 +1,4 @@
+## Read me
 Lokad.Cloud.Storage is an O/C mapper (object to cloud) for Windows Azure.
 Copyright (c) Lokad SAS, 2009-2011
 
